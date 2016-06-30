@@ -18,3 +18,7 @@ if((NOT HAVE_HIREDIS) OR (NOT HAVE_HIREDIS_H))
 endif((NOT HAVE_HIREDIS) OR (NOT HAVE_HIREDIS_H))
 
 add_subdirectory(kvshl)
+
+add_executable(kvsnssh kvsnssh.c kvsns.c)
+target_link_libraries(kvsnssh kvshl_redis hiredis)
+
