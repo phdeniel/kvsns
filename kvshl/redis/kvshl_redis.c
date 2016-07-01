@@ -1,6 +1,7 @@
 #include <errno.h>
 #include <unistd.h>
 #include <stdlib.h>
+#include <string.h>
 #include <hiredis/hiredis.h>
 #include "../kvshl.h"
 
@@ -48,7 +49,6 @@ int kvshl_set_char(char *k, char *v)
 	if (!reply)
 		return -1;
 
-	printf("SET: %s\n", reply->str);
 	freeReplyObject(reply);
 
 	return 0;
@@ -80,12 +80,31 @@ int kvshl_get_char(char *k, char *v)
 		return -EINVAL;
 
 	/* Try a GET and two INCR */
-	reply = redisCommand(rediscontext,"GET foo");
+	reply = NULL;
+	reply = redisCommand(rediscontext,"GET %s", k);
 	if (!reply)
 		return -1;
 
-	printf("GET foo: %s\n", reply->str);
+	if (reply->len == 0)
+		return -ENOENT;
+
+	strcpy(v, reply->str);
 	freeReplyObject(reply);
 
+	return 0;
+}
+
+int kvshl_del(char *k)
+{
+	redisReply *reply;
+
+	if (!k)
+		return -EINVAL;
+
+	/* Try a GET and two INCR */
+	reply = redisCommand(rediscontext,"DEL %s", k);
+	if (!reply)
+		return -1;
+	freeReplyObject(reply);
 	return 0;
 }
