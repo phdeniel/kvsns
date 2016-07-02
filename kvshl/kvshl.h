@@ -17,6 +17,7 @@ int kvshl_set_char(char *k, char *v);
 int kvshl_get_char(char *k, char *v);
 int kvshl_set_stat(char *k, struct stat *buf);
 int kvshl_get_stat(char *k, struct stat *buf);
+int kvshl_get_list_size(char *k);
 int kvshl_del(char *k);
 int kvshl_incr_counter(char *k, unsigned long long *v);
 #endif

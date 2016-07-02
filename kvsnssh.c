@@ -62,6 +62,17 @@ int main(int argc, char *argv[])
 	}
 	printf("===> New Ino = %llu\n", ino);
 
+	rc = kvsns_mkdir(&parent, "mydir2", &ino);
+	if (rc != 0) {
+		if (rc == -EEXIST)
+			printf("dirent exists \n");
+		else {
+			fprintf(stderr, "kvsns_mkdir: err=%d\n", rc);
+			exit(1);
+		}
+	}
+	printf("===> New Ino = %llu\n", ino);
+
 	rc = kvsns_lookup(&parent, "mydir", &ino);
 	if (rc != 0) {
 		fprintf(stderr, "kvsns_lookup: err=%d\n", rc);
@@ -77,6 +88,12 @@ int main(int argc, char *argv[])
 	printf("====> INO LOOKUP = %llu|%llu\n", ino2, parent);
 	if (parent != ino2) 
 		fprintf(stderr, "kvsns_lookupp: mauvaise implémentation !!!\n");
+
+	rc = kvsns_rmdir(&parent, "mydir");
+	if (rc != 0) {
+		fprintf(stderr, "kvsns_rmdir: err=%d\n", rc);
+		exit(1);
+	}
 
 	return 0;
 

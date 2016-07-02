@@ -85,6 +85,42 @@ int kvsns_mkdir(kvsns_ino_t *parent, char *name,
 	return 0;
 }
 
+int kvsns_rmdir(kvsns_ino_t *parent, char *name)
+{
+	int rc;
+	char k[KLEN];
+	kvsns_ino_t ino;
+
+	if (!parent || !name)
+		return -EINVAL; 
+	
+	rc = kvsns_lookup(parent, name, &ino);
+	if (rc != 0)
+		return -rc;
+
+	kvshl_begin_transaction();
+	snprintf(k, KLEN, "%llu.dentries.%s", 
+		 *parent, name);
+
+	rc = kvshl_del(k);
+	if (rc != 0)
+		return rc;
+
+	snprintf(k, KLEN, "%llu.parentdir", &ino);
+
+	rc = kvshl_del(k);
+	if (rc != 0)
+		return rc;
+
+	snprintf(k, KLEN, "%llu.stat", ino);
+	rc = kvshl_del(k);
+	if (rc != 0)
+		return rc;
+
+	kvshl_end_transaction();
+	return 0;
+}
+
 int kvsns_lookup(kvsns_ino_t *parent, char *name,
 		kvsns_ino_t *ino)
 {

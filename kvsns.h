@@ -16,6 +16,8 @@ int kvsns_next_inode(kvsns_ino_t *ino);
 int kvsns_mkdir(kvsns_ino_t *parent, char *name,
 		kvsns_ino_t *newdir);
 
+int kvsns_rmdir(kvsns_ino_t *parent, char *name);
+
 int kvsns_lookup(kvsns_ino_t *parent, char *name,
 		 kvsns_ino_t *myino);
 
