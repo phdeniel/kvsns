@@ -8,7 +8,10 @@ int main(int argc, char *argv[])
 {
 	int rc;
 	kvsns_ino_t ino;
+	kvsns_ino_t ino2;
 	kvsns_ino_t parent;
+	struct stat bufstat;
+	struct stat bufstat2;
 	char key[KLEN];
 	char val[VLEN];
 
@@ -61,10 +64,19 @@ int main(int argc, char *argv[])
 
 	rc = kvsns_lookup(&parent, "mydir", &ino);
 	if (rc != 0) {
-		fprintf(stderr, "kvsns_mkdir: err=%d\n", rc);
+		fprintf(stderr, "kvsns_lookup: err=%d\n", rc);
 		exit(1);
 	}
 	printf("====> INO LOOKUP = %llu\n", ino);
+
+	rc = kvsns_lookupp(&ino, &ino2);
+	if (rc != 0) {
+		fprintf(stderr, "kvsns_lookupp: err=%d\n", rc);
+		exit(1);
+	}
+	printf("====> INO LOOKUP = %llu|%llu\n", ino2, parent);
+	if (parent != ino2) 
+		fprintf(stderr, "kvsns_lookupp: mauvaise implémentation !!!\n");
 
 	return 0;
 

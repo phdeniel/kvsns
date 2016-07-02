@@ -19,4 +19,6 @@ int kvsns_mkdir(kvsns_ino_t *parent, char *name,
 int kvsns_lookup(kvsns_ino_t *parent, char *name,
 		 kvsns_ino_t *myino);
 
+int kvsns_lookupp(kvsns_ino_t *dir, kvsns_ino_t *parent);
+
 #endif
