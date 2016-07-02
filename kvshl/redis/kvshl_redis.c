@@ -165,3 +165,22 @@ int kvshl_del(char *k)
 	freeReplyObject(reply);
 	return 0;
 }
+
+int kvshl_get_list_size(char *k)
+{
+	redisReply *reply;
+	int rc;
+
+	if (!k)
+		return -EINVAL;
+
+	reply = redisCommand(rediscontext, "KEYS %s", k);
+	if (!reply)
+		return -1;
+	rc = reply->elements;
+
+	freeReplyObject(reply);
+	return rc;
+}
+	
+

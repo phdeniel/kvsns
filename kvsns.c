@@ -98,6 +98,11 @@ int kvsns_rmdir(kvsns_ino_t *parent, char *name)
 	if (rc != 0)
 		return -rc;
 
+	snprintf(k, KLEN, "%llu.dentries.*", ino);
+	rc = kvshl_get_list_size(k);
+	if (rc > 0)
+		return -ENOTEMPTY;
+
 	kvshl_begin_transaction();
 	snprintf(k, KLEN, "%llu.dentries.%s", 
 		 *parent, name);
