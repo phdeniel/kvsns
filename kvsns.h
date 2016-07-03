@@ -22,5 +22,6 @@ int kvsns_lookup(kvsns_ino_t *parent, char *name,
 		 kvsns_ino_t *myino);
 
 int kvsns_lookupp(kvsns_ino_t *dir, kvsns_ino_t *parent);
+int kvsns_getattr(kvsns_ino_t *ino, struct stat *buffstat);
 
 #endif

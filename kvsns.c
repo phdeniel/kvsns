@@ -169,3 +169,11 @@ int kvsns_lookupp(kvsns_ino_t *dir, kvsns_ino_t *parent)
 	return 0;
 }
 
+int kvsns_getattr(kvsns_ino_t *ino, struct stat *buffstat) 
+{
+	char k[KLEN];
+
+	snprintf(k, KLEN, "%llu.stat", *ino);
+	 return kvshl_get_stat(k, buffstat);
+
+}
