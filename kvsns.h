@@ -5,16 +5,30 @@
 #include <unistd.h>
 #include <stdlib.h>
 #include <errno.h>
+#include <dirent.h>
 #include "kvshl/kvshl.h"
 
+#define KVSNS_ROOT_INODE 2LL
+
 typedef unsigned long long int kvsns_ino_t;
+
 typedef struct kvsns_cred__ 
 {
 	uid_t uid;
 	gid_t gid;
 } kvsns_cred_t;
 
-int kvsns_init(void);
+typedef struct kvsns_entry_
+{
+	char name[MAXNAMLEN];
+	kvsns_ino_t inode;
+	int type;
+	struct stat stats;
+} kvsns_dentry_t;
+
+int kvsns_start(void);
+
+int kvsns_init_root(void);
 
 int kvsns_next_inode(kvsns_ino_t *ino);
 

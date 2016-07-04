@@ -7,7 +7,7 @@
 #include "kvsns.h"
 #include "kvshl/kvshl.h"
 
-int kvsns_init(void)
+int kvsns_start(void)
 {
 	int rc;
 
@@ -15,6 +15,47 @@ int kvsns_init(void)
 	if (rc != 0)
 		return rc;
 
+	return 0;
+}
+
+int kvsns_init_root()
+{
+	int rc;
+	char k[KLEN];
+	char v[KLEN];
+	struct stat bufstat;
+	kvsns_cred_t cred;
+	kvsns_ino_t ino;
+
+	cred.uid= 0;
+	cred.gid = 0;
+	ino = KVSNS_ROOT_INODE;
+
+	kvshl_begin_transaction();
+
+	snprintf(k, KLEN, "%llu.parentdir", ino);
+	snprintf(v, VLEN, "%llu", ino);
+
+	rc = kvshl_set_char(k, v);
+	if (rc != 0)
+		return rc;
+
+	/* Set stat */
+	memset(&bufstat, 0, sizeof(struct stat));
+	bufstat.st_mode = S_IFDIR|0755;
+	bufstat.st_nlink = 2;
+	bufstat.st_uid = 0;
+	bufstat.st_gid = 0;
+	bufstat.st_atim.tv_sec = 0;
+	bufstat.st_mtim.tv_sec = 0;
+	bufstat.st_ctim.tv_sec = 0;
+
+	snprintf(k, KLEN, "%llu.stat", ino);
+	rc = kvshl_set_stat(k, &bufstat);
+	if (rc != 0)
+		return rc;
+
+	kvshl_end_transaction();
 	return 0;
 }
 
@@ -39,7 +80,7 @@ int kvsns_mkdir(kvsns_cred_t *cred, kvsns_ino_t *parent, char *name,
 	char v[KLEN];
 	struct stat bufstat;
 
-	if (!parent || !name || !newdir)
+	if (!cred || !parent || !name || !newdir)
 		return -EINVAL;
 
 	rc = kvsns_lookup(cred, parent, name, newdir);
@@ -91,7 +132,7 @@ int kvsns_rmdir(kvsns_cred_t *cred, kvsns_ino_t *parent, char *name)
 	char k[KLEN];
 	kvsns_ino_t ino;
 
-	if (!parent || !name)
+	if (!cred || !parent || !name)
 		return -EINVAL; 
 	
 	rc = kvsns_lookup(cred, parent, name, &ino);
@@ -133,7 +174,7 @@ int kvsns_lookup(kvsns_cred_t *cred, kvsns_ino_t *parent, char *name,
 	char k[KLEN];
 	char v[VLEN];
 
-	if (!parent || !name || !ino)
+	if (!cred || !parent || !name || !ino)
 		return -EINVAL; 
 
 	snprintf(k, KLEN, "%llu.dentries.%s", 
@@ -154,7 +195,7 @@ int kvsns_lookupp(kvsns_cred_t *cred, kvsns_ino_t *dir, kvsns_ino_t *parent)
 	char k[KLEN];
 	char v[VLEN];
 
-	if (!dir || !parent)
+	if (!cred || !dir || !parent)
 		return -EINVAL;
 
 	snprintf(k, KLEN, "%llu.parentdir", 
@@ -172,6 +213,9 @@ int kvsns_lookupp(kvsns_cred_t *cred, kvsns_ino_t *dir, kvsns_ino_t *parent)
 int kvsns_getattr(kvsns_cred_t *cred, kvsns_ino_t *ino, struct stat *buffstat) 
 {
 	char k[KLEN];
+
+	if (!cred || !ino || !buffstat)
+		return -EINVAL;
 
 	snprintf(k, KLEN, "%llu.stat", *ino);
 	return kvshl_get_stat(k, buffstat);
