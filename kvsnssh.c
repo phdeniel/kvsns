@@ -14,6 +14,10 @@ int main(int argc, char *argv[])
 	struct stat bufstat2;
 	char key[KLEN];
 	char val[VLEN];
+	kvsns_cred_t cred;
+
+	cred.uid = getuid();
+	cred.gid = getgid();
 
 	rc = kvsns_init();
 	if (rc != 0) {
@@ -58,7 +62,7 @@ int main(int argc, char *argv[])
 
 	/* NS FUNCTION */
 	parent = 2LL;
-	rc = kvsns_mkdir(&parent, "mydir", &ino);
+	rc = kvsns_mkdir(&cred, &parent, "mydir", &ino);
 	if (rc != 0) {
 		if (rc == -EEXIST)
 			printf("dirent exists \n");
@@ -69,7 +73,7 @@ int main(int argc, char *argv[])
 	}
 	printf("===> New Ino = %llu\n", ino);
 
-	rc = kvsns_mkdir(&parent, "mydir2", &ino);
+	rc = kvsns_mkdir(&cred, &parent, "mydir2", &ino);
 	if (rc != 0) {
 		if (rc == -EEXIST)
 			printf("dirent exists \n");
@@ -80,14 +84,14 @@ int main(int argc, char *argv[])
 	}
 	printf("===> New Ino = %llu\n", ino);
 
-	rc = kvsns_lookup(&parent, "mydir", &ino);
+	rc = kvsns_lookup(&cred, &parent, "mydir", &ino);
 	if (rc != 0) {
 		fprintf(stderr, "kvsns_lookup: err=%d\n", rc);
 		exit(1);
 	}
 	printf("====> INO LOOKUP = %llu\n", ino);
 
-	rc = kvsns_lookupp(&ino, &ino2);
+	rc = kvsns_lookupp(&cred, &ino, &ino2);
 	if (rc != 0) {
 		fprintf(stderr, "kvsns_lookupp: err=%d\n", rc);
 		exit(1);
@@ -96,7 +100,7 @@ int main(int argc, char *argv[])
 	if (parent != ino2) 
 		fprintf(stderr, "kvsns_lookupp: mauvaise implémentation !!!\n");
 
-	rc = kvsns_rmdir(&parent, "mydir");
+	rc = kvsns_rmdir(&cred, &parent, "mydir");
 	if (rc != 0) {
 		fprintf(stderr, "kvsns_rmdir: err=%d\n", rc);
 		exit(1);

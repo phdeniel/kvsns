@@ -31,7 +31,7 @@ int kvsns_next_inode(kvsns_ino_t *ino)
 	return 0;
 }
 
-int kvsns_mkdir(kvsns_ino_t *parent, char *name,
+int kvsns_mkdir(kvsns_cred_t *cred, kvsns_ino_t *parent, char *name,
 		kvsns_ino_t *newdir)
 {
 	int rc;
@@ -42,7 +42,7 @@ int kvsns_mkdir(kvsns_ino_t *parent, char *name,
 	if (!parent || !name || !newdir)
 		return -EINVAL;
 
-	rc = kvsns_lookup(parent, name, newdir);
+	rc = kvsns_lookup(cred, parent, name, newdir);
 	if (rc == 0)
 		return -EEXIST;
 
@@ -85,7 +85,7 @@ int kvsns_mkdir(kvsns_ino_t *parent, char *name,
 	return 0;
 }
 
-int kvsns_rmdir(kvsns_ino_t *parent, char *name)
+int kvsns_rmdir(kvsns_cred_t *cred, kvsns_ino_t *parent, char *name)
 {
 	int rc;
 	char k[KLEN];
@@ -94,7 +94,7 @@ int kvsns_rmdir(kvsns_ino_t *parent, char *name)
 	if (!parent || !name)
 		return -EINVAL; 
 	
-	rc = kvsns_lookup(parent, name, &ino);
+	rc = kvsns_lookup(cred, parent, name, &ino);
 	if (rc != 0)
 		return -rc;
 
@@ -126,7 +126,7 @@ int kvsns_rmdir(kvsns_ino_t *parent, char *name)
 	return 0;
 }
 
-int kvsns_lookup(kvsns_ino_t *parent, char *name,
+int kvsns_lookup(kvsns_cred_t *cred, kvsns_ino_t *parent, char *name,
 		kvsns_ino_t *ino)
 {
 	int rc;
@@ -148,7 +148,7 @@ int kvsns_lookup(kvsns_ino_t *parent, char *name,
 	return 0;
 }
 
-int kvsns_lookupp(kvsns_ino_t *dir, kvsns_ino_t *parent)
+int kvsns_lookupp(kvsns_cred_t *cred, kvsns_ino_t *dir, kvsns_ino_t *parent)
 {
 	int rc;
 	char k[KLEN];
@@ -169,11 +169,10 @@ int kvsns_lookupp(kvsns_ino_t *dir, kvsns_ino_t *parent)
 	return 0;
 }
 
-int kvsns_getattr(kvsns_ino_t *ino, struct stat *buffstat) 
+int kvsns_getattr(kvsns_cred_t *cred, kvsns_ino_t *ino, struct stat *buffstat) 
 {
 	char k[KLEN];
 
 	snprintf(k, KLEN, "%llu.stat", *ino);
-	 return kvshl_get_stat(k, buffstat);
-
+	return kvshl_get_stat(k, buffstat);
 }
