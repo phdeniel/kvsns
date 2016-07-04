@@ -19,9 +19,15 @@ int main(int argc, char *argv[])
 	cred.uid = getuid();
 	cred.gid = getgid();
 
-	rc = kvsns_init();
+	rc = kvsns_start();
 	if (rc != 0) {
 		fprintf(stderr, "kvsns_init: err=%d\n", rc);
+		exit(1);
+	}
+
+	rc = kvsns_init_root();
+	if (rc != 0) {
+		fprintf(stderr, "kvsns_init_root: err=%d\n", rc);
 		exit(1);
 	}
 
@@ -54,14 +60,14 @@ int main(int argc, char *argv[])
 	printf("kvshl_get_char after del: %d\n", kvshl_get_char("test", val)); 
 
 	rc = kvshl_get_list_size( "*" );
-	if (rc != 0) {
-		fprintf(stderr, "ikvshl_get_list_size: err=%d\n", rc);
+if (rc < 0) {
+		fprintf(stderr, "kvshl_get_list_size: err=%d\n", rc);
 		exit(1);
 	}
 	printf("kvshl_get_list_size * : rc=%d\n");
 
 	/* NS FUNCTION */
-	parent = 2LL;
+	parent = KVSNS_ROOT_INODE;
 	rc = kvsns_mkdir(&cred, &parent, "mydir", &ino);
 	if (rc != 0) {
 		if (rc == -EEXIST)
@@ -106,6 +112,7 @@ int main(int argc, char *argv[])
 		exit(1);
 	}
 
+	printf("######## OK ########\n");
 	return 0;
 
 }
