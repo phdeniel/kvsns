@@ -60,7 +60,7 @@ int main(int argc, char *argv[])
 	printf("kvshl_get_char after del: %d\n", kvshl_get_char("test", val)); 
 
 	rc = kvshl_get_list_size( "*" );
-if (rc < 0) {
+	if (rc < 0) {
 		fprintf(stderr, "kvshl_get_list_size: err=%d\n", rc);
 		exit(1);
 	}
