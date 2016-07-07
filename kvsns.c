@@ -167,6 +167,38 @@ int kvsns_rmdir(kvsns_cred_t *cred, kvsns_ino_t *parent, char *name)
 	return 0;
 }
 
+int kvsns_readdir(kvsns_cred_t *cred, kvsns_ino_t *dir, int offset, 
+		  kvsns_dentry_t *dirent, int *size)
+{
+	int rc;
+	char pattern[KLEN];
+	kvshl_item_t *items;
+	int i; 
+
+	items = (kvshl_item_t *)malloc(*size*sizeof(kvshl_item_t));
+	if (items == NULL)
+		return -ENOMEM;
+
+	kvshl_begin_transaction();
+
+	snprintf(pattern, KLEN, "%llu.dentries.*", *dir);
+	rc = kvshl_get_list(pattern, offset, size, items);
+	if (rc < 0)
+		return rc;
+
+	for (i=0; i < *size ; i++) {
+		sscanf(items[i].str, "%llu %s\n", 
+		       &dirent[i].inode, dirent[i].name);
+		rc = kvsns_getattr(cred, &dirent[i].inode, &dirent[i].stats);
+		if (rc != 0)
+			return rc;
+	} 
+
+	kvshl_end_transaction();
+
+	return 0;
+}
+
 int kvsns_lookup(kvsns_cred_t *cred, kvsns_ino_t *parent, char *name,
 		kvsns_ino_t *ino)
 {
