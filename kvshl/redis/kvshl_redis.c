@@ -166,16 +166,45 @@ int kvshl_del(char *k)
 	return 0;
 }
 
-int kvshl_get_list_size(char *k)
+int kvshl_get_list(char *pattern, int start, int *size, kvshl_item_t *items)
+{
+	redisReply *reply;
+	int rc;
+	int i;
+
+	if (!pattern || !size || !items)
+		return -EINVAL;
+
+	reply = redisCommand(rediscontext, "KEYS %s", pattern);
+	if (!reply)
+		return -1;
+	if (reply->type != REDIS_REPLY_ARRAY)
+		return -1;
+
+	if (reply->elements < (start + *size))
+		*size = reply->elements - start;
+
+	for (i = start; i < start + *size ; i++) {
+		items[i-start].offset = i;
+		strcpy(items[i-start].str, reply->element[i]->str);
+	}
+ 
+	freeReplyObject(reply);
+	return 0;
+}
+
+int kvshl_get_list_size(char *pattern)
 {
 	redisReply *reply;
 	int rc;
 
-	if (!k)
+	if (!pattern)
 		return -EINVAL;
 
-	reply = redisCommand(rediscontext, "KEYS %s", k);
+	reply = redisCommand(rediscontext, "KEYS %s", pattern);
 	if (!reply)
+		return -1;
+	if (reply->type != REDIS_REPLY_ARRAY)
 		return -1;
 	rc = reply->elements;
 

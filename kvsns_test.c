@@ -7,6 +7,8 @@
 int main(int argc, char *argv[])
 {
 	int rc;
+	int i;
+	int end;
 	kvsns_ino_t ino;
 	kvsns_ino_t ino2;
 	kvsns_ino_t parent;
@@ -14,7 +16,9 @@ int main(int argc, char *argv[])
 	struct stat bufstat2;
 	char key[KLEN];
 	char val[VLEN];
+	char tmp[VLEN];
 	kvsns_cred_t cred;
+	kvshl_item_t items[10];
 
 	cred.uid = getuid();
 	cred.gid = getgid();
@@ -64,7 +68,31 @@ int main(int argc, char *argv[])
 		fprintf(stderr, "kvshl_get_list_size: err=%d\n", rc);
 		exit(1);
 	}
-	printf("kvshl_get_list_size * : rc=%d\n");
+	printf("kvshl_get_list_size * : rc=%d\n", rc);
+
+	end = 10;
+	rc = kvshl_get_list( "*", 0, &end, items);
+	if (rc != 0) {
+		fprintf(stderr, "kvsns_get_list: err=%d\n", rc);
+		exit(1);
+	}
+	for (i=0 ; i < end ; i++)
+		printf("==> LIST: %s\n", items[i].str);
+
+	printf("+++++++++++++++\n");
+	end = 10;
+	rc = kvshl_get_list( "2.dentries.*", 0, &end, items);
+	if (rc != 0) {
+		fprintf(stderr, "kvsns_get_list: err=%d\n", rc);
+		exit(1);
+	}
+	for (i=0 ; i < end ; i++) {
+		printf("==> LIST: %s\n", items[i].str);
+		sscanf(items[i].str, "%llu.dentries.%s", &ino, tmp);
+		printf("+++> LIST: %llu %s\n", ino, tmp);
+	}
+	printf("+++++++++++++++\n");
+
 
 	/* NS FUNCTION */
 	parent = KVSNS_ROOT_INODE;
