@@ -1,5 +1,7 @@
 cmake_minimum_required(VERSION 2.6.3)
 set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -g")
+cmake_policy(SET CMP0017 NEW)
+
 
 message( STATUS "cmake version ${CMAKE_MAJOR_VERSION}.${CMAKE_MINOR_VERSION}" )
 
@@ -22,7 +24,7 @@ endif((NOT HAVE_HIREDIS) OR (NOT HAVE_HIREDIS_H))
 add_subdirectory(kvshl)
 
 SET(kvsns_LIB_SRCS
-    kvsns.c 
+    kvsns_dir.c 
 )
 
 add_library(kvsns SHARED ${kvsns_LIB_SRCS})
@@ -32,3 +34,4 @@ add_executable(kvsns_test kvsns_test.c)
 target_link_libraries(kvsns_test kvsns)
 
 add_subdirectory(kvsns_shell)
+

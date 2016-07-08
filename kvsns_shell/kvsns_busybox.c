@@ -72,6 +72,7 @@ int main(int argc, char *argv[])
 	} else if (!strcmp(exec_name, "ns_mkdir")) {
 	} else if (!strcmp(exec_name, "ns_rmdir")) {
 	} else if (!strcmp(exec_name, "ns_cd")) {
+	} else if (!strcmp(exec_name, "ns_ls")) {
 	} else if (!strcmp(exec_name, "ns_getattr")) {
 	} 
 	printf("######## OK ########\n");
