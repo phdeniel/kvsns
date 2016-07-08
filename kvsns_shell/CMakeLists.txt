@@ -6,9 +6,11 @@ target_link_libraries(kvsns_busybox kvsns)
 
 add_custom_target(links DEPENDS kvsns_busybox)
 add_custom_command(TARGET links
-                  COMMAND ln -s kvsns_busybox ns_reset
-		  WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}
-                  VERBATIM
-		  DEPENDS kvsns_busybox)
-
+		   COMMAND /usr/bin/ln -sf kvsns_busybox ns_reset
+		   COMMAND /usr/bin/ln -sf kvsns_busybox ns_mkdir
+		   COMMAND /usr/bin/ln -sf kvsns_busybox ns_cd
+		   COMMAND /usr/bin/ln -sf kvsns_busybox ns_getattr
+		   COMMAND /usr/bin/ln -sf kvsns_busybox ns_ls
+		   WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}
+		   VERBATIM)
 
