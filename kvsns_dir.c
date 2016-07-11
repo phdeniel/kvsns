@@ -189,9 +189,11 @@ int kvsns_readdir(kvsns_cred_t *cred, kvsns_ino_t *dir, int offset,
 	for (i=0; i < *size ; i++) {
 		sscanf(items[i].str, "%llu %s\n", 
 		       &dirent[i].inode, dirent[i].name);
+#if 0
 		rc = kvsns_getattr(cred, &dirent[i].inode, &dirent[i].stats);
 		if (rc != 0)
 			return rc;
+#endif
 	} 
 
 	kvshl_end_transaction();
