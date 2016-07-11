@@ -164,6 +164,9 @@ int kvsns_symlink(kvsns_cred_t *cred, kvsns_ino_t *parent, char *name,
 	int rc;
 	char k[KLEN];
 
+	if (!cred || !parent || ! name || !content || !newlnk)
+		return -EINVAL;
+
 	rc = kvsns_create_entry(cred, parent, name,
 				0, newlnk, KVSNS_SYMLINK);
 	if (rc)
@@ -181,6 +184,9 @@ int kvsns_readlink(kvsns_cred_t *cred, kvsns_ino_t *lnk,
 	int rc;
 	char k[KLEN];
 	char v[KLEN];
+
+	if (!cred || !lnk || !content || !size)
+		return -EINVAL;
 
 	snprintf(k, KLEN, "%llu.link", *lnk);
 	rc = kvshl_get_char(k, v);
@@ -246,6 +252,9 @@ int kvsns_readdir(kvsns_cred_t *cred, kvsns_ino_t *dir, int offset,
 	char pattern[KLEN];
 	kvshl_item_t *items;
 	int i; 
+
+	if (!cred || !dir || !dirent || !size)
+		return -EINVAL;
 
 	items = (kvshl_item_t *)malloc(*size*sizeof(kvshl_item_t));
 	if (items == NULL)
@@ -326,3 +335,4 @@ int kvsns_getattr(kvsns_cred_t *cred, kvsns_ino_t *ino, struct stat *buffstat)
 	snprintf(k, KLEN, "%llu.stat", *ino);
 	return kvshl_get_stat(k, buffstat);
 }
+
