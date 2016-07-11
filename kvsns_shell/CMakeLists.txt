@@ -8,6 +8,7 @@ add_custom_target(links DEPENDS kvsns_busybox)
 add_custom_command(TARGET links
 		   COMMAND /usr/bin/ln -sf kvsns_busybox ns_reset
 		   COMMAND /usr/bin/ln -sf kvsns_busybox ns_mkdir
+		   COMMAND /usr/bin/ln -sf kvsns_busybox ns_rmdir
 		   COMMAND /usr/bin/ln -sf kvsns_busybox ns_cd
 		   COMMAND /usr/bin/ln -sf kvsns_busybox ns_getattr
 		   COMMAND /usr/bin/ln -sf kvsns_busybox ns_ls

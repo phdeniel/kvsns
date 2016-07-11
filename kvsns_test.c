@@ -96,7 +96,7 @@ int main(int argc, char *argv[])
 
 	/* NS FUNCTION */
 	parent = KVSNS_ROOT_INODE;
-	rc = kvsns_mkdir(&cred, &parent, "mydir", &ino);
+	rc = kvsns_mkdir(&cred, &parent, "mydir", 0755, &ino);
 	if (rc != 0) {
 		if (rc == -EEXIST)
 			printf("dirent exists \n");
@@ -107,7 +107,7 @@ int main(int argc, char *argv[])
 	}
 	printf("===> New Ino = %llu\n", ino);
 
-	rc = kvsns_mkdir(&cred, &parent, "mydir2", &ino);
+	rc = kvsns_mkdir(&cred, &parent, "mydir2", 0755, &ino);
 	if (rc != 0) {
 		if (rc == -EEXIST)
 			printf("dirent exists \n");

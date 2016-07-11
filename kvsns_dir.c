@@ -73,7 +73,7 @@ int kvsns_next_inode(kvsns_ino_t *ino)
 }
 
 int kvsns_mkdir(kvsns_cred_t *cred, kvsns_ino_t *parent, char *name,
-		kvsns_ino_t *newdir)
+		mode_t mode, kvsns_ino_t *newdir)
 {
 	int rc;
 	char k[KLEN];
@@ -109,7 +109,7 @@ int kvsns_mkdir(kvsns_cred_t *cred, kvsns_ino_t *parent, char *name,
 
 	/* Set stat */
 	memset(&bufstat, 0, sizeof(struct stat));
-	bufstat.st_mode = S_IFDIR|0755;
+	bufstat.st_mode = S_IFDIR|mode;
 	bufstat.st_nlink = 2;
 	bufstat.st_uid = getuid(); 
 	bufstat.st_gid = getgid(); 

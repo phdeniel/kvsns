@@ -32,7 +32,7 @@ int kvsns_init_root(void);
 int kvsns_next_inode(kvsns_ino_t *ino);
 
 int kvsns_mkdir(kvsns_cred_t *cred, kvsns_ino_t *parent, char *name,
-		kvsns_ino_t *newdir);
+		mode_t mode, kvsns_ino_t *newdir);
 
 int kvsns_rmdir(kvsns_cred_t *cred, kvsns_ino_t *parent, char *name);
 
