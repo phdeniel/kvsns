@@ -152,7 +152,7 @@ int kvsns_rmdir(kvsns_cred_t *cred, kvsns_ino_t *parent, char *name)
 	if (rc != 0)
 		return rc;
 
-	snprintf(k, KLEN, "%llu.parentdir", &ino);
+	snprintf(k, KLEN, "%llu.parentdir", ino);
 
 	rc = kvshl_del(k);
 	if (rc != 0)
