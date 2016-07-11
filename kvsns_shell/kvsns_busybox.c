@@ -178,6 +178,31 @@ int main(int argc, char *argv[])
 			return 0;
 		}
 	} else if (!strcmp(exec_name, "ns_ls")) {
+		int offset;
+		int size;
+		kvsns_dentry_t dirent[10];
+		int i;
+
+		offset = 0;
+		size = 10;
+		do {
+			rc = kvsns_readdir(&cred, &current_inode, offset, 
+				           dirent, &size);
+			if (rc != 0) {
+				printf("==> readdir failed rc=%d\n", rc);
+				exit(1);
+			}
+			printf( "===> size = %d\n", size);
+			for (i=0; i < size; i++)
+				printf("%d %s/%s = %llu\n", 
+					offset+i, current_path, dirent[i].name,
+					dirent[i].inode);
+			if (size == 0)
+				break;
+
+			offset += size ;
+			size = 10;
+		} while (1);
 	} else if (!strcmp(exec_name, "ns_getattr")) {
 	} 
 	printf("######## OK ########\n");
