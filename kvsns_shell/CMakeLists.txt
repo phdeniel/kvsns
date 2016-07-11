@@ -10,7 +10,10 @@ add_custom_command(TARGET links
 		   COMMAND /usr/bin/ln -sf kvsns_busybox ns_init
 		   COMMAND /usr/bin/ln -sf kvsns_busybox ns_mkdir
 		   COMMAND /usr/bin/ln -sf kvsns_busybox ns_rmdir
+		   COMMAND /usr/bin/ln -sf kvsns_busybox ns_creat
 		   COMMAND /usr/bin/ln -sf kvsns_busybox ns_cd
+		   COMMAND /usr/bin/ln -sf kvsns_busybox ns_ln
+		   COMMAND /usr/bin/ln -sf kvsns_busybox ns_readlink
 		   COMMAND /usr/bin/ln -sf kvsns_busybox ns_getattr
 		   COMMAND /usr/bin/ln -sf kvsns_busybox ns_ls
 		   WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}

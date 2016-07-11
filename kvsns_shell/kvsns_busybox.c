@@ -82,6 +82,55 @@ int main(int argc, char *argv[])
 			fprintf(stderr, "kvsns_init_root: err=%d\n", rc);
 			exit(1);
 		}
+	} else if (!strcmp(exec_name, "ns_creat")) {
+		if (argc != 2) {
+			fprintf(stderr, "creat <newdir>\n");
+			exit(1);
+		}
+		rc = kvsns_creat(&cred, &current_inode, argv[1], 0755, &ino);
+		if (rc == 0) {
+			printf("==> %llu/%s created = %llu\n", 
+				current_inode, argv[1], ino);
+			return 0;
+		} else
+			printf("Failed rc=%d !\n", rc);
+	} else if (!strcmp(exec_name, "ns_ln")) {
+		if (argc != 3) {
+			fprintf(stderr, "ln <newdir> <content>\n");
+			exit(1);
+		}
+		rc = kvsns_symlink(&cred, &current_inode, argv[1],
+				   argv[2], &ino);
+		if (rc == 0) {
+			printf("==> %llu/%s created = %llu\n", 
+				current_inode, argv[1], ino);
+			return 0;
+		} else
+			printf("Failed rc=%d !\n", rc);
+	} else if (!strcmp(exec_name, "ns_readlink")) {
+		char link_content[MAXPATHLEN];
+		int size = MAXPATHLEN;
+		if (argc != 2) {
+			fprintf(stderr, "readlink <link>\n");
+			exit(1);
+		}
+
+		rc = kvsns_lookup(&cred, &current_inode, argv[1], &ino);
+		if (rc != 0) {
+			printf("==> %llun not accessible = %llu : rc=%d\n", 
+				current_inode, ino, rc);
+			return 0;
+		}
+
+		rc = kvsns_readlink(&cred, &ino,
+				    link_content, &size);
+		if (rc == 0) {
+			printf("==> %llu/%s %llu content = %s\n", 
+				current_inode, argv[1], ino, link_content);
+			return 0;
+		} else
+			printf("Failed rc=%d !\n", rc);
+
 	} else if (!strcmp(exec_name, "ns_mkdir")) {
 		if (argc != 2) {
 			fprintf(stderr, "mkdir <newdir>\n");
