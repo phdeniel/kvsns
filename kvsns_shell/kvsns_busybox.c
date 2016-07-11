@@ -84,7 +84,7 @@ int main(int argc, char *argv[])
 		}
 	} else if (!strcmp(exec_name, "ns_creat")) {
 		if (argc != 2) {
-			fprintf(stderr, "creat <newdir>\n");
+			fprintf(stderr, "creat <newfile>\n");
 			exit(1);
 		}
 		rc = kvsns_creat(&cred, &current_inode, argv[1], 0755, &ino);
@@ -285,7 +285,9 @@ int main(int argc, char *argv[])
 		} else
 			printf("Failed rc=%d !\n", rc);
 		return 0;
-	} 
+	} else if (!strcmp(exec_name, "ns_rm")) {
+	} else
+		fprintf(stderr, "%s does not exists\n", exec_name);
 	printf("######## OK ########\n");
 	return 0;
 }

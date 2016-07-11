@@ -193,7 +193,7 @@ int kvsns_readlink(kvsns_cred_t *cred, kvsns_ino_t *lnk,
 	return 0;
 }
 
-int kvsns_rmdir(kvsns_cred_t *cred, kvsns_ino_t *parent, char *name)
+static int kvsns_remove_entry(kvsns_cred_t *cred, kvsns_ino_t *parent, char *name)
 {
 	int rc;
 	char k[KLEN];
@@ -233,6 +233,11 @@ int kvsns_rmdir(kvsns_cred_t *cred, kvsns_ino_t *parent, char *name)
 	kvshl_end_transaction();
 	return 0;
 }
+
+int kvsns_rmdir(kvsns_cred_t *cred, kvsns_ino_t *parent, char *name)
+{
+	return kvsns_remove_entry(cred, parent, name);
+} 
 
 int kvsns_readdir(kvsns_cred_t *cred, kvsns_ino_t *dir, int offset, 
 		  kvsns_dentry_t *dirent, int *size)
