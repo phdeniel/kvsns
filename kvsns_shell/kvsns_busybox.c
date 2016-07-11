@@ -3,9 +3,13 @@
 #include <stdlib.h>
 #include <string.h>
 #include <errno.h>
+#include <time.h>
+#include <sys/stat.h>
+#include <sys/types.h>
 #include <sys/param.h>
 #include <libgen.h>
 #include "../kvsns.h"
+
 
 int main(int argc, char *argv[])
 {
@@ -72,6 +76,12 @@ int main(int argc, char *argv[])
 		strcpy(k, "KVSNS_PREV_PATH");
 		strcpy(v, "/");
 		kvshl_set_char(k, v);
+	} else if (!strcmp(exec_name, "ns_init")) {
+		rc = kvsns_init_root();
+		if (rc != 0) {
+			fprintf(stderr, "kvsns_init_root: err=%d\n", rc);
+			exit(1);
+		}
 	} else if (!strcmp(exec_name, "ns_mkdir")) {
 		if (argc != 2) {
 			fprintf(stderr, "mkdir <newdir>\n");
@@ -204,6 +214,28 @@ int main(int argc, char *argv[])
 			size = 10;
 		} while (1);
 	} else if (!strcmp(exec_name, "ns_getattr")) {
+		struct stat buffstat;
+		rc = kvsns_getattr(&cred, &current_inode, &buffstat);
+		if (rc == 0) {
+ 			printf(" inode: %ld\n",                         buffstat.st_ino);
+			printf(" protection: %o\n",                     buffstat.st_mode);
+			printf(" number of hard links: %d\n",           buffstat.st_nlink);
+			printf(" user ID of owner: %d\n",               buffstat.st_uid);
+			printf(" group ID of owner: %d\n",              buffstat.st_gid);
+			printf(" total size, in bytes: %ld\n",          buffstat.st_size);
+			printf(" blocksize for filesystem I/O: %ld\n",  buffstat.st_blksize);
+			printf(" number of blocks allocated: %ld\n",    buffstat.st_blocks);
+			printf(" time of last access: %ld : %s",        buffstat.st_atime, 
+				ctime(&buffstat.st_atime));
+			printf(" time of last modification: %ld : %s",  buffstat.st_mtime,
+				 ctime(&buffstat.st_mtime));
+			printf(" time of last change: %ld : %s",        buffstat.st_ctime,
+				 ctime(&buffstat.st_ctime));
+
+			return 0;
+		} else
+			printf("Failed rc=%d !\n", rc);
+		return 0;
 	} 
 	printf("######## OK ########\n");
 	return 0;
