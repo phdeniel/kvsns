@@ -25,6 +25,7 @@ add_subdirectory(kvshl)
 
 SET(kvsns_LIB_SRCS
     kvsns_dir.c 
+    kvsns_file.c 
 )
 
 add_library(kvsns SHARED ${kvsns_LIB_SRCS})

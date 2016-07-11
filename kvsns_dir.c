@@ -72,8 +72,8 @@ int kvsns_next_inode(kvsns_ino_t *ino)
 	return 0;
 }
 
-int kvsns_mkdir(kvsns_cred_t *cred, kvsns_ino_t *parent, char *name,
-		mode_t mode, kvsns_ino_t *newdir)
+static int kvsns_create_entry(kvsns_cred_t *cred, kvsns_ino_t *parent, char *name,
+		mode_t mode, kvsns_ino_t *newdir, enum kvsns_type type)
 {
 	int rc;
 	char k[KLEN];
@@ -109,13 +109,31 @@ int kvsns_mkdir(kvsns_cred_t *cred, kvsns_ino_t *parent, char *name,
 
 	/* Set stat */
 	memset(&bufstat, 0, sizeof(struct stat));
-	bufstat.st_mode = S_IFDIR|mode;
-	bufstat.st_nlink = 2;
 	bufstat.st_uid = getuid(); 
 	bufstat.st_gid = getgid(); 
 	bufstat.st_atim.tv_sec = time(NULL);
 	bufstat.st_mtim.tv_sec = bufstat.st_atim.tv_sec;
 	bufstat.st_ctim.tv_sec = bufstat.st_atim.tv_sec;
+
+	switch(type) {
+	case KVSNS_DIR:
+		bufstat.st_mode = S_IFDIR|mode;
+		bufstat.st_nlink = 2;
+		break;
+
+	case KVSNS_FILE:
+		bufstat.st_mode = S_IFREG|mode;
+		bufstat.st_nlink = 1;
+		break;
+
+	case KVSNS_SYMLINK:
+		bufstat.st_mode = S_IFLNK|mode;
+		bufstat.st_nlink = 1;
+		break;
+
+	default:
+		return -EINVAL;
+	}
 
 	snprintf(k, KLEN, "%llu.stat", *newdir);
 	rc = kvshl_set_stat(k, &bufstat);
@@ -123,6 +141,55 @@ int kvsns_mkdir(kvsns_cred_t *cred, kvsns_ino_t *parent, char *name,
 		return rc;
 
 	kvshl_end_transaction();
+	return 0;
+}
+
+int kvsns_mkdir(kvsns_cred_t *cred, kvsns_ino_t *parent, char *name,
+		mode_t mode, kvsns_ino_t *newdir)
+{
+	return kvsns_create_entry(cred, parent, name,
+				  mode, newdir, KVSNS_DIR);
+}
+
+int kvsns_creat(kvsns_cred_t *cred, kvsns_ino_t *parent, char *name,
+		mode_t mode, kvsns_ino_t *newfile)
+{
+	return kvsns_create_entry(cred, parent, name,
+				  mode, newfile, KVSNS_FILE);
+}
+
+int kvsns_symlink(kvsns_cred_t *cred, kvsns_ino_t *parent, char *name,
+		  char *content, kvsns_ino_t *newlnk)
+{
+	int rc;
+	char k[KLEN];
+
+	rc = kvsns_create_entry(cred, parent, name,
+				0, newlnk, KVSNS_SYMLINK);
+	if (rc)
+		return rc;
+
+	snprintf(k, KLEN, "%llu.link", *newlnk);
+	rc = kvshl_set_char(k, content);
+	
+	return rc;
+}
+
+int kvsns_readlink(kvsns_cred_t *cred, kvsns_ino_t *lnk, 
+		  char *content, int *size) 
+{
+	int rc;
+	char k[KLEN];
+	char v[KLEN];
+
+	snprintf(k, KLEN, "%llu.link", *lnk);
+	rc = kvshl_get_char(k, v);
+	if (rc != 0)
+		return rc;
+
+	strncpy(content, v, *size);
+	*size = strnlen(v, VLEN); 
+	
 	return 0;
 }
 

@@ -25,14 +25,29 @@ typedef struct kvsns_entry_
 	struct stat stats;
 } kvsns_dentry_t;
 
+enum kvsns_type {
+	KVSNS_DIR = 1,
+	KVSNS_FILE = 2,
+	KVSNS_SYMLINK = 3
+};
+
 int kvsns_start(void);
 
 int kvsns_init_root(void);
 
 int kvsns_next_inode(kvsns_ino_t *ino);
 
+int kvsns_creat(kvsns_cred_t *cred, kvsns_ino_t *parent, char *name,
+		mode_t mode, kvsns_ino_t *newdir);
+
 int kvsns_mkdir(kvsns_cred_t *cred, kvsns_ino_t *parent, char *name,
 		mode_t mode, kvsns_ino_t *newdir);
+
+int kvsns_symlink(kvsns_cred_t *cred, kvsns_ino_t *parent, char *name,
+		  char *content, kvsns_ino_t *newlnk);
+
+int kvsns_readlink(kvsns_cred_t *cred, kvsns_ino_t *link, 
+		  char *content, int *size); 
 
 int kvsns_rmdir(kvsns_cred_t *cred, kvsns_ino_t *parent, char *name);
 
