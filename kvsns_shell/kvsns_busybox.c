@@ -372,6 +372,44 @@ int main(int argc, char *argv[])
 		else
 			fprintf(stderr, "Can't unlink %llu/%s rc=%d\n",
 				current_inode, argv[1], rc);
+	} else if (!strcmp(exec_name, "ns_rename")) {
+		kvsns_ino_t sino;
+		kvsns_ino_t dino;
+
+		if (argc != 5) {
+			fprintf(stderr, "rename sdir sname ddir dname\n");
+			exit(1);
+		}
+
+		if (!strcmp(argv[1], "."))
+			sino = current_inode;
+		else {
+			rc = kvsns_lookup( &cred, &current_inode, argv[2], &sino);
+			if (rc != 0) {
+				fprintf(stderr, "%llu/%s does not exist rc=%d\n",
+					current_inode, argv[2], rc);
+				exit(1);
+			}
+		}
+
+		if (!strcmp(argv[3], "."))
+			dino = current_inode;
+		else {
+			rc = kvsns_lookup( &cred, &current_inode, argv[4], &dino);
+			if (rc != 0) {
+				fprintf(stderr, "%llu/%s does not exist rc=%d\n",
+					current_inode, argv[2], rc);
+				exit(1);
+			}
+		}
+
+		rc = kvsns_rename(&cred, &sino, argv[2], &dino, argv[4]);
+		if (rc == 0)
+			printf("Rename %llu/%s => %llu/%s OK\n",
+				sino, argv[2], dino, argv[4]);
+		else
+			fprintf(stderr, "%llu/%s => %llu/%s Failed rc=%d\n",
+				sino, argv[2], dino, argv[4], rc);
 	} else
 		fprintf(stderr, "%s does not exists\n", exec_name);
 	printf("######## OK ########\n");
