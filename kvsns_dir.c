@@ -366,6 +366,78 @@ int kvsns_unlink(kvsns_cred_t *cred, kvsns_ino_t *dir, char *name)
 			return rc;
 
 	}
+	kvshl_end_transaction();
 	
+	return 0;
+}
+
+int kvsns_rename(kvsns_cred_t *cred,  kvsns_ino_t *sino, char *sname, kvsns_ino_t *dino, char *dname)
+{
+	int rc;
+	char k[KLEN];
+	char v[VLEN];
+	kvsns_ino_t ino;
+	kvsns_ino_t parent[KVSNS_ARRAY_SIZE];
+	int size;
+	struct stat buffstat;
+	int i;
+
+	if (!cred || !sino || !sname || !dino || !dname)
+		return -EINVAL;
+
+	rc = kvsns_lookup(cred, dino, dname, &ino);
+	if (rc ==0)
+		return -EEXIST;
+
+	rc = kvsns_lookup(cred, sino, sname, &ino);
+	if (rc !=0)
+		return rc; 
+
+	kvshl_begin_transaction();
+
+	snprintf(k, KLEN, "%llu.dentries.%s", 
+		 *sino, sname);
+	rc = kvshl_del(k);
+	if (rc != 0)
+		return rc;
+
+	snprintf(k, KLEN, "%llu.dentries.%s", 
+		 *dino, dname);
+	snprintf(v, VLEN, "%llu", ino);
+	rc = kvshl_set_char(k, v);
+	if (rc != 0)
+		return rc;
+
+	snprintf(k, KLEN, "%llu.parentdir", ino);
+	rc = kvshl_get_char(k, v);
+	if (rc != 0)
+		return rc;
+
+	size = KVSNS_ARRAY_SIZE;
+	kvsns_str2parentlist(parent, &size, v);
+	for(i=0; i < size ; i++)
+		if (parent[i] == *sino) {
+			parent[i] = *dino;
+			break;
+		}
+	kvsns_parentlist2str(parent, size, v);
+
+	rc = kvshl_set_char(k, v);
+	if (rc != 0)
+		return rc;
+
+	snprintf(k, KLEN, "%llu.stat", ino);
+	rc = kvshl_get_stat(k, &buffstat);
+	if (rc != 0)
+		return rc;
+
+	buffstat.st_ctim.tv_sec = time(NULL);
+
+	rc = kvshl_set_stat(k, &buffstat);
+	if (rc != 0)
+		return rc;
+
+	kvshl_end_transaction();
+
 	return 0;
 }
