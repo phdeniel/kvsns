@@ -82,6 +82,40 @@ int main(int argc, char *argv[])
 			fprintf(stderr, "kvsns_init_root: err=%d\n", rc);
 			exit(1);
 		}
+
+		strcpy(k, "KVSNS_INODE");
+		snprintf(v, VLEN, "%llu", KVSNS_ROOT_INODE);
+		current_inode = KVSNS_ROOT_INODE;
+		rc = kvshl_set_char(k, v);
+		if (rc != 0) {
+			fprintf(stderr, "kvsns_init_root: err=%d\n", rc);
+			exit(1);
+		}
+
+		strcpy(k, "KVSNS_PARENT_INODE");
+		snprintf(v, VLEN, "%llu", KVSNS_ROOT_INODE);
+		parent_inode = KVSNS_ROOT_INODE;
+		rc = kvshl_set_char(k, v);
+		if (rc != 0) {
+			fprintf(stderr, "kvsns_init_root: err=%d\n", rc);
+			exit(1);
+		}
+
+		strcpy(k, "KVSNS_PATH");
+		strcpy(v, "/");
+		rc = kvshl_set_char(k, v);
+		if (rc != 0) {
+			fprintf(stderr, "kvsns_init_root: err=%d\n", rc);
+			exit(1);
+		}
+
+		strcpy(k, "KVSNS_PREV_PATH");
+		strcpy(v, "/");
+		rc = kvshl_set_char(k, v);
+		if (rc != 0) {
+			fprintf(stderr, "kvsns_init_root: err=%d\n", rc);
+			exit(1);
+		}
 	} else if (!strcmp(exec_name, "ns_creat")) {
 		if (argc != 2) {
 			fprintf(stderr, "creat <newfile>\n");
@@ -327,6 +361,17 @@ int main(int argc, char *argv[])
 			fprintf(stderr, "Failed : %d\n", rc);
 
 	} else if (!strcmp(exec_name, "ns_rm")) {
+		if (argc != 2) {
+			fprintf(stderr, "unlink <newdir>\n");
+			exit(1);
+		}
+
+		rc = kvsns_unlink(&cred, &current_inode, argv[1]);
+		if (rc == 0)
+			printf("Unlink %llu/%s OK\n", current_inode, argv[1]);
+		else
+			fprintf(stderr, "Can't unlink %llu/%s rc=%d\n",
+				current_inode, argv[1], rc);
 	} else
 		fprintf(stderr, "%s does not exists\n", exec_name);
 	printf("######## OK ########\n");
