@@ -35,7 +35,7 @@ int kvsns_init_root()
 	kvshl_begin_transaction();
 
 	snprintf(k, KLEN, "%llu.parentdir", ino);
-	snprintf(v, VLEN, "%llu", ino);
+	snprintf(v, VLEN, "%llu|", ino);
 
 	rc = kvshl_set_char(k, v);
 	if (rc != 0)
@@ -44,6 +44,7 @@ int kvsns_init_root()
 	/* Set stat */
 	memset(&bufstat, 0, sizeof(struct stat));
 	bufstat.st_mode = S_IFDIR|0755;
+	bufstat.st_ino = KVSNS_ROOT_INODE;
 	bufstat.st_nlink = 2;
 	bufstat.st_uid = 0;
 	bufstat.st_gid = 0;
@@ -61,90 +62,12 @@ int kvsns_init_root()
 }
 
 
-static int kvsns_create_entry(kvsns_cred_t *cred, kvsns_ino_t *parent, char *name,
-		mode_t mode, kvsns_ino_t *newdir, enum kvsns_type type)
-{
-	int rc;
-	char k[KLEN];
-	char v[KLEN];
-	struct stat bufstat;
-
-	if (!cred || !parent || !name || !newdir)
-		return -EINVAL;
-
-	rc = kvsns_lookup(cred, parent, name, newdir);
-	if (rc == 0)
-		return -EEXIST;
-
-	rc = kvsns_next_inode(newdir);
-	if (rc != 0)
-		return rc;
-
-	kvshl_begin_transaction();
-	snprintf(k, KLEN, "%llu.dentries.%s", 
-		 *parent, name);
-	snprintf(v, VLEN, "%llu", *newdir);
-	
-	rc = kvshl_set_char(k, v);
-	if (rc != 0)
-		return rc;
-
-	snprintf(k, KLEN, "%llu.parentdir", *newdir);
-	snprintf(v, VLEN, "%llu", *parent);
-
-	rc = kvshl_set_char(k, v);
-	if (rc != 0)
-		return rc;
-
-	/* Set stat */
-	memset(&bufstat, 0, sizeof(struct stat));
-	bufstat.st_uid = getuid(); 
-	bufstat.st_gid = getgid(); 
-	bufstat.st_atim.tv_sec = time(NULL);
-	bufstat.st_mtim.tv_sec = bufstat.st_atim.tv_sec;
-	bufstat.st_ctim.tv_sec = bufstat.st_atim.tv_sec;
-
-	switch(type) {
-	case KVSNS_DIR:
-		bufstat.st_mode = S_IFDIR|mode;
-		bufstat.st_nlink = 2;
-		break;
-
-	case KVSNS_FILE:
-		bufstat.st_mode = S_IFREG|mode;
-		bufstat.st_nlink = 1;
-		break;
-
-	case KVSNS_SYMLINK:
-		bufstat.st_mode = S_IFLNK|mode;
-		bufstat.st_nlink = 1;
-		break;
-
-	default:
-		return -EINVAL;
-	}
-
-	snprintf(k, KLEN, "%llu.stat", *newdir);
-	rc = kvshl_set_stat(k, &bufstat);
-	if (rc != 0)
-		return rc;
-
-	kvshl_end_transaction();
-	return 0;
-}
 
 int kvsns_mkdir(kvsns_cred_t *cred, kvsns_ino_t *parent, char *name,
 		mode_t mode, kvsns_ino_t *newdir)
 {
 	return kvsns_create_entry(cred, parent, name,
 				  mode, newdir, KVSNS_DIR);
-}
-
-int kvsns_creat(kvsns_cred_t *cred, kvsns_ino_t *parent, char *name,
-		mode_t mode, kvsns_ino_t *newfile)
-{
-	return kvsns_create_entry(cred, parent, name,
-				  mode, newfile, KVSNS_FILE);
 }
 
 int kvsns_symlink(kvsns_cred_t *cred, kvsns_ino_t *parent, char *name,
@@ -239,8 +162,10 @@ int kvsns_readdir(kvsns_cred_t *cred, kvsns_ino_t *dir, int offset,
 {
 	int rc;
 	char pattern[KLEN];
+	char v[VLEN];
 	kvshl_item_t *items;
 	int i; 
+	kvsns_ino_t ino;
 
 	if (!cred || !dir || !dirent || !size)
 		return -EINVAL;
@@ -258,12 +183,16 @@ int kvsns_readdir(kvsns_cred_t *cred, kvsns_ino_t *dir, int offset,
 
 	for (i=0; i < *size ; i++) {
 		sscanf(items[i].str, "%llu.dentries.%s\n", 
-		       &dirent[i].inode, dirent[i].name);
-#if 0
+		       &ino, dirent[i].name);
+
+		rc = kvshl_get_char(items[i].str, v);
+		if (rc != 0)
+			return rc;
+		sscanf(v, "%llu", &dirent[i].inode);		
+
 		rc = kvsns_getattr(cred, &dirent[i].inode, &dirent[i].stats);
 		if (rc != 0)
 			return rc;
-#endif
 	} 
 
 	kvshl_end_transaction();
@@ -309,7 +238,7 @@ int kvsns_lookupp(kvsns_cred_t *cred, kvsns_ino_t *dir, kvsns_ino_t *parent)
 	if (rc != 0)
 		return rc;
 
-	sscanf(v, "%llu", parent);
+	sscanf(v, "%llu|", parent);
 
 	return 0;
 }
@@ -325,3 +254,14 @@ int kvsns_getattr(kvsns_cred_t *cred, kvsns_ino_t *ino, struct stat *buffstat)
 	return kvshl_get_stat(k, buffstat);
 }
 
+int kvsns_link(kvsns_cred_t *cred, kvsns_ino_t *ino, kvsns_ino_t *dino, char *dname)
+{
+	int rc;
+	char k[KLEN];
+	char v[VLEN];
+
+	if (!cred || !ino || !dino || !dname)
+		return -EINVAL;
+
+	return 0;
+}

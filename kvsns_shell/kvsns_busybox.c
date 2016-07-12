@@ -256,6 +256,7 @@ int main(int argc, char *argv[])
 				printf("%d %s/%s = %llu\n", 
 					offset+i, current_path, dirent[i].name,
 					dirent[i].inode);
+
 			if (size == 0)
 				break;
 
