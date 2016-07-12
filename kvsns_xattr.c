@@ -5,5 +5,6 @@
 #include <string.h>
 #include <time.h>
 #include "kvsns.h"
+#include "kvsns_internal.h"
 #include "kvshl/kvshl.h"
 
