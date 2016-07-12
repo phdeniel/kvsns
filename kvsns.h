@@ -33,34 +33,22 @@ enum kvsns_type {
 };
 
 int kvsns_start(void);
-
 int kvsns_init_root(void);
-
-int kvsns_next_inode(kvsns_ino_t *ino);
-
 int kvsns_creat(kvsns_cred_t *cred, kvsns_ino_t *parent, char *name,
 		mode_t mode, kvsns_ino_t *newdir);
-
 int kvsns_mkdir(kvsns_cred_t *cred, kvsns_ino_t *parent, char *name,
 		mode_t mode, kvsns_ino_t *newdir);
-
 int kvsns_symlink(kvsns_cred_t *cred, kvsns_ino_t *parent, char *name,
 		  char *content, kvsns_ino_t *newlnk);
-
 int kvsns_readlink(kvsns_cred_t *cred, kvsns_ino_t *link, 
 		  char *content, int *size); 
-
 int kvsns_rmdir(kvsns_cred_t *cred, kvsns_ino_t *parent, char *name);
-
 int kvsns_lookup(kvsns_cred_t *cred, kvsns_ino_t *parent, char *name,
 		 kvsns_ino_t *myino);
-
 int kvsns_readdir(kvsns_cred_t *cred, kvsns_ino_t *dirt, int offset, 
 		  kvsns_dentry_t *dirent, int *size);
-
 int kvsns_lookupp(kvsns_cred_t *cred, kvsns_ino_t *dir, kvsns_ino_t *parent);
-
 int kvsns_getattr(kvsns_cred_t *cred, kvsns_ino_t *ino, struct stat *buffstat);
-
+int kvsns_link(kvsns_cred_t *cred, kvsns_ino_t *ino, kvsns_ino_t *dino, char *dname);
 
 #endif
