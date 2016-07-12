@@ -276,7 +276,7 @@ int kvsns_link(kvsns_cred_t *cred, kvsns_ino_t *ino, kvsns_ino_t *dino, char *dn
 	if (rc != 0)
 		return rc;
 
-	snprintf(k, KLEN, "%llu|", *ino);
+	snprintf(k, KLEN, "%llu|", *dino);
 	strcat(v,k);
  
 	snprintf(k, KLEN, "%llu.parentdir", *ino);
