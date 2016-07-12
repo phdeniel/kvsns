@@ -287,6 +287,45 @@ int main(int argc, char *argv[])
 			printf("Failed rc=%d !\n", rc);
 		return 0;
 	} else if (!strcmp(exec_name, "ns_link")) {
+		kvsns_ino_t dino;
+		kvsns_ino_t sino;
+		char dname[MAXNAMLEN];
+
+		if (argc != 3 && argc != 4) {
+			printf("ns_link srcname newname (same dir)\n");
+			printf("ns_link srcname dstdir newname\n");
+			exit(1);
+		}
+
+		rc = kvsns_lookup(&cred, &current_inode, argv[1], &sino);
+		if (rc != 0) {
+			fprintf(stderr, "%s/%s does not exist\n",
+				current_path, argv[1]);
+			exit(1);
+		}
+
+		if (argc == 3) {
+			dino = current_inode;
+			strcpy(dname, argv[2]);
+		} else if (argc == 4) {
+			rc = kvsns_lookup(&cred, &current_inode, argv[2], &dino);
+			if (rc != 0) {
+				fprintf(stderr, "%s/%s does not exist\n",
+					current_path, argv[1]);
+				exit(1);
+			}
+			strcpy(dname, argv[3]);
+		}
+		printf( "%s: sino=%llu dino=%llu dname=%s\n",
+			exec_name, sino, dino, dname); 
+
+		rc = kvsns_link(&cred, &sino, &dino, dname);
+		if (rc == 0) 
+			printf("ns_link: %llu --> %llu/%s CREATED \n",
+				sino, dino, dname);
+		else
+			fprintf(stderr, "Failed : %d\n", rc);
+
 	} else if (!strcmp(exec_name, "ns_rm")) {
 	} else
 		fprintf(stderr, "%s does not exists\n", exec_name);
