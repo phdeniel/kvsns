@@ -259,9 +259,48 @@ int kvsns_link(kvsns_cred_t *cred, kvsns_ino_t *ino, kvsns_ino_t *dino, char *dn
 	int rc;
 	char k[KLEN];
 	char v[VLEN];
+	kvsns_ino_t tmpino;
+	kvsns_ino_t parent[KVSNS_ARRAY_SIZE];
+	int size ;
+	struct stat buffstat;
 
 	if (!cred || !ino || !dino || !dname)
 		return -EINVAL;
+
+	rc = kvsns_lookup(cred, dino, dname, &tmpino);
+	if (rc == 0)
+		return -EEXIST;
+
+	snprintf(k, KLEN, "%llu.parentdir", *ino);
+	rc = kvshl_get_char(k, v);
+	if (rc != 0)
+		return rc;
+
+	snprintf(k, KLEN, "%llu|", *ino);
+	strcat(v,k);
+ 
+	snprintf(k, KLEN, "%llu.parentdir", *ino);
+	rc = kvshl_set_char(k, v);
+	if (rc != 0)
+		return rc;
+
+	snprintf(k, KLEN, "%llu.stat", *ino);
+	rc = kvshl_get_stat(k, &buffstat);
+	if (rc != 0)
+		return rc;
+
+	buffstat.st_nlink += 1;
+	buffstat.st_ctim.tv_sec = time(NULL);
+	rc = kvshl_set_stat(k, &buffstat);
+	if (rc != 0)
+		return rc;
+
+	snprintf(k, KLEN, "%llu.dentries.%s", 
+		 *dino, dname);
+	snprintf(v, VLEN, "%llu", *ino);
+	rc = kvshl_set_char(k, v);
+	if (rc != 0)
+		return rc;
 
 	return 0;
 }

@@ -9,6 +9,7 @@
 #include "kvshl/kvshl.h"
 
 #define KVSNS_ROOT_INODE 2LL
+#define KVSNS_ARRAY_SIZE 100
 
 typedef unsigned long long int kvsns_ino_t;
 
