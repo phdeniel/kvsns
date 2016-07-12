@@ -13,6 +13,7 @@ add_custom_command(TARGET links
 		   COMMAND /usr/bin/ln -sf kvsns_busybox ns_creat
 		   COMMAND /usr/bin/ln -sf kvsns_busybox ns_cd
 		   COMMAND /usr/bin/ln -sf kvsns_busybox ns_ln
+		   COMMAND /usr/bin/ln -sf kvsns_busybox ns_link
 		   COMMAND /usr/bin/ln -sf kvsns_busybox ns_rm
 		   COMMAND /usr/bin/ln -sf kvsns_busybox ns_readlink
 		   COMMAND /usr/bin/ln -sf kvsns_busybox ns_getattr

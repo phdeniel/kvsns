@@ -286,6 +286,7 @@ int main(int argc, char *argv[])
 		} else
 			printf("Failed rc=%d !\n", rc);
 		return 0;
+	} else if (!strcmp(exec_name, "ns_link")) {
 	} else if (!strcmp(exec_name, "ns_rm")) {
 	} else
 		fprintf(stderr, "%s does not exists\n", exec_name);
