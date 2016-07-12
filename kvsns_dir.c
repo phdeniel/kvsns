@@ -111,7 +111,7 @@ int kvsns_readlink(kvsns_cred_t *cred, kvsns_ino_t *lnk,
 	return 0;
 }
 
-static int kvsns_remove_entry(kvsns_cred_t *cred, kvsns_ino_t *parent, char *name)
+int kvsns_rmdir(kvsns_cred_t *cred, kvsns_ino_t *parent, char *name)
 {
 	int rc;
 	char k[KLEN];
@@ -151,11 +151,6 @@ static int kvsns_remove_entry(kvsns_cred_t *cred, kvsns_ino_t *parent, char *nam
 	kvshl_end_transaction();
 	return 0;
 }
-
-int kvsns_rmdir(kvsns_cred_t *cred, kvsns_ino_t *parent, char *name)
-{
-	return kvsns_remove_entry(cred, parent, name);
-} 
 
 int kvsns_readdir(kvsns_cred_t *cred, kvsns_ino_t *dir, int offset, 
 		  kvsns_dentry_t *dirent, int *size)
@@ -302,5 +297,75 @@ int kvsns_link(kvsns_cred_t *cred, kvsns_ino_t *ino, kvsns_ino_t *dino, char *dn
 	if (rc != 0)
 		return rc;
 
+	return 0;
+}
+
+int kvsns_unlink(kvsns_cred_t *cred, kvsns_ino_t *dir, char *name)
+{
+	int rc;
+	char k[KLEN];
+	char v[VLEN];
+	kvsns_ino_t ino;
+	kvsns_ino_t parent[KVSNS_ARRAY_SIZE];
+	int size;
+	int i;
+	struct stat buffstat;
+
+	if (!cred || !dir || !name)
+		return -EINVAL;
+
+	rc = kvsns_lookup(cred, dir, name, &ino);
+	if (rc !=0)
+		return rc;
+
+	kvshl_begin_transaction();
+	snprintf(k, KLEN, "%llu.dentries.%s", 
+		 *dir, name);
+
+	rc = kvshl_del(k);
+	if (rc != 0)
+		return rc;
+
+	snprintf(k, KLEN, "%llu.parentdir", ino);
+	rc = kvshl_get_char(k, v);
+	if (rc != 0)
+		return rc;
+
+	size = KVSNS_ARRAY_SIZE;
+	kvsns_str2parentlist(parent, &size, v);
+	if (size == 1) {
+		rc = kvshl_del(k);
+		if (rc != 0)
+			return rc;
+
+		snprintf(k, KLEN, "%llu.stat", ino);
+		rc = kvshl_del(k);
+		if (rc != 0)
+			return rc;
+	} else {
+		for(i=0; i < size ; i++)
+			if (parent[i] == *dir) {
+				parent[i] = 0;
+				break;
+			}
+		kvsns_parentlist2str(parent, size, v);
+		rc = kvshl_set_char(k, v);
+		if (rc != 0)
+			return rc;
+
+		snprintf(k, KLEN, "%llu.stat", ino);
+		rc = kvshl_get_stat(k, &buffstat);
+		if (rc != 0)
+			return rc;
+
+		buffstat.st_nlink -= 1;
+		buffstat.st_ctim.tv_sec = time(NULL);
+
+		rc = kvshl_set_stat(k, &buffstat);
+		if (rc != 0)
+			return rc;
+
+	}
+	
 	return 0;
 }
