@@ -60,18 +60,6 @@ int kvsns_init_root()
 	return 0;
 }
 
-int kvsns_next_inode(kvsns_ino_t *ino)
-{
-	int rc;
-	if (!ino)
-		return -EINVAL;
-
-	rc = kvshl_incr_counter("ino_counter", ino);
-	if (rc != 0)
-		return rc;
-
-	return 0;
-}
 
 static int kvsns_create_entry(kvsns_cred_t *cred, kvsns_ino_t *parent, char *name,
 		mode_t mode, kvsns_ino_t *newdir, enum kvsns_type type)
@@ -269,7 +257,7 @@ int kvsns_readdir(kvsns_cred_t *cred, kvsns_ino_t *dir, int offset,
 		return rc;
 
 	for (i=0; i < *size ; i++) {
-		sscanf(items[i].str, "%llu %s\n", 
+		sscanf(items[i].str, "%llu.dentries.%s\n", 
 		       &dirent[i].inode, dirent[i].name);
 #if 0
 		rc = kvsns_getattr(cred, &dirent[i].inode, &dirent[i].stats);

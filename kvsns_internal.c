@@ -5,6 +5,19 @@
 #include "kvsns.h"
 #include <string.h>
 
+int kvsns_next_inode(kvsns_ino_t *ino)
+{
+	int rc;
+	if (!ino)
+		return -EINVAL;
+
+	rc = kvshl_incr_counter("ino_counter", ino);
+	if (rc != 0)
+		return rc;
+
+	return 0;
+}
+
 int kvsns_str2parentlist(kvsns_ino_t *inolist, int *size, char *str)
 {
 	char *token;
