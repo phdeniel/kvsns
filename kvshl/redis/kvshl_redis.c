@@ -98,8 +98,8 @@ int kvshl_set_stat(char *k, struct stat *buf)
 
 	if (!k || !buf)
 		return -EINVAL;
-	snprintf(v, VLEN, "%o|%u|%u,%u|%u,%u,%u|%u,%u|%u,%u|%u,%u=",
-		 buf->st_mode, buf->st_nlink, 
+	snprintf(v, VLEN, "%o|%u|%u|%u,%u|%u,%u,%u|%u,%u|%u,%u|%u,%u=",
+		 buf->st_mode, buf->st_ino, buf->st_nlink, 
 		 buf->st_uid, buf->st_gid,
 		 buf->st_size, buf->st_blksize, buf->st_blocks,
 		 buf->st_atim.tv_sec, buf->st_atim.tv_nsec,
@@ -122,14 +122,13 @@ int kvshl_get_stat(char *k, struct stat *buf)
 	if (rc != 0)
 		return rc;
 
-	rc = sscanf(v, "%o|%u|%u,%u|%u,%u,%u|%u,%u|%u,%u|%u,%u=",
-		&buf->st_mode, &buf->st_nlink,
+	rc = sscanf(v, "%o|%u|%u|%u,%u|%u,%u,%u|%u,%u|%u,%u|%u,%u=",
+		&buf->st_mode, &buf->st_ino, &buf->st_nlink,
                 &buf->st_uid, &buf->st_gid,
                 &buf->st_size, &buf->st_blksize, &buf->st_blocks,
                 &buf->st_atim.tv_sec, &buf->st_atim.tv_nsec,
                 &buf->st_mtim.tv_sec, &buf->st_mtim.tv_nsec,
                 &buf->st_ctim.tv_sec, &buf->st_ctim.tv_nsec);
-	printf("===>rc=%d\n", rc);
 
 	return 0;
 }
