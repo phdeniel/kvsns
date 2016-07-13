@@ -6,6 +6,8 @@
 #include <stdlib.h>
 #include <errno.h>
 #include <dirent.h>
+#include <sys/types.h>
+#include <sys/xattr.h>
 #include "kvshl/kvshl.h"
 
 #define KVSNS_ROOT_INODE 2LL
@@ -27,7 +29,7 @@ typedef struct kvsns_cred__
 	gid_t gid;
 } kvsns_cred_t;
 
-typedef struct kvsns_entry_
+typedef struct kvsns_dentry_
 {
 	char name[MAXNAMLEN];
 	kvsns_ino_t inode;
@@ -39,6 +41,11 @@ enum kvsns_type {
 	KVSNS_FILE = 2,
 	KVSNS_SYMLINK = 3
 };
+
+typedef struct kvsns_xattr__
+{
+	char name[MAXNAMLEN];
+} kvsns_xattr_t;
 
 int kvsns_start(void);
 int kvsns_init_root(void);
@@ -61,5 +68,13 @@ int kvsns_setattr(kvsns_cred_t *cred, kvsns_ino_t *ino, struct stat *setstat, in
 int kvsns_link(kvsns_cred_t *cred, kvsns_ino_t *ino, kvsns_ino_t *dino, char *dname);
 int kvsns_unlink(kvsns_cred_t *cred, kvsns_ino_t *ino, char *name);
 int kvsns_rename(kvsns_cred_t *cred,  kvsns_ino_t *sino, char *sname, kvsns_ino_t *dino, char *dname);
+
+int kvsns_setxattr(kvsns_cred_t *cred, kvsns_ino_t *ino,
+		   char *name, char *value, size_t size, int flags);
+int kvsns_getxattr(kvsns_cred_t *cred, kvsns_ino_t *ino,
+		   char *name, char *value, size_t size);
+int kvsns_listxattr(kvsns_cred_t *cred, kvsns_ino_t *ino, int offset, 
+		  kvsns_xattr_t *list, int *size);
+int kvsns_removexattr(kvsns_cred_t *cred, kvsns_ino_t *ino, char *name);
 
 #endif
