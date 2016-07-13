@@ -249,6 +249,53 @@ int kvsns_getattr(kvsns_cred_t *cred, kvsns_ino_t *ino, struct stat *buffstat)
 	return kvshl_get_stat(k, buffstat);
 }
 
+int kvsns_setattr(kvsns_cred_t *cred, kvsns_ino_t *ino, struct stat *setstat, int statflag) 
+{
+	char k[KLEN];
+	struct stat buffstat;
+	int rc;
+
+	if (!cred || !ino || !setstat)
+		return -EINVAL;
+
+	if (statflag == 0)
+		return 0; /* Nothing to do */
+
+	snprintf(k, KLEN, "%llu.stat", *ino);
+	rc = kvshl_get_stat(k, &buffstat);
+	if (rc != 0)
+		return rc;
+
+	if (statflag & STAT_MODE_SET)
+		buffstat.st_mode = setstat->st_mode;
+
+	if (statflag & STAT_UID_SET)
+		buffstat.st_uid = setstat->st_uid;
+		
+	if (statflag & STAT_GID_SET)
+		buffstat.st_gid = setstat->st_gid;
+		
+	if (statflag & STAT_SIZE_SET)
+		buffstat.st_size = setstat->st_size;
+		
+	if (statflag & STAT_ATIME_SET) {
+		buffstat.st_atim.tv_sec = setstat->st_atim.tv_sec;
+		buffstat.st_atim.tv_nsec = setstat->st_atim.tv_nsec;
+	}		
+
+	if (statflag & STAT_MTIME_SET) {
+		buffstat.st_mtim.tv_sec = setstat->st_mtim.tv_sec;
+		buffstat.st_mtim.tv_nsec = setstat->st_mtim.tv_nsec;
+	}		
+
+	if (statflag & STAT_CTIME_SET) {
+		buffstat.st_ctim.tv_sec = setstat->st_ctim.tv_sec;
+		buffstat.st_ctim.tv_nsec = setstat->st_ctim.tv_nsec;
+	}		
+
+	return kvshl_set_stat(k, &buffstat);
+}
+
 int kvsns_link(kvsns_cred_t *cred, kvsns_ino_t *ino, kvsns_ino_t *dino, char *dname)
 {
 	int rc;
