@@ -3,6 +3,7 @@
 #include <stdlib.h>
 #include <errno.h>
 #include "kvsns.h"
+#include "kvsns_internal.h"
 
 int main(int argc, char *argv[])
 {

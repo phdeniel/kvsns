@@ -13,6 +13,14 @@
 
 typedef unsigned long long int kvsns_ino_t;
 
+#define STAT_MODE_SET	0x01
+#define STAT_UID_SET	0x02
+#define STAT_GID_SET	0x04
+#define STAT_SIZE_SET	0x08
+#define STAT_ATIME_SET	0x10
+#define STAT_MTIME_SET	0x11
+#define STAT_CTIME_SET	0x12
+
 typedef struct kvsns_cred__ 
 {
 	uid_t uid;
@@ -49,6 +57,7 @@ int kvsns_readdir(kvsns_cred_t *cred, kvsns_ino_t *dirt, int offset,
 		  kvsns_dentry_t *dirent, int *size);
 int kvsns_lookupp(kvsns_cred_t *cred, kvsns_ino_t *dir, kvsns_ino_t *parent);
 int kvsns_getattr(kvsns_cred_t *cred, kvsns_ino_t *ino, struct stat *buffstat);
+int kvsns_setattr(kvsns_cred_t *cred, kvsns_ino_t *ino, struct stat *setstat, int statflags);
 int kvsns_link(kvsns_cred_t *cred, kvsns_ino_t *ino, kvsns_ino_t *dino, char *dname);
 int kvsns_unlink(kvsns_cred_t *cred, kvsns_ino_t *ino, char *name);
 int kvsns_rename(kvsns_cred_t *cred,  kvsns_ino_t *sino, char *sname, kvsns_ino_t *dino, char *dname);
