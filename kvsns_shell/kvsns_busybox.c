@@ -299,10 +299,24 @@ int main(int argc, char *argv[])
 		} while (1);
 	} else if (!strcmp(exec_name, "ns_getattr")) {
 		struct stat buffstat;
-		rc = kvsns_getattr(&cred, &current_inode, &buffstat);
+
+		if (argc != 2) {
+			fprintf(stderr, "getattr <name>\n");
+			exit(1);
+		}
+
+		if (!strcmp(argv[1], "."))
+			ino = current_inode;
+		else {
+			rc = kvsns_lookup(&cred, &current_inode, argv[1], &ino);
+			if (rc != 0)
+				return rc;
+		}
+
+		rc = kvsns_getattr(&cred, &ino, &buffstat);
 		if (rc == 0) {
  			printf(" inode: %ld\n",                         buffstat.st_ino);
-			printf(" protection: %o\n",                     buffstat.st_mode);
+			printf(" mode: %o\n",	                        buffstat.st_mode);
 			printf(" number of hard links: %d\n",           buffstat.st_nlink);
 			printf(" user ID of owner: %d\n",               buffstat.st_uid);
 			printf(" group ID of owner: %d\n",              buffstat.st_gid);
