@@ -19,7 +19,7 @@ int main(int argc, char *argv[])
 	char val[VLEN];
 	char tmp[VLEN];
 	kvsns_cred_t cred;
-	kvshl_item_t items[10];
+	kvsal_item_t items[10];
 
 	cred.uid = getuid();
 	cred.gid = getgid();
@@ -44,35 +44,35 @@ int main(int argc, char *argv[])
 	}
 	printf("kvsns_next_inode: ino=%llu\n", ino);
 
-	rc = kvshl_set_char("test", "value");
+	rc = kvsal_set_char("test", "value");
 	if (rc != 0) {
 		fprintf(stderr, "kvsns_set_char: err=%d\n", rc);
 		exit(1);
 	}
 
-	rc = kvshl_get_char("test", val);
+	rc = kvsal_get_char("test", val);
 	if (rc != 0) {
 		fprintf(stderr, "kvsns_get_char: err=%d\n", rc);
 		exit(1);
 	}
-	printf("kvshl_get_char: val=%s\n", val);
+	printf("kvsal_get_char: val=%s\n", val);
 
-	rc = kvshl_del("test");
+	rc = kvsal_del("test");
 	if (rc != 0) {
 		fprintf(stderr, "kvsns_get_char: err=%d\n", rc);
 		exit(1);
 	}
-	printf("kvshl_get_char after del: %d\n", kvshl_get_char("test", val)); 
+	printf("kvsal_get_char after del: %d\n", kvsal_get_char("test", val)); 
 
-	rc = kvshl_get_list_size( "*" );
+	rc = kvsal_get_list_size( "*" );
 	if (rc < 0) {
-		fprintf(stderr, "kvshl_get_list_size: err=%d\n", rc);
+		fprintf(stderr, "kvsal_get_list_size: err=%d\n", rc);
 		exit(1);
 	}
-	printf("kvshl_get_list_size * : rc=%d\n", rc);
+	printf("kvsal_get_list_size * : rc=%d\n", rc);
 
 	end = 10;
-	rc = kvshl_get_list( "*", 0, &end, items);
+	rc = kvsal_get_list( "*", 0, &end, items);
 	if (rc != 0) {
 		fprintf(stderr, "kvsns_get_list: err=%d\n", rc);
 		exit(1);
@@ -82,7 +82,7 @@ int main(int argc, char *argv[])
 
 	printf("+++++++++++++++\n");
 	end = 10;
-	rc = kvshl_get_list( "2.dentries.*", 0, &end, items);
+	rc = kvsal_get_list( "2.dentries.*", 0, &end, items);
 	if (rc != 0) {
 		fprintf(stderr, "kvsns_get_list: err=%d\n", rc);
 		exit(1);

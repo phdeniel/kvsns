@@ -5,12 +5,12 @@
 #include <hiredis/hiredis.h>
 #include <pthread.h>
 #include <time.h>
-#include "../kvshl.h"
+#include "../kvsal.h"
 
 static redisContext *rediscontext;
 static pthread_mutex_t translock;
 
-int kvshl_init(void)
+int kvsal_init(void)
 {
 	unsigned int j;
 	redisReply *reply;
@@ -42,18 +42,18 @@ int kvshl_init(void)
 	return 0;
 }
 
-int kvshl_begin_transaction()
+int kvsal_begin_transaction()
 {
 	pthread_mutex_lock(&translock);
 	return 0;
 }
 
-int kvshl_end_transaction()
+int kvsal_end_transaction()
 {
 	pthread_mutex_unlock(&translock);
 	return 0;
 }
-int kvshl_set_char(char *k, char *v)
+int kvsal_set_char(char *k, char *v)
 {
 	redisReply *reply;
 
@@ -70,7 +70,7 @@ int kvshl_set_char(char *k, char *v)
 	return 0;
 }
 
-int kvshl_get_char(char *k, char *v)
+int kvsal_get_char(char *k, char *v)
 {
 	redisReply *reply;
 
@@ -92,7 +92,7 @@ int kvshl_get_char(char *k, char *v)
 	return 0;
 }
 
-int kvshl_set_stat(char *k, struct stat *buf)
+int kvsal_set_stat(char *k, struct stat *buf)
 {
 	char v[VLEN];
 
@@ -106,10 +106,10 @@ int kvshl_set_stat(char *k, struct stat *buf)
 		 buf->st_mtim.tv_sec, buf->st_mtim.tv_nsec,
 		 buf->st_ctim.tv_sec, buf->st_ctim.tv_nsec);
 
-	return kvshl_set_char(k,v);
+	return kvsal_set_char(k,v);
 }
 
-int kvshl_get_stat(char *k, struct stat *buf)
+int kvsal_get_stat(char *k, struct stat *buf)
 {
 	redisReply *reply;
 	char v[VLEN];
@@ -118,7 +118,7 @@ int kvshl_get_stat(char *k, struct stat *buf)
 	if (!k || !buf)
 		return -EINVAL;
 
-	rc = kvshl_get_char(k, v);
+	rc = kvsal_get_char(k, v);
 	if (rc != 0)
 		return rc;
 
@@ -133,7 +133,7 @@ int kvshl_get_stat(char *k, struct stat *buf)
 	return 0;
 }
 
-int kvshl_incr_counter(char *k, unsigned long long *v)
+int kvsal_incr_counter(char *k, unsigned long long *v)
 {
 	redisReply *reply;
 
@@ -150,7 +150,7 @@ int kvshl_incr_counter(char *k, unsigned long long *v)
 	return 0;
 }
 
-int kvshl_del(char *k)
+int kvsal_del(char *k)
 {
 	redisReply *reply;
 
@@ -165,7 +165,7 @@ int kvshl_del(char *k)
 	return 0;
 }
 
-int kvshl_get_list(char *pattern, int start, int *size, kvshl_item_t *items)
+int kvsal_get_list(char *pattern, int start, int *size, kvsal_item_t *items)
 {
 	redisReply *reply;
 	int rc;
@@ -192,7 +192,7 @@ int kvshl_get_list(char *pattern, int start, int *size, kvshl_item_t *items)
 	return 0;
 }
 
-int kvshl_get_list_size(char *pattern)
+int kvsal_get_list_size(char *pattern)
 {
 	redisReply *reply;
 	int rc;

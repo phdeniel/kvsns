@@ -12,7 +12,7 @@ int kvsns_next_inode(kvsns_ino_t *ino)
 	if (!ino)
 		return -EINVAL;
 
-	rc = kvshl_incr_counter("ino_counter", ino);
+	rc = kvsal_incr_counter("ino_counter", ino);
 	if (rc != 0)
 		return rc;
 
@@ -79,19 +79,19 @@ int kvsns_create_entry(kvsns_cred_t *cred, kvsns_ino_t *parent, char *name,
 	if (rc != 0)
 		return rc;
 
-	kvshl_begin_transaction();
+	kvsal_begin_transaction();
 	snprintf(k, KLEN, "%llu.dentries.%s", 
 		 *parent, name);
 	snprintf(v, VLEN, "%llu", *new_entry);
 	
-	rc = kvshl_set_char(k, v);
+	rc = kvsal_set_char(k, v);
 	if (rc != 0)
 		return rc;
 
 	snprintf(k, KLEN, "%llu.parentdir", *new_entry);
 	snprintf(v, VLEN, "%llu|", *parent);
 
-	rc = kvshl_set_char(k, v);
+	rc = kvsal_set_char(k, v);
 	if (rc != 0)
 		return rc;
 
@@ -125,11 +125,11 @@ int kvsns_create_entry(kvsns_cred_t *cred, kvsns_ino_t *parent, char *name,
 	}
 
 	snprintf(k, KLEN, "%llu.stat", *new_entry);
-	rc = kvshl_set_stat(k, &bufstat);
+	rc = kvsal_set_stat(k, &bufstat);
 	if (rc != 0)
 		return rc;
 
-	kvshl_end_transaction();
+	kvsal_end_transaction();
 	return 0;
 }
 
@@ -138,7 +138,7 @@ int kvsns_delall_xattr(kvsns_cred_t *cred, kvsns_ino_t *ino)
 	int rc;
 	char pattern[KLEN];
 	char v[VLEN];
-	kvshl_item_t items[KVSNS_ARRAY_SIZE];
+	kvsal_item_t items[KVSNS_ARRAY_SIZE];
 	int i; 
 	int size;
 	kvsns_ino_t tmpino;
@@ -146,24 +146,24 @@ int kvsns_delall_xattr(kvsns_cred_t *cred, kvsns_ino_t *ino)
 	if (!cred || !ino)
 		return -EINVAL;
 
-	kvshl_begin_transaction();
+	kvsal_begin_transaction();
 
 	snprintf(pattern, KLEN, "%llu.xattr.*", *ino);
 
 	do {
 		size = KVSNS_ARRAY_SIZE;
-		rc = kvshl_get_list(pattern, 0, &size, items);
+		rc = kvsal_get_list(pattern, 0, &size, items);
 		if (rc < 0)
 			return rc;
 	
 		for (i=0; i < size ; i++) {
-			rc = kvshl_del(items[i].str);
+			rc = kvsal_del(items[i].str);
 			if (rc !=0)
 				return rc;
 		}
 	} while(size > 0);
 
-	kvshl_end_transaction();
+	kvsal_end_transaction();
 
 	return 0;
 }
