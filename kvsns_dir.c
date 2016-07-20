@@ -6,13 +6,13 @@
 #include <time.h>
 #include "kvsns.h"
 #include "kvsns_internal.h"
-#include "kvshl/kvshl.h"
+#include "kvsal/kvsal.h"
 
 int kvsns_start(void)
 {
 	int rc;
 
-	rc = kvshl_init();
+	rc = kvsal_init();
 	if (rc != 0)
 		return rc;
 
@@ -32,12 +32,12 @@ int kvsns_init_root()
 	cred.gid = 0;
 	ino = KVSNS_ROOT_INODE;
 
-	kvshl_begin_transaction();
+	kvsal_begin_transaction();
 
 	snprintf(k, KLEN, "%llu.parentdir", ino);
 	snprintf(v, VLEN, "%llu|", ino);
 
-	rc = kvshl_set_char(k, v);
+	rc = kvsal_set_char(k, v);
 	if (rc != 0)
 		return rc;
 
@@ -53,11 +53,11 @@ int kvsns_init_root()
 	bufstat.st_ctim.tv_sec = 0;
 
 	snprintf(k, KLEN, "%llu.stat", ino);
-	rc = kvshl_set_stat(k, &bufstat);
+	rc = kvsal_set_stat(k, &bufstat);
 	if (rc != 0)
 		return rc;
 
-	kvshl_end_transaction();
+	kvsal_end_transaction();
 	return 0;
 }
 
@@ -85,7 +85,7 @@ int kvsns_symlink(kvsns_cred_t *cred, kvsns_ino_t *parent, char *name,
 		return rc;
 
 	snprintf(k, KLEN, "%llu.link", *newlnk);
-	rc = kvshl_set_char(k, content);
+	rc = kvsal_set_char(k, content);
 	
 	return rc;
 }
@@ -101,7 +101,7 @@ int kvsns_readlink(kvsns_cred_t *cred, kvsns_ino_t *lnk,
 		return -EINVAL;
 
 	snprintf(k, KLEN, "%llu.link", *lnk);
-	rc = kvshl_get_char(k, v);
+	rc = kvsal_get_char(k, v);
 	if (rc != 0)
 		return rc;
 
@@ -125,30 +125,30 @@ int kvsns_rmdir(kvsns_cred_t *cred, kvsns_ino_t *parent, char *name)
 		return -rc;
 
 	snprintf(k, KLEN, "%llu.dentries.*", ino);
-	rc = kvshl_get_list_size(k);
+	rc = kvsal_get_list_size(k);
 	if (rc > 0)
 		return -ENOTEMPTY;
 
-	kvshl_begin_transaction();
+	kvsal_begin_transaction();
 	snprintf(k, KLEN, "%llu.dentries.%s", 
 		 *parent, name);
 
-	rc = kvshl_del(k);
+	rc = kvsal_del(k);
 	if (rc != 0)
 		return rc;
 
 	snprintf(k, KLEN, "%llu.parentdir", ino);
 
-	rc = kvshl_del(k);
+	rc = kvsal_del(k);
 	if (rc != 0)
 		return rc;
 
 	snprintf(k, KLEN, "%llu.stat", ino);
-	rc = kvshl_del(k);
+	rc = kvsal_del(k);
 	if (rc != 0)
 		return rc;
 
-	kvshl_end_transaction();
+	kvsal_end_transaction();
 	return 0;
 }
 
@@ -158,21 +158,21 @@ int kvsns_readdir(kvsns_cred_t *cred, kvsns_ino_t *dir, int offset,
 	int rc;
 	char pattern[KLEN];
 	char v[VLEN];
-	kvshl_item_t *items;
+	kvsal_item_t *items;
 	int i; 
 	kvsns_ino_t ino;
 
 	if (!cred || !dir || !dirent || !size)
 		return -EINVAL;
 
-	items = (kvshl_item_t *)malloc(*size*sizeof(kvshl_item_t));
+	items = (kvsal_item_t *)malloc(*size*sizeof(kvsal_item_t));
 	if (items == NULL)
 		return -ENOMEM;
 
-	kvshl_begin_transaction();
+	kvsal_begin_transaction();
 
 	snprintf(pattern, KLEN, "%llu.dentries.*", *dir);
-	rc = kvshl_get_list(pattern, offset, size, items);
+	rc = kvsal_get_list(pattern, offset, size, items);
 	if (rc < 0)
 		return rc;
 
@@ -180,7 +180,7 @@ int kvsns_readdir(kvsns_cred_t *cred, kvsns_ino_t *dir, int offset,
 		sscanf(items[i].str, "%llu.dentries.%s\n", 
 		       &ino, dirent[i].name);
 
-		rc = kvshl_get_char(items[i].str, v);
+		rc = kvsal_get_char(items[i].str, v);
 		if (rc != 0)
 			return rc;
 		sscanf(v, "%llu", &dirent[i].inode);		
@@ -190,7 +190,7 @@ int kvsns_readdir(kvsns_cred_t *cred, kvsns_ino_t *dir, int offset,
 			return rc;
 	} 
 
-	kvshl_end_transaction();
+	kvsal_end_transaction();
 
 	return 0;
 }
@@ -208,7 +208,7 @@ int kvsns_lookup(kvsns_cred_t *cred, kvsns_ino_t *parent, char *name,
 	snprintf(k, KLEN, "%llu.dentries.%s", 
 		 *parent, name);
 
-	rc = kvshl_get_char(k, v);
+	rc = kvsal_get_char(k, v);
 	if (rc != 0)
 		return rc;
 
@@ -229,7 +229,7 @@ int kvsns_lookupp(kvsns_cred_t *cred, kvsns_ino_t *dir, kvsns_ino_t *parent)
 	snprintf(k, KLEN, "%llu.parentdir", 
 		 *dir);
 
-	rc = kvshl_get_char(k, v);
+	rc = kvsal_get_char(k, v);
 	if (rc != 0)
 		return rc;
 
@@ -246,7 +246,7 @@ int kvsns_getattr(kvsns_cred_t *cred, kvsns_ino_t *ino, struct stat *buffstat)
 		return -EINVAL;
 
 	snprintf(k, KLEN, "%llu.stat", *ino);
-	return kvshl_get_stat(k, buffstat);
+	return kvsal_get_stat(k, buffstat);
 }
 
 int kvsns_setattr(kvsns_cred_t *cred, kvsns_ino_t *ino, struct stat *setstat, int statflag) 
@@ -262,7 +262,7 @@ int kvsns_setattr(kvsns_cred_t *cred, kvsns_ino_t *ino, struct stat *setstat, in
 		return 0; /* Nothing to do */
 
 	snprintf(k, KLEN, "%llu.stat", *ino);
-	rc = kvshl_get_stat(k, &buffstat);
+	rc = kvsal_get_stat(k, &buffstat);
 	if (rc != 0)
 		return rc;
 
@@ -293,7 +293,7 @@ int kvsns_setattr(kvsns_cred_t *cred, kvsns_ino_t *ino, struct stat *setstat, in
 		buffstat.st_ctim.tv_nsec = setstat->st_ctim.tv_nsec;
 	}		
 
-	return kvshl_set_stat(k, &buffstat);
+	return kvsal_set_stat(k, &buffstat);
 }
 
 int kvsns_link(kvsns_cred_t *cred, kvsns_ino_t *ino, kvsns_ino_t *dino, char *dname)
@@ -314,7 +314,7 @@ int kvsns_link(kvsns_cred_t *cred, kvsns_ino_t *ino, kvsns_ino_t *dino, char *dn
 		return -EEXIST;
 
 	snprintf(k, KLEN, "%llu.parentdir", *ino);
-	rc = kvshl_get_char(k, v);
+	rc = kvsal_get_char(k, v);
 	if (rc != 0)
 		return rc;
 
@@ -322,25 +322,25 @@ int kvsns_link(kvsns_cred_t *cred, kvsns_ino_t *ino, kvsns_ino_t *dino, char *dn
 	strcat(v,k);
  
 	snprintf(k, KLEN, "%llu.parentdir", *ino);
-	rc = kvshl_set_char(k, v);
+	rc = kvsal_set_char(k, v);
 	if (rc != 0)
 		return rc;
 
 	snprintf(k, KLEN, "%llu.stat", *ino);
-	rc = kvshl_get_stat(k, &buffstat);
+	rc = kvsal_get_stat(k, &buffstat);
 	if (rc != 0)
 		return rc;
 
 	buffstat.st_nlink += 1;
 	buffstat.st_ctim.tv_sec = time(NULL);
-	rc = kvshl_set_stat(k, &buffstat);
+	rc = kvsal_set_stat(k, &buffstat);
 	if (rc != 0)
 		return rc;
 
 	snprintf(k, KLEN, "%llu.dentries.%s", 
 		 *dino, dname);
 	snprintf(v, VLEN, "%llu", *ino);
-	rc = kvshl_set_char(k, v);
+	rc = kvsal_set_char(k, v);
 	if (rc != 0)
 		return rc;
 
@@ -365,28 +365,28 @@ int kvsns_unlink(kvsns_cred_t *cred, kvsns_ino_t *dir, char *name)
 	if (rc !=0)
 		return rc;
 
-	kvshl_begin_transaction();
+	kvsal_begin_transaction();
 	snprintf(k, KLEN, "%llu.dentries.%s", 
 		 *dir, name);
 
-	rc = kvshl_del(k);
+	rc = kvsal_del(k);
 	if (rc != 0)
 		return rc;
 
 	snprintf(k, KLEN, "%llu.parentdir", ino);
-	rc = kvshl_get_char(k, v);
+	rc = kvsal_get_char(k, v);
 	if (rc != 0)
 		return rc;
 
 	size = KVSNS_ARRAY_SIZE;
 	kvsns_str2parentlist(parent, &size, v);
 	if (size == 1) {
-		rc = kvshl_del(k);
+		rc = kvsal_del(k);
 		if (rc != 0)
 			return rc;
 
 		snprintf(k, KLEN, "%llu.stat", ino);
-		rc = kvshl_del(k);
+		rc = kvsal_del(k);
 		if (rc != 0)
 			return rc;
 	} else {
@@ -396,24 +396,24 @@ int kvsns_unlink(kvsns_cred_t *cred, kvsns_ino_t *dir, char *name)
 				break;
 			}
 		kvsns_parentlist2str(parent, size, v);
-		rc = kvshl_set_char(k, v);
+		rc = kvsal_set_char(k, v);
 		if (rc != 0)
 			return rc;
 
 		snprintf(k, KLEN, "%llu.stat", ino);
-		rc = kvshl_get_stat(k, &buffstat);
+		rc = kvsal_get_stat(k, &buffstat);
 		if (rc != 0)
 			return rc;
 
 		buffstat.st_nlink -= 1;
 		buffstat.st_ctim.tv_sec = time(NULL);
 
-		rc = kvshl_set_stat(k, &buffstat);
+		rc = kvsal_set_stat(k, &buffstat);
 		if (rc != 0)
 			return rc;
 
 	}
-	kvshl_end_transaction();
+	kvsal_end_transaction();
 	
 	return 0;
 }
@@ -440,23 +440,23 @@ int kvsns_rename(kvsns_cred_t *cred,  kvsns_ino_t *sino, char *sname, kvsns_ino_
 	if (rc !=0)
 		return rc; 
 
-	kvshl_begin_transaction();
+	kvsal_begin_transaction();
 
 	snprintf(k, KLEN, "%llu.dentries.%s", 
 		 *sino, sname);
-	rc = kvshl_del(k);
+	rc = kvsal_del(k);
 	if (rc != 0)
 		return rc;
 
 	snprintf(k, KLEN, "%llu.dentries.%s", 
 		 *dino, dname);
 	snprintf(v, VLEN, "%llu", ino);
-	rc = kvshl_set_char(k, v);
+	rc = kvsal_set_char(k, v);
 	if (rc != 0)
 		return rc;
 
 	snprintf(k, KLEN, "%llu.parentdir", ino);
-	rc = kvshl_get_char(k, v);
+	rc = kvsal_get_char(k, v);
 	if (rc != 0)
 		return rc;
 
@@ -469,22 +469,22 @@ int kvsns_rename(kvsns_cred_t *cred,  kvsns_ino_t *sino, char *sname, kvsns_ino_
 		}
 	kvsns_parentlist2str(parent, size, v);
 
-	rc = kvshl_set_char(k, v);
+	rc = kvsal_set_char(k, v);
 	if (rc != 0)
 		return rc;
 
 	snprintf(k, KLEN, "%llu.stat", ino);
-	rc = kvshl_get_stat(k, &buffstat);
+	rc = kvsal_get_stat(k, &buffstat);
 	if (rc != 0)
 		return rc;
 
 	buffstat.st_ctim.tv_sec = time(NULL);
 
-	rc = kvshl_set_stat(k, &buffstat);
+	rc = kvsal_set_stat(k, &buffstat);
 	if (rc != 0)
 		return rc;
 
-	kvshl_end_transaction();
+	kvsal_end_transaction();
 
 	return 0;
 }

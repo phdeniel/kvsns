@@ -8,7 +8,7 @@
 #include <dirent.h>
 #include <sys/types.h>
 #include <sys/xattr.h>
-#include "kvshl/kvshl.h"
+#include "kvsal/kvsal.h"
 
 #define KVSNS_ROOT_INODE 2LL
 #define KVSNS_ARRAY_SIZE 100
