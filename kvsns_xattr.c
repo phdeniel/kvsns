@@ -86,3 +86,38 @@ int kvsns_removexattr(kvsns_cred_t *cred, kvsns_ino_t *ino, char *name)
 	return rc = kvsal_del(k);
 }
 
+int kvsns_remove_all_xattr(kvsns_cred_t *cred, kvsns_ino_t *ino)
+{
+	int rc;
+	char pattern[KLEN];
+	char v[VLEN];
+	kvsal_item_t items[KVSNS_ARRAY_SIZE];
+	int i; 
+	int size;
+	kvsns_ino_t tmpino;
+
+	if (!cred || !ino)
+		return -EINVAL;
+
+	kvsal_begin_transaction();
+
+	snprintf(pattern, KLEN, "%llu.xattr.*", *ino);
+
+	do {
+		size = KVSNS_ARRAY_SIZE;
+		rc = kvsal_get_list(pattern, 0, &size, items);
+		if (rc < 0)
+			return rc;
+	
+		for (i=0; i < size ; i++) {
+			rc = kvsal_del(items[i].str);
+			if (rc !=0)
+				return rc;
+		}
+	} while(size > 0);
+
+	kvsal_end_transaction();
+
+	return 0;
+}
+

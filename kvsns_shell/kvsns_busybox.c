@@ -438,6 +438,26 @@ int main(int argc, char *argv[])
 			offset += size ;
 			size = 10;
 		} while (1);
+	} else if (!strcmp(exec_name, "ns_clearxattr")) {
+		if (argc != 2) {
+			printf("ns_clearxattr name\n");
+			exit(1);
+		}
+
+		if (!strcmp(argv[1], "."))
+			ino = current_inode;
+		else {
+			rc = kvsns_lookup(&cred, &current_inode, argv[1], &ino);
+			if (rc != 0)
+				return rc;
+		}
+
+		rc = kvsns_remove_all_xattr(&cred, &ino);
+		if (rc == 0)
+			printf( "All xattr deleted for %s = %llu\n", argv[1], ino);
+		else
+			fprintf(stderr, "Failed !!!\n");
+
 	} else if (!strcmp(exec_name, "ns_link")) {
 		kvsns_ino_t dino;
 		kvsns_ino_t sino;
