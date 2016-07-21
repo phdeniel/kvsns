@@ -12,6 +12,7 @@
 
 #define KVSNS_ROOT_INODE 2LL
 #define KVSNS_ARRAY_SIZE 100
+#define KVSNS_ROOT_UID 0
 
 typedef unsigned long long int kvsns_ino_t;
 
@@ -22,6 +23,20 @@ typedef unsigned long long int kvsns_ino_t;
 #define STAT_ATIME_SET	0x10
 #define STAT_MTIME_SET	0x11
 #define STAT_CTIME_SET	0x12
+
+#define STAT_OWNER_READ       	0400    /* Read by owner.  */
+#define STAT_OWNER_WRITE      	0200    /* Write by owner.  */
+#define STAT_OWNER_EXEC       	0100    /* Execute by owner.  */
+#define STAT_GROUP_READ       	0040    /* Read by group.  */
+#define STAT_GROUP_WRITE      	0020    /* Write by group.  */
+#define STAT_GROUP_EXEC	0010    /* Execute by group.  */
+#define STAT_OTHER_READ       	0004    /* Read by other.  */
+#define STAT_OTHER_WRITE      	0002    /* Write by other.  */
+#define STAT_OTHER_EXEC	0001    /* Execute by other.  */
+
+#define KVSNS_ACCESS_READ 	1
+#define KVSNS_ACCESS_WRITE	2
+#define KVSNS_ACCESS_EXEC	4
 
 typedef struct kvsns_cred__ 
 {
@@ -49,6 +64,7 @@ typedef struct kvsns_xattr__
 
 int kvsns_start(void);
 int kvsns_init_root(void);
+int kvsns_access(kvsns_cred_t *cred, kvsns_ino_t *ino, int flags); 
 int kvsns_creat(kvsns_cred_t *cred, kvsns_ino_t *parent, char *name,
 		mode_t mode, kvsns_ino_t *newdir);
 int kvsns_mkdir(kvsns_cred_t *cred, kvsns_ino_t *parent, char *name,

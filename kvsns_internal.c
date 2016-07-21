@@ -168,3 +168,68 @@ int kvsns_delall_xattr(kvsns_cred_t *cred, kvsns_ino_t *ino)
 	return 0;
 }
 
+/* Access routines */
+static int kvsns_access_check(kvsns_cred_t *cred, struct stat *stat, int flags)
+{
+	int check = 0;
+
+	if (!stat || !cred)
+		return -EINVAL;
+
+	/* Root's superpowers */
+	if (cred->uid == KVSNS_ROOT_UID)
+		return 0;
+
+	if (cred->uid == stat->st_uid ) {
+		if (flags & KVSNS_ACCESS_READ)
+			check |= STAT_OWNER_READ;
+		
+		if (flags & KVSNS_ACCESS_WRITE)
+			check |= STAT_OWNER_WRITE;
+
+		if (flags & KVSNS_ACCESS_EXEC)
+			check |= STAT_OWNER_EXEC;
+	} else if (cred->gid == stat->st_gid) {
+		if (flags & KVSNS_ACCESS_READ)
+			check |= STAT_GROUP_READ;
+		
+		if (flags & KVSNS_ACCESS_WRITE)
+			check |= STAT_GROUP_WRITE;
+
+		if (flags & KVSNS_ACCESS_EXEC)
+			check |= STAT_GROUP_EXEC;
+	} else {
+		if (flags & KVSNS_ACCESS_READ)
+			check |= STAT_OTHER_READ;
+		
+		if (flags & KVSNS_ACCESS_WRITE)
+			check |= STAT_OTHER_WRITE;
+
+		if (flags & KVSNS_ACCESS_EXEC)
+			check |= STAT_OTHER_EXEC;
+	}
+
+	if ((check & stat->st_mode ) != check)
+		return -EPERM;
+	else	
+		return 0;
+
+	/* Should not be reached */
+	return -EPERM;
+}
+
+int kvsns_access(kvsns_cred_t *cred, kvsns_ino_t *ino, int flags) 
+{
+	struct stat stat;
+	int rc;
+
+	if (!cred || !ino)
+		return -EINVAL;
+
+	rc = kvsns_getattr(cred, ino, &stat);
+	if (rc != 0)
+		return rc;
+
+	return kvsns_access_check(cred, &stat, flags);
+} 
+	
