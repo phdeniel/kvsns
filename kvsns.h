@@ -92,5 +92,7 @@ int kvsns_getxattr(kvsns_cred_t *cred, kvsns_ino_t *ino,
 int kvsns_listxattr(kvsns_cred_t *cred, kvsns_ino_t *ino, int offset, 
 		  kvsns_xattr_t *list, int *size);
 int kvsns_removexattr(kvsns_cred_t *cred, kvsns_ino_t *ino, char *name);
+int kvsns_remove_all_xattr(kvsns_cred_t *cred, kvsns_ino_t *ino);
+
 
 #endif

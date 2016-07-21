@@ -133,40 +133,6 @@ int kvsns_create_entry(kvsns_cred_t *cred, kvsns_ino_t *parent, char *name,
 	return 0;
 }
 
-int kvsns_delall_xattr(kvsns_cred_t *cred, kvsns_ino_t *ino)
-{
-	int rc;
-	char pattern[KLEN];
-	char v[VLEN];
-	kvsal_item_t items[KVSNS_ARRAY_SIZE];
-	int i; 
-	int size;
-	kvsns_ino_t tmpino;
-
-	if (!cred || !ino)
-		return -EINVAL;
-
-	kvsal_begin_transaction();
-
-	snprintf(pattern, KLEN, "%llu.xattr.*", *ino);
-
-	do {
-		size = KVSNS_ARRAY_SIZE;
-		rc = kvsal_get_list(pattern, 0, &size, items);
-		if (rc < 0)
-			return rc;
-	
-		for (i=0; i < size ; i++) {
-			rc = kvsal_del(items[i].str);
-			if (rc !=0)
-				return rc;
-		}
-	} while(size > 0);
-
-	kvsal_end_transaction();
-
-	return 0;
-}
 
 /* Access routines */
 static int kvsns_access_check(kvsns_cred_t *cred, struct stat *stat, int flags)
