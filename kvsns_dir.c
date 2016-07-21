@@ -19,7 +19,7 @@ int kvsns_start(void)
 	return 0;
 }
 
-int kvsns_init_root()
+int kvsns_init_root(int openbar)
 {
 	int rc;
 	char k[KLEN];
@@ -43,7 +43,10 @@ int kvsns_init_root()
 
 	/* Set stat */
 	memset(&bufstat, 0, sizeof(struct stat));
-	bufstat.st_mode = S_IFDIR|0755;
+	if (openbar != 0)
+		bufstat.st_mode = S_IFDIR|0777;
+	else
+		bufstat.st_mode = S_IFDIR|0755;
 	bufstat.st_ino = KVSNS_ROOT_INODE;
 	bufstat.st_nlink = 2;
 	bufstat.st_uid = 0;
@@ -273,10 +276,6 @@ int kvsns_getattr(kvsns_cred_t *cred, kvsns_ino_t *ino, struct stat *buffstat)
 
 	if (!cred || !ino || !buffstat)
 		return -EINVAL;
-
-	rc = kvsns_access(cred, ino, KVSNS_ACCESS_READ);
-	if (rc != 0)
-		return rc;
 
 	snprintf(k, KLEN, "%llu.stat", *ino);
 	return kvsal_get_stat(k, buffstat);
