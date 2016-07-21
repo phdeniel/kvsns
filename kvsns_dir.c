@@ -168,6 +168,12 @@ int kvsns_rmdir(kvsns_cred_t *cred, kvsns_ino_t *parent, char *name)
 		return rc;
 
 	kvsal_end_transaction();
+
+	/* Remove all associated xattr */
+	rc = kvsns_remove_all_xattr(cred, &ino);
+	if (rc != 0)
+		return rc;
+
 	return 0;
 }
 
@@ -432,6 +438,11 @@ int kvsns_unlink(kvsns_cred_t *cred, kvsns_ino_t *dir, char *name)
 		snprintf(k, KLEN, "%llu.stat", ino);
 		rc = kvsal_del(k);
 		if (rc != 0)
+			return rc;
+
+		/* Remove all associated xattr */
+		rc = kvsns_remove_all_xattr(cred, &ino);
+		if( rc != 0)
 			return rc;
 	} else {
 		for(i=0; i < size ; i++)
