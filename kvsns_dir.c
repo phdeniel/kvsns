@@ -66,6 +66,12 @@ int kvsns_init_root()
 int kvsns_mkdir(kvsns_cred_t *cred, kvsns_ino_t *parent, char *name,
 		mode_t mode, kvsns_ino_t *newdir)
 {
+	int rc;
+
+	rc = kvsns_access(cred, parent, KVSNS_ACCESS_WRITE);
+	if (rc != 0)
+		return rc;
+
 	return kvsns_create_entry(cred, parent, name,
 				  mode, newdir, KVSNS_DIR);
 }
@@ -78,6 +84,10 @@ int kvsns_symlink(kvsns_cred_t *cred, kvsns_ino_t *parent, char *name,
 
 	if (!cred || !parent || ! name || !content || !newlnk)
 		return -EINVAL;
+
+	rc = kvsns_access(cred, parent, KVSNS_ACCESS_WRITE);
+	if (rc != 0)
+		return rc;
 
 	rc = kvsns_create_entry(cred, parent, name,
 				0, newlnk, KVSNS_SYMLINK);
@@ -96,6 +106,8 @@ int kvsns_readlink(kvsns_cred_t *cred, kvsns_ino_t *lnk,
 	int rc;
 	char k[KLEN];
 	char v[KLEN];
+
+	/* No access check, a symlink's content is always readable */
 
 	if (!cred || !lnk || !content || !size)
 		return -EINVAL;
@@ -120,6 +132,10 @@ int kvsns_rmdir(kvsns_cred_t *cred, kvsns_ino_t *parent, char *name)
 	if (!cred || !parent || !name)
 		return -EINVAL; 
 	
+	rc = kvsns_access(cred, parent, KVSNS_ACCESS_WRITE);
+	if (rc != 0)
+		return rc;
+
 	rc = kvsns_lookup(cred, parent, name, &ino);
 	if (rc != 0)
 		return -rc;
@@ -165,6 +181,10 @@ int kvsns_readdir(kvsns_cred_t *cred, kvsns_ino_t *dir, int offset,
 	if (!cred || !dir || !dirent || !size)
 		return -EINVAL;
 
+	rc = kvsns_access(cred, dir, KVSNS_ACCESS_READ);
+	if (rc != 0)
+		return rc;
+
 	items = (kvsal_item_t *)malloc(*size*sizeof(kvsal_item_t));
 	if (items == NULL)
 		return -ENOMEM;
@@ -205,6 +225,10 @@ int kvsns_lookup(kvsns_cred_t *cred, kvsns_ino_t *parent, char *name,
 	if (!cred || !parent || !name || !ino)
 		return -EINVAL; 
 
+	rc = kvsns_access(cred, parent, KVSNS_ACCESS_READ);
+	if (rc != 0)
+		return rc;
+
 	snprintf(k, KLEN, "%llu.dentries.%s", 
 		 *parent, name);
 
@@ -226,6 +250,10 @@ int kvsns_lookupp(kvsns_cred_t *cred, kvsns_ino_t *dir, kvsns_ino_t *parent)
 	if (!cred || !dir || !parent)
 		return -EINVAL;
 
+	rc = kvsns_access(cred, dir, KVSNS_ACCESS_READ);
+	if (rc != 0)
+		return rc;
+
 	snprintf(k, KLEN, "%llu.parentdir", 
 		 *dir);
 
@@ -241,9 +269,14 @@ int kvsns_lookupp(kvsns_cred_t *cred, kvsns_ino_t *dir, kvsns_ino_t *parent)
 int kvsns_getattr(kvsns_cred_t *cred, kvsns_ino_t *ino, struct stat *buffstat) 
 {
 	char k[KLEN];
+	int rc;
 
 	if (!cred || !ino || !buffstat)
 		return -EINVAL;
+
+	rc = kvsns_access(cred, ino, KVSNS_ACCESS_READ);
+	if (rc != 0)
+		return rc;
 
 	snprintf(k, KLEN, "%llu.stat", *ino);
 	return kvsal_get_stat(k, buffstat);
@@ -260,6 +293,10 @@ int kvsns_setattr(kvsns_cred_t *cred, kvsns_ino_t *ino, struct stat *setstat, in
 
 	if (statflag == 0)
 		return 0; /* Nothing to do */
+
+	rc = kvsns_access(cred, ino, KVSNS_ACCESS_WRITE);
+	if (rc != 0)
+		return rc;
 
 	snprintf(k, KLEN, "%llu.stat", *ino);
 	rc = kvsal_get_stat(k, &buffstat);
@@ -308,6 +345,10 @@ int kvsns_link(kvsns_cred_t *cred, kvsns_ino_t *ino, kvsns_ino_t *dino, char *dn
 
 	if (!cred || !ino || !dino || !dname)
 		return -EINVAL;
+
+	rc = kvsns_access(cred, dino, KVSNS_ACCESS_WRITE);
+	if (rc != 0)
+		return rc;
 
 	rc = kvsns_lookup(cred, dino, dname, &tmpino);
 	if (rc == 0)
@@ -360,6 +401,10 @@ int kvsns_unlink(kvsns_cred_t *cred, kvsns_ino_t *dir, char *name)
 
 	if (!cred || !dir || !name)
 		return -EINVAL;
+
+	rc = kvsns_access(cred, dir, KVSNS_ACCESS_WRITE);
+	if (rc != 0)
+		return rc;
 
 	rc = kvsns_lookup(cred, dir, name, &ino);
 	if (rc !=0)
@@ -431,6 +476,14 @@ int kvsns_rename(kvsns_cred_t *cred,  kvsns_ino_t *sino, char *sname, kvsns_ino_
 
 	if (!cred || !sino || !sname || !dino || !dname)
 		return -EINVAL;
+
+	rc = kvsns_access(cred, sino, KVSNS_ACCESS_WRITE);
+	if (rc != 0)
+		return rc;
+
+	rc = kvsns_access(cred, dino, KVSNS_ACCESS_WRITE);
+	if (rc != 0)
+		return rc;
 
 	rc = kvsns_lookup(cred, dino, dname, &ino);
 	if (rc ==0)
