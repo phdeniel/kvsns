@@ -18,6 +18,10 @@ add_custom_command(TARGET links
 		   COMMAND /usr/bin/ln -sf kvsns_busybox ns_rename
 		   COMMAND /usr/bin/ln -sf kvsns_busybox ns_readlink
 		   COMMAND /usr/bin/ln -sf kvsns_busybox ns_getattr
+		   COMMAND /usr/bin/ln -sf kvsns_busybox ns_getxattr
+		   COMMAND /usr/bin/ln -sf kvsns_busybox ns_setxattr
+		   COMMAND /usr/bin/ln -sf kvsns_busybox ns_listxattr
+		   COMMAND /usr/bin/ln -sf kvsns_busybox ns_removexattr
 		   COMMAND /usr/bin/ln -sf kvsns_busybox ns_ls
 		   WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}
 		   VERBATIM)
