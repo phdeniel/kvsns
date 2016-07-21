@@ -77,7 +77,7 @@ int main(int argc, char *argv[])
 		strcpy(v, "/");
 		kvsal_set_char(k, v);
 	} else if (!strcmp(exec_name, "ns_init")) {
-		rc = kvsns_init_root(1);
+		rc = kvsns_init_root(1); /* Open Bar */
 		if (rc != 0) {
 			fprintf(stderr, "kvsns_init_root: err=%d\n", rc);
 			exit(1);
@@ -334,6 +334,110 @@ int main(int argc, char *argv[])
 		} else
 			printf("Failed rc=%d !\n", rc);
 		return 0;
+	} else if (!strcmp(exec_name, "ns_setxattr")) {
+		if (argc != 4) {
+			printf("ns_sexattr name xattr_name xattr_val\n");
+			exit(1);
+		}
+
+		if (!strcmp(argv[1], "."))
+			ino = current_inode;
+		else {
+			rc = kvsns_lookup(&cred, &current_inode, argv[1], &ino);
+			if (rc != 0)
+				return rc;
+		}
+
+		rc = kvsns_setxattr(&cred, &ino, argv[2],
+				    argv[3], strlen(argv[3]), 0);
+		if (rc == 0) 
+			printf("ns_setxattr: %llu --> %s = %s CREATED \n",
+				ino, argv[2], argv[3]);
+		else
+			fprintf(stderr, "Failed : %d\n", rc);
+	 } else if (!strcmp(exec_name, "ns_getxattr")) {
+		char value[VLEN];
+
+		if (argc != 3) {
+			printf("ns_gexattr name xattr_name \n");
+			exit(1);
+		}
+
+		if (!strcmp(argv[1], "."))
+			ino = current_inode;
+		else {
+			rc = kvsns_lookup(&cred, &current_inode, argv[1], &ino);
+			if (rc != 0)
+				return rc;
+		}
+
+		rc = kvsns_getxattr(&cred, &ino, argv[2], value, KLEN);
+		if (rc == 0) 
+			printf("ns_getxattr: %llu --> %s = %s \n",
+				ino, argv[2], value);
+		else
+			fprintf(stderr, "Failed : %d\n", rc);
+		
+	} else if (!strcmp(exec_name, "ns_removexattr")) {
+		if (argc != 3) {
+			printf("ns_removexattr name\n");
+			exit(1);
+		}
+
+		if (!strcmp(argv[1], "."))
+			ino = current_inode;
+		else {
+			rc = kvsns_lookup(&cred, &current_inode, argv[1], &ino);
+			if (rc != 0)
+				return rc;
+		}
+		rc = kvsns_removexattr(&cred, &ino, argv[2]);
+		if (rc == 0) 
+			printf("ns_removexattr: %llu --> %s DELETED \n",
+				ino, argv[2]);
+		else
+			fprintf(stderr, "Failed : %d\n", rc);
+		
+
+	} else if (!strcmp(exec_name, "ns_listxattr")) {
+		int offset;
+		int size;
+		int i = 0 ;
+		kvsns_xattr_t dirent[10];
+
+		if (argc != 2) {
+			printf("ns_listxattr name\n");
+			exit(1);
+		}
+
+		if (!strcmp(argv[1], "."))
+			ino = current_inode;
+		else {
+			rc = kvsns_lookup(&cred, &current_inode, argv[1], &ino);
+			if (rc != 0)
+				return rc;
+		}
+
+		offset = 0;
+		size = 10;
+		do {
+			rc = kvsns_listxattr(&cred, &ino, offset, 
+				           dirent, &size);
+			if (rc != 0) {
+				printf("==> readdir failed rc=%d\n", rc);
+				exit(1);
+			}
+			printf( "===> size = %d\n", size);
+			for (i=0; i < size; i++)
+				printf("%d %s -> xattr:%s \n", 
+					offset+i, current_path, dirent[i].name);
+
+			if (size == 0)
+				break;
+
+			offset += size ;
+			size = 10;
+		} while (1);
 	} else if (!strcmp(exec_name, "ns_link")) {
 		kvsns_ino_t dino;
 		kvsns_ino_t sino;
