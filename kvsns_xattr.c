@@ -59,6 +59,7 @@ int kvsns_listxattr(kvsns_cred_t *cred, kvsns_ino_t *ino, int offset,
 	if (!cred || !ino || !list || !size)
 		return -EINVAL;
 
+	snprintf(pattern, KLEN, "%llu.xattr.*", *ino);
 	items = (kvsal_item_t *)malloc(*size*sizeof(kvsal_item_t));
 	if (items == NULL)
 		return -ENOMEM;
