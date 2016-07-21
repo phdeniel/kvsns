@@ -77,7 +77,7 @@ int main(int argc, char *argv[])
 		strcpy(v, "/");
 		kvsal_set_char(k, v);
 	} else if (!strcmp(exec_name, "ns_init")) {
-		rc = kvsns_init_root();
+		rc = kvsns_init_root(1);
 		if (rc != 0) {
 			fprintf(stderr, "kvsns_init_root: err=%d\n", rc);
 			exit(1);

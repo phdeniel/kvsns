@@ -63,7 +63,7 @@ typedef struct kvsns_xattr__
 } kvsns_xattr_t;
 
 int kvsns_start(void);
-int kvsns_init_root(void);
+int kvsns_init_root(int openbar);
 int kvsns_access(kvsns_cred_t *cred, kvsns_ino_t *ino, int flags); 
 int kvsns_creat(kvsns_cred_t *cred, kvsns_ino_t *parent, char *name,
 		mode_t mode, kvsns_ino_t *newdir);
