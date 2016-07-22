@@ -79,7 +79,6 @@ int kvsns_create_entry(kvsns_cred_t *cred, kvsns_ino_t *parent, char *name,
 	if (rc != 0)
 		return rc;
 
-	kvsal_begin_transaction();
 	snprintf(k, KLEN, "%llu.dentries.%s", 
 		 *parent, name);
 	snprintf(v, VLEN, "%llu", *new_entry);
@@ -129,7 +128,6 @@ int kvsns_create_entry(kvsns_cred_t *cred, kvsns_ino_t *parent, char *name,
 	if (rc != 0)
 		return rc;
 
-	kvsal_end_transaction();
 	return 0;
 }
 

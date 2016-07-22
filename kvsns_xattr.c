@@ -64,7 +64,6 @@ int kvsns_listxattr(kvsns_cred_t *cred, kvsns_ino_t *ino, int offset,
 	if (items == NULL)
 		return -ENOMEM;
 
-	kvsal_begin_transaction();
 
 	rc = kvsal_get_list(pattern, offset, size, items);
 	if (rc < 0)
@@ -99,8 +98,6 @@ int kvsns_remove_all_xattr(kvsns_cred_t *cred, kvsns_ino_t *ino)
 	if (!cred || !ino)
 		return -EINVAL;
 
-	kvsal_begin_transaction();
-
 	snprintf(pattern, KLEN, "%llu.xattr.*", *ino);
 
 	do {
@@ -115,8 +112,6 @@ int kvsns_remove_all_xattr(kvsns_cred_t *cred, kvsns_ino_t *ino)
 				return rc;
 		}
 	} while(size > 0);
-
-	kvsal_end_transaction();
 
 	return 0;
 }
