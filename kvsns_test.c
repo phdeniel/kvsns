@@ -30,7 +30,7 @@ int main(int argc, char *argv[])
 		exit(1);
 	}
 
-	rc = kvsns_init_root();
+	rc = kvsns_init_root(1);
 	if (rc != 0) {
 		fprintf(stderr, "kvsns_init_root: err=%d\n", rc);
 		exit(1);
