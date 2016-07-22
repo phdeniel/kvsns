@@ -53,6 +53,12 @@ int kvsal_end_transaction()
 	pthread_mutex_unlock(&translock);
 	return 0;
 }
+
+int kvsal_discard_transaction()
+{
+	return 0;
+}
+
 int kvsal_set_char(char *k, char *v)
 {
 	redisReply *reply;
