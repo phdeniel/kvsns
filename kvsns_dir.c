@@ -32,11 +32,14 @@ int kvsns_init_root(int openbar)
 	cred.gid = 0;
 	ino = KVSNS_ROOT_INODE;
 
-	kvsal_begin_transaction();
-
 	snprintf(k, KLEN, "%llu.parentdir", ino);
 	snprintf(v, VLEN, "%llu|", ino);
+	rc = kvsal_set_char(k, v);
+	if (rc != 0)
+		return rc;
 
+	snprintf(k, KLEN, "ino_counter");
+	snprintf(v, VLEN, "3");
 	rc = kvsal_set_char(k, v);
 	if (rc != 0)
 		return rc;
@@ -60,7 +63,6 @@ int kvsns_init_root(int openbar)
 	if (rc != 0)
 		return rc;
 
-	kvsal_end_transaction();
 	return 0;
 }
 
@@ -148,7 +150,6 @@ int kvsns_rmdir(kvsns_cred_t *cred, kvsns_ino_t *parent, char *name)
 	if (rc > 0)
 		return -ENOTEMPTY;
 
-	kvsal_begin_transaction();
 	snprintf(k, KLEN, "%llu.dentries.%s", 
 		 *parent, name);
 
@@ -167,7 +168,6 @@ int kvsns_rmdir(kvsns_cred_t *cred, kvsns_ino_t *parent, char *name)
 	if (rc != 0)
 		return rc;
 
-	kvsal_end_transaction();
 
 	/* Remove all associated xattr */
 	rc = kvsns_remove_all_xattr(cred, &ino);
@@ -198,7 +198,6 @@ int kvsns_readdir(kvsns_cred_t *cred, kvsns_ino_t *dir, int offset,
 	if (items == NULL)
 		return -ENOMEM;
 
-	kvsal_begin_transaction();
 
 	snprintf(pattern, KLEN, "%llu.dentries.*", *dir);
 	rc = kvsal_get_list(pattern, offset, size, items);
@@ -218,8 +217,6 @@ int kvsns_readdir(kvsns_cred_t *cred, kvsns_ino_t *dir, int offset,
 		if (rc != 0)
 			return rc;
 	} 
-
-	kvsal_end_transaction();
 
 	return 0;
 }
@@ -415,7 +412,6 @@ int kvsns_unlink(kvsns_cred_t *cred, kvsns_ino_t *dir, char *name)
 	if (rc !=0)
 		return rc;
 
-	kvsal_begin_transaction();
 	snprintf(k, KLEN, "%llu.dentries.%s", 
 		 *dir, name);
 
@@ -468,7 +464,6 @@ int kvsns_unlink(kvsns_cred_t *cred, kvsns_ino_t *dir, char *name)
 			return rc;
 
 	}
-	kvsal_end_transaction();
 	
 	return 0;
 }
@@ -503,7 +498,6 @@ int kvsns_rename(kvsns_cred_t *cred,  kvsns_ino_t *sino, char *sname, kvsns_ino_
 	if (rc !=0)
 		return rc; 
 
-	kvsal_begin_transaction();
 
 	snprintf(k, KLEN, "%llu.dentries.%s", 
 		 *sino, sname);
@@ -547,7 +541,6 @@ int kvsns_rename(kvsns_cred_t *cred,  kvsns_ino_t *sino, char *sname, kvsns_ino_
 	if (rc != 0)
 		return rc;
 
-	kvsal_end_transaction();
 
 	return 0;
 }
