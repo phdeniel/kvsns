@@ -8,7 +8,6 @@
 #include "../kvsal.h"
 
 static redisContext *rediscontext;
-static pthread_mutex_t translock;
 
 int kvsal_init(void)
 {
@@ -16,8 +15,6 @@ int kvsal_init(void)
 	redisReply *reply;
 	const char *hostname = "127.0.0.1";
 	int port = 6379; /* REDIS default */
-
-	pthread_mutex_init( &translock, NULL);
 
 	struct timeval timeout = { 1, 500000 }; // 1.5 seconds
 	rediscontext = redisConnectWithTimeout(hostname, port, timeout);
@@ -44,18 +41,70 @@ int kvsal_init(void)
 
 int kvsal_begin_transaction()
 {
-	pthread_mutex_lock(&translock);
+	redisReply *reply;
+
+	reply = redisCommand(rediscontext, "MULTI");
+	if (!reply)
+		return -1;
+
+	if (reply->type != REDIS_REPLY_STATUS) {
+		freeReplyObject(reply);
+		return -1;
+	}
+
+	if (strncmp(reply->str, "OK", reply->len)) {
+		freeReplyObject(reply);
+		return -1;
+	}
+ 
+	freeReplyObject(reply);
 	return 0;
 }
 
 int kvsal_end_transaction()
 {
-	pthread_mutex_unlock(&translock);
+	redisReply *reply;
+	int i;
+
+	reply = redisCommand(rediscontext, "EXEC");
+	if (!reply)
+		return -1;
+
+	if (reply->type != REDIS_REPLY_ARRAY) {
+		freeReplyObject(reply);
+		return -1;
+	}
+
+	for (i=0; i < reply->elements ; i++)
+		if (strncmp(reply->element[i]->str, "OK",
+			    reply->element[i]->len)) {
+			freeReplyObject(reply);
+			return -1;
+		}
+
+	freeReplyObject(reply);
 	return 0;
 }
 
 int kvsal_discard_transaction()
 {
+	redisReply *reply;
+
+	reply = redisCommand(rediscontext, "DISCARD");
+	if (!reply)
+		return -1;
+
+	if (reply->type != REDIS_REPLY_STATUS) {
+		freeReplyObject(reply);
+		return -1;
+	}
+
+	if (strncmp(reply->str, "OK", reply->len)) {
+		freeReplyObject(reply);
+		return -1;
+	}
+
+	freeReplyObject(reply);
 	return 0;
 }
 
