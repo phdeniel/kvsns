@@ -2,7 +2,17 @@ cmake_minimum_required(VERSION 2.6.3)
 set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -g")
 cmake_policy(SET CMP0017 NEW)
 
-PROJECT(libkvsns)
+PROJECT(libkvsns C)
+set(LIBKVSNS_MAJOR_VERSION 0)
+set(LIBKVSNS_MINOR_VERSION 9)
+# Patch level is always ".0" for mainline (master).  It is blank for development.
+# When starting a stable maintenance branch, this becomes ".N"
+# where N is monotonically increasing starting at 1. Remember to include the "." !!
+set(LIBKVSNS_PATCH_LEVEL )
+set(LIBKVSNS_EXTRA_VERSION -dev-1)
+
+
+set(LIBKVSNS_BASE_VERSION ${LIBKVSNS_MAJOR_VERSION}.${LIBKVSNS_MINOR_VERSION}${LIBKVSNS_PATCH_LEVEL})
 
 message( STATUS "cmake version ${CMAKE_MAJOR_VERSION}.${CMAKE_MINOR_VERSION}" )
 
@@ -43,8 +53,8 @@ add_subdirectory(kvsns_shell)
 set(CPACK_PACKAGE_FILE_NAME "libkvsns-Source" )
 set(CPACK_PACKAGE_VENDOR "KVSNS")
 set(CPACK_PACKAGE_DESCRIPTION_SUMMARY "KVSNS - a namespace on top of a KVS")
-SET(CPACK_PACKAGE_VERSION_MAJOR "0")
-SET(CPACK_PACKAGE_VERSION_MINOR "9")
+SET(CPACK_PACKAGE_VERSION_MAJOR ${LIBKVSNS_MAJOR_VERSION})
+SET(CPACK_PACKAGE_VERSION_MINOR ${LIBKVSNS_MINOR_VERSION})
 SET(CPACK_PACKAGE_VERSION_PATCH "1")
 
 # Tell CPack the kind of packages to be generated
@@ -59,6 +69,12 @@ include(CPack)
 set(PKG_NAME "${CPACK_PACKAGE_NAME}.tar.gz")
 add_custom_target(dist COMMAND ${CMAKE_MAKE_PROGRAM} package_source)
 
+# Create the .pc file
+configure_file(
+  "${PROJECT_SOURCE_DIR}/libkvsns.pc-in.cmake"
+  "${PROJECT_SOURCE_DIR}/libkvsns.pc"
+)
+
 # Now create a useable specfile
 configure_file(
   "${PROJECT_SOURCE_DIR}/libkvsns.spec-in.cmake"
@@ -67,14 +83,15 @@ configure_file(
 
 add_custom_target( rpm DEPENDS dist)
 add_custom_command(TARGET rpm
-                  COMMAND sh -c "rpmbuild -ta ${PKG_NAME}"
+                  COMMAND sh -c "rpmbuild ${RPMDEST} -ta ${CPACK_SOURCE_PACKAGE_FILE_NAME}.tar.gz"
                   VERBATIM
                   DEPENDS dist)
 
 set(RPMDEST "--define '_srcrpmdir ${CMAKE_CURRENT_BINARY_DIR}'")
 add_custom_target( srpm DEPENDS dist)
 add_custom_command(TARGET srpm
-                  COMMAND sh -c "rpmbuild ${RPMDEST} -ts ${PKG_NAME}"
+                  COMMAND sh -c "rpmbuild ${RPMDEST} -ts ${CPACK_SOURCE_PACKAGE_FILE_NAME}.tar.gz"
                   VERBATIM
                   DEPENDS dist)
-message(STATUS "--> PKG_NAME = ${PKG_NAME}  CPACK_PACKAGE_NAME = ${CPACK_PACKAGE_NAME}")
+message(STATUS "--> PKG_NAME = ${PKG_NAME} CPACK_SOURCE_PACKAGE_FILE_NAME = ${CPACK_SOURCE_PACKAGE_FILE_NAME}")
+
