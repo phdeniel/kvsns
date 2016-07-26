@@ -1,12 +1,14 @@
+%define sourcename @CPACK_SOURCE_PACKAGE_FILE_NAME@
+%global dev_version %{lua: extraver = string.gsub('@LIBKVSNS_EXTRA_VERSION@', '%-', '.'); print(extraver) }
+
 Name: libkvsns 
-Version: 0.9.1
-Release: 1.0
+Version: @LIBKVSNS_BASE_VERSION@
+Release: 0%{dev_version}%{?dist}
 Summary: Library to access to a namespace inside a KVS
 License: LGPLv3 
 Group: Development/Libraries
 Url: http://github.com/phdeniel/libkvsns
-Source0: %{name}-%{version}-Source.tar.gz
-BuildRoot: %{_tmppath}/%{name}-%{version}-root-%(%{__id_u} -n)
+Source: %{sourcename}.tar.gz
 BuildRequires: cmake hiredis-devel
 BuildRequires: gcc
 Requires: redis hiredis
@@ -38,40 +40,41 @@ This package contains the tools to administrate the kvsns namespace.
 
 
 %prep
-%setup -q -n %{name}-%{version}-Source
+%setup -q -n %{sourcename}
 
 %build
 cmake .
 make %{?_smp_mflags} || make %{?_smp_mflags} || make
 
 %install
-rm -rf $RPM_BUILD_ROOT
-mkdir -p $RPM_BUILD_ROOT
-mkdir -p $RPM_BUILD_ROOT%{_bindir}
-mkdir -p $RPM_BUILD_ROOT%{_libdir}
-mkdir -p $RPM_BUILD_ROOT%{_libdir}/pkgconfig
 
-make install DESTDIR=$RPM_BUILD_ROOT
+mkdir -p %{buildroot}%{_bindir}
+mkdir -p %{buildroot}%{_libdir}
+mkdir -p %{buildroot}%{_libdir}/pkgconfig
+mkdir -p %{buildroot}%{_includedir}
+install -m 644 libkvsns.so %{buildroot}%{_libdir}
+install -m 644 kvsal/redis/libkvsal_redis.so %{buildroot}%{_libdir}
+install -m 644 kvsns.h  %{buildroot}%{_includedir}
+install -m 644 kvsal/kvsal.h  %{buildroot}%{_includedir}
+install -m 644 libkvsns.pc  %{buildroot}%{_libdir}/pkgconfig
+
+
 
 %clean
 rm -rf $RPM_BUILD_ROOT
 
 %files
 %defattr(-,root,root)
-%doc README
-%{_libdir}/libkvsns.so.*
+%{_libdir}/libkvsns.so*
+%{_libdir}/libkvsal_redis.so*
 
 %files devel
 %defattr(-,root,root)
 %{_libdir}/pkgconfig/libkvsns.pc
-%{_includedir}/libzfswrap.h
-%{_libdir}/libzfswrap.so
-%{_libdir}/libzfswrap.a
+%{_includedir}/kvs*
 
 %files utils
 %defattr(-,root,root)
-%{_bindir}/lzw_zfs
-%{_bindir}/lzw_zpool
 
 
 %changelog
