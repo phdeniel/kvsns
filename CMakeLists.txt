@@ -81,17 +81,23 @@ configure_file(
   "${PROJECT_SOURCE_DIR}/libkvsns.spec"
 )
 
-add_custom_target( rpm DEPENDS dist)
-add_custom_command(TARGET rpm
+set(RPMDEST "--define '_srcrpmdir ${CMAKE_CURRENT_BINARY_DIR}'")
+
+add_custom_target( rpms DEPENDS dist)
+add_custom_command(TARGET rpms
                   COMMAND sh -c "rpmbuild ${RPMDEST} -ta ${CPACK_SOURCE_PACKAGE_FILE_NAME}.tar.gz"
                   VERBATIM
                   DEPENDS dist)
 
-set(RPMDEST "--define '_srcrpmdir ${CMAKE_CURRENT_BINARY_DIR}'")
+add_custom_target( rpm DEPENDS dist)
+add_custom_command(TARGET rpm
+                  COMMAND sh -c "rpmbuild ${RPMDEST} -tb ${CPACK_SOURCE_PACKAGE_FILE_NAME}.tar.gz"
+                  VERBATIM
+                  DEPENDS dist)
+
 add_custom_target( srpm DEPENDS dist)
 add_custom_command(TARGET srpm
                   COMMAND sh -c "rpmbuild ${RPMDEST} -ts ${CPACK_SOURCE_PACKAGE_FILE_NAME}.tar.gz"
                   VERBATIM
                   DEPENDS dist)
-message(STATUS "--> PKG_NAME = ${PKG_NAME} CPACK_SOURCE_PACKAGE_FILE_NAME = ${CPACK_SOURCE_PACKAGE_FILE_NAME}")
 
