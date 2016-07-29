@@ -1,4 +1,5 @@
 cmake_minimum_required(VERSION 2.6.3)
+set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -fPIC -g")
 
 add_subdirectory(examples)
 
@@ -7,7 +8,7 @@ SET(kvsal_redis_LIB_SRCS
     kvsal_redis.c
 )
 
-add_library(kvsal_redis SHARED ${kvsal_redis_LIB_SRCS})
+add_library(kvsal_redis STATIC  ${kvsal_redis_LIB_SRCS})
 
 target_link_libraries(kvsal_redis
   hiredis

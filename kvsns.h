@@ -2,13 +2,14 @@
 #define _KVSNS_H
 
 #include <stdio.h>
+#include <sys/stat.h>
+#include <unistd.h>
 #include <unistd.h>
 #include <stdlib.h>
 #include <errno.h>
 #include <dirent.h>
 #include <sys/types.h>
 #include <sys/xattr.h>
-#include "kvsal/kvsal.h"
 
 #define KVSNS_ROOT_INODE 2LL
 #define KVSNS_ARRAY_SIZE 100
