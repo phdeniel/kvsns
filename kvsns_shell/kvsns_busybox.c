@@ -9,6 +9,7 @@
 #include <sys/param.h>
 #include <libgen.h>
 #include "../kvsns.h"
+#include "../kvsal/kvsal.h"
 
 
 int main(int argc, char *argv[])

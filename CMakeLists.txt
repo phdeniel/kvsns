@@ -1,5 +1,5 @@
 cmake_minimum_required(VERSION 2.6.3)
-set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -g")
+set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -fPIC -g")
 cmake_policy(SET CMP0017 NEW)
 
 PROJECT(libkvsns C)
