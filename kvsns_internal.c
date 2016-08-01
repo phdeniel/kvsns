@@ -5,7 +5,7 @@
 #include <time.h>
 #include "kvsns.h"
 #include <string.h>
-#include "kvsal/kvsal.h"
+#include "kvsns.h"
 
 int kvsns_next_inode(kvsns_ino_t *ino)
 {

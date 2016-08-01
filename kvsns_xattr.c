@@ -6,7 +6,6 @@
 #include <time.h>
 #include "kvsns.h"
 #include "kvsns_internal.h"
-#include "kvsal/kvsal.h"
 
 int kvsns_setxattr(kvsns_cred_t *cred, kvsns_ino_t *ino,
 		   char *name, char *value, size_t size, int flags)

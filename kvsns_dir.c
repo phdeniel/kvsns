@@ -6,7 +6,6 @@
 #include <time.h>
 #include "kvsns.h"
 #include "kvsns_internal.h"
-#include "kvsal/kvsal.h"
 
 int kvsns_start(void)
 {

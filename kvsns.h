@@ -8,6 +8,7 @@
 #include <stdlib.h>
 #include <errno.h>
 #include <dirent.h>
+#include <sys/stat.h>
 #include <sys/types.h>
 #include <sys/xattr.h>
 
@@ -15,7 +16,8 @@
 #define KVSNS_ARRAY_SIZE 100
 #define KVSNS_ROOT_UID 0
 
-typedef unsigned long long int kvsns_ino_t;
+#define KLEN 256
+#define VLEN 256
 
 #define STAT_MODE_SET	0x01
 #define STAT_UID_SET	0x02
@@ -39,6 +41,28 @@ typedef unsigned long long int kvsns_ino_t;
 #define KVSNS_ACCESS_WRITE	2
 #define KVSNS_ACCESS_EXEC	4
 
+/* KVSAL related definitions and functions */
+typedef unsigned long long int kvsns_ino_t;
+
+typedef struct kvsal_item__ {
+	int offset;
+	char str[KLEN];
+} kvsal_item_t;
+
+int kvsal_init();
+int kvsal_begin_transaction();
+int kvsal_end_transaction();
+int kvsal_discard_transaction();
+int kvsal_set_char(char *k, char *v);
+int kvsal_get_char(char *k, char *v);
+int kvsal_set_stat(char *k, struct stat *buf);
+int kvsal_get_stat(char *k, struct stat *buf);
+int kvsal_get_list_size(char *pattern);
+int kvsal_get_list(char *pattern, int start, int *end, kvsal_item_t *items);
+int kvsal_del(char *k);
+int kvsal_incr_counter(char *k, unsigned long long *v);
+
+/* KVSNS related definitions and functions */
 typedef struct kvsns_cred__ 
 {
 	uid_t uid;
