@@ -5,7 +5,7 @@
 #include <hiredis/hiredis.h>
 #include <pthread.h>
 #include <time.h>
-#include "../kvsal.h"
+#include "kvsns.h"
 
 static redisContext *rediscontext;
 

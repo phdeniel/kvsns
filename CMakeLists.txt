@@ -32,9 +32,8 @@ if((NOT HAVE_HIREDIS) OR (NOT HAVE_HIREDIS_H))
       message(FATAL_ERROR "Cannot find hiredis")
 endif((NOT HAVE_HIREDIS) OR (NOT HAVE_HIREDIS_H))
 
-add_subdirectory(kvsal)
-
 SET(kvsns_LIB_SRCS
+    kvsal_redis.c
     kvsns_dir.c 
     kvsns_file.c 
     kvsns_internal.c
@@ -42,10 +41,9 @@ SET(kvsns_LIB_SRCS
 )
 
 add_library(kvsns SHARED ${kvsns_LIB_SRCS})
-target_link_libraries(kvsns kvsal_redis)
 
 add_executable(kvsns_test kvsns_test.c)
-target_link_libraries(kvsns_test kvsns)
+target_link_libraries(kvsns_test kvsns hiredis)
 
 add_subdirectory(kvsns_shell)
 
