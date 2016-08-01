@@ -5,16 +5,14 @@ cmake_policy(SET CMP0017 NEW)
 PROJECT(libkvsns C)
 set(LIBKVSNS_MAJOR_VERSION 0)
 set(LIBKVSNS_MINOR_VERSION 9)
-# Patch level is always ".0" for mainline (master).  It is blank for development.
-# When starting a stable maintenance branch, this becomes ".N"
-# where N is monotonically increasing starting at 1. Remember to include the "." !!
-set(LIBKVSNS_PATCH_LEVEL )
+set(LIBKVSNS_PATCH_LEVEL 2)
 set(LIBKVSNS_EXTRA_VERSION -dev-1)
 
 
-set(LIBKVSNS_BASE_VERSION ${LIBKVSNS_MAJOR_VERSION}.${LIBKVSNS_MINOR_VERSION}${LIBKVSNS_PATCH_LEVEL})
+set(LIBKVSNS_BASE_VERSION ${LIBKVSNS_MAJOR_VERSION}.${LIBKVSNS_MINOR_VERSION}.${LIBKVSNS_PATCH_LEVEL})
 
 message( STATUS "cmake version ${CMAKE_MAJOR_VERSION}.${CMAKE_MINOR_VERSION}" )
+message( STATUS "libkvsns version ${LIBKVSNS_BASE_VERSION}")
 
 include(CheckIncludeFiles)
 include(CheckLibraryExists)
@@ -41,6 +39,7 @@ SET(kvsns_LIB_SRCS
 )
 
 add_library(kvsns SHARED ${kvsns_LIB_SRCS})
+target_link_libraries(kvsns hiredis)
 
 add_executable(kvsns_test kvsns_test.c)
 target_link_libraries(kvsns_test kvsns hiredis)
@@ -53,7 +52,7 @@ set(CPACK_PACKAGE_VENDOR "KVSNS")
 set(CPACK_PACKAGE_DESCRIPTION_SUMMARY "KVSNS - a namespace on top of a KVS")
 SET(CPACK_PACKAGE_VERSION_MAJOR ${LIBKVSNS_MAJOR_VERSION})
 SET(CPACK_PACKAGE_VERSION_MINOR ${LIBKVSNS_MINOR_VERSION})
-SET(CPACK_PACKAGE_VERSION_PATCH "1")
+SET(CPACK_PACKAGE_VERSION_PATCH ${LIBKVSNS_PATCH_LEVEL})
 
 # Tell CPack the kind of packages to be generated
 set(CPACK_GENERATOR "TGZ")
