@@ -69,6 +69,11 @@ typedef struct kvsns_cred__
 	gid_t gid;
 } kvsns_cred_t;
 
+typedef struct kvsns_fsstat_
+{
+	unsigned long nb_inodes;
+} kvsns_fsstat_t;
+
 typedef struct kvsns_dentry_
 {
 	char name[MAXNAMLEN];

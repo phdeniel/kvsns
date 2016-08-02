@@ -24,6 +24,7 @@ add_custom_command(TARGET links
 		   COMMAND /usr/bin/ln -sf kvsns_busybox ns_removexattr
 		   COMMAND /usr/bin/ln -sf kvsns_busybox ns_clearxattr
 		   COMMAND /usr/bin/ln -sf kvsns_busybox ns_ls
+		   COMMAND /usr/bin/ln -sf kvsns_busybox ns_fsstat
 		   WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}
 		   VERBATIM)
 
