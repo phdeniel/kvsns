@@ -102,7 +102,7 @@ int kvsns_mkdir(kvsns_cred_t *cred, kvsns_ino_t *parent, char *name,
 int kvsns_symlink(kvsns_cred_t *cred, kvsns_ino_t *parent, char *name,
 		  char *content, kvsns_ino_t *newlnk);
 int kvsns_readlink(kvsns_cred_t *cred, kvsns_ino_t *link, 
-		  char *content, int *size); 
+		  char *content, size_t *size); 
 int kvsns_rmdir(kvsns_cred_t *cred, kvsns_ino_t *parent, char *name);
 int kvsns_lookup(kvsns_cred_t *cred, kvsns_ino_t *parent, char *name,
 		 kvsns_ino_t *myino);
@@ -110,11 +110,13 @@ int kvsns_readdir(kvsns_cred_t *cred, kvsns_ino_t *dirt, int offset,
 		  kvsns_dentry_t *dirent, int *size);
 int kvsns_lookupp(kvsns_cred_t *cred, kvsns_ino_t *dir, kvsns_ino_t *parent);
 int kvsns_getattr(kvsns_cred_t *cred, kvsns_ino_t *ino, struct stat *buffstat);
-int kvsns_setattr(kvsns_cred_t *cred, kvsns_ino_t *ino, struct stat *setstat, int statflags);
-int kvsns_link(kvsns_cred_t *cred, kvsns_ino_t *ino, kvsns_ino_t *dino, char *dname);
+int kvsns_setattr(kvsns_cred_t *cred, kvsns_ino_t *ino, struct stat *setstat,
+		  int statflags);
+int kvsns_link(kvsns_cred_t *cred, kvsns_ino_t *ino, kvsns_ino_t *dino,
+	       char *dname);
 int kvsns_unlink(kvsns_cred_t *cred, kvsns_ino_t *ino, char *name);
-int kvsns_rename(kvsns_cred_t *cred,  kvsns_ino_t *sino, char *sname, kvsns_ino_t *dino, char *dname);
-
+int kvsns_rename(kvsns_cred_t *cred,  kvsns_ino_t *sino, char *sname,
+		 kvsns_ino_t *dino, char *dname);
 int kvsns_fsstat(kvsns_fsstat_t *stat);
 int kvsns_get_root(kvsns_ino_t *ino);
 
