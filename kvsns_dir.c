@@ -81,7 +81,15 @@ int kvsns_fsstat(kvsns_fsstat_t *stat)
 	stat->nb_inodes = rc;
 	return 0;
 }
-	
+
+int kvsns_get_root(kvsns_ino_t *ino)
+{
+	if (!ino)
+		return -EINVAL;
+
+	*ino = KVSNS_ROOT_INODE;
+	return 0;
+}
 
 int kvsns_mkdir(kvsns_cred_t *cred, kvsns_ino_t *parent, char *name,
 		mode_t mode, kvsns_ino_t *newdir)

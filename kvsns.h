@@ -115,6 +115,11 @@ int kvsns_link(kvsns_cred_t *cred, kvsns_ino_t *ino, kvsns_ino_t *dino, char *dn
 int kvsns_unlink(kvsns_cred_t *cred, kvsns_ino_t *ino, char *name);
 int kvsns_rename(kvsns_cred_t *cred,  kvsns_ino_t *sino, char *sname, kvsns_ino_t *dino, char *dname);
 
+int kvsns_fsstat(kvsns_fsstat_t *stat);
+int kvsns_get_root(kvsns_ino_t *ino);
+
+
+/* Xattr */
 int kvsns_setxattr(kvsns_cred_t *cred, kvsns_ino_t *ino,
 		   char *name, char *value, size_t size, int flags);
 int kvsns_getxattr(kvsns_cred_t *cred, kvsns_ino_t *ino,
