@@ -129,7 +129,7 @@ int kvsns_symlink(kvsns_cred_t *cred, kvsns_ino_t *parent, char *name,
 }
 
 int kvsns_readlink(kvsns_cred_t *cred, kvsns_ino_t *lnk, 
-		  char *content, int *size) 
+		  char *content, size_t *size) 
 {
 	int rc;
 	char k[KLEN];

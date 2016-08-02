@@ -142,7 +142,7 @@ int main(int argc, char *argv[])
 			printf("Failed rc=%d !\n", rc);
 	} else if (!strcmp(exec_name, "ns_readlink")) {
 		char link_content[MAXPATHLEN];
-		int size = MAXPATHLEN;
+		size_t size = MAXPATHLEN;
 		if (argc != 2) {
 			fprintf(stderr, "readlink <link>\n");
 			exit(1);
