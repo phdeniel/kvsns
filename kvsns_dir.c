@@ -65,7 +65,23 @@ int kvsns_init_root(int openbar)
 	return 0;
 }
 
+int kvsns_fsstat(kvsns_fsstat_t *stat)
+{
+	char k[KLEN];
+	int rc;
 
+	if (!stat)
+		return -EINVAL;
+
+	snprintf(k, KLEN, "*.stat");
+	rc = kvsal_get_list_size(k);
+	if (rc < 0 )
+		return rc;
+
+	stat->nb_inodes = rc;
+	return 0;
+}
+	
 
 int kvsns_mkdir(kvsns_cred_t *cred, kvsns_ino_t *parent, char *name,
 		mode_t mode, kvsns_ino_t *newdir)

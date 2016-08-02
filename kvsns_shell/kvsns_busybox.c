@@ -547,6 +547,10 @@ int main(int argc, char *argv[])
 		else
 			fprintf(stderr, "%llu/%s => %llu/%s Failed rc=%d\n",
 				sino, argv[2], dino, argv[4], rc);
+	} else if (!strcmp(exec_name, "ns_fsstat")) {
+		kvsns_fsstat_t statfs;
+		rc = kvsns_fsstat(&statfs);
+		printf( "FSSTAT: nb_inodes = %llu\n", statfs.nb_inodes);
 	} else
 		fprintf(stderr, "%s does not exists\n", exec_name);
 	printf("######## OK ########\n");
