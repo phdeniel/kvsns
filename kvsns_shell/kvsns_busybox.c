@@ -348,7 +348,7 @@ int main(int argc, char *argv[])
 		}
 
 		rc = kvsns_setxattr(&cred, &ino, argv[2],
-				    argv[3], strlen(argv[3]), 0);
+				    argv[3], strlen(argv[3])+1, 0);
 		if (rc == 0) 
 			printf("ns_setxattr: %llu --> %s = %s CREATED \n",
 				ino, argv[2], argv[3]);
@@ -356,6 +356,7 @@ int main(int argc, char *argv[])
 			fprintf(stderr, "Failed : %d\n", rc);
 	 } else if (!strcmp(exec_name, "ns_getxattr")) {
 		char value[VLEN];
+		size_t xattr_size = KLEN;
 
 		if (argc != 3) {
 			printf("ns_gexattr name xattr_name \n");
@@ -370,7 +371,7 @@ int main(int argc, char *argv[])
 				return rc;
 		}
 
-		rc = kvsns_getxattr(&cred, &ino, argv[2], value, KLEN);
+		rc = kvsns_getxattr(&cred, &ino, argv[2], value, &xattr_size);
 		if (rc == 0) 
 			printf("ns_getxattr: %llu --> %s = %s \n",
 				ino, argv[2], value);

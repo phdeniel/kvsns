@@ -55,8 +55,6 @@ int kvsal_end_transaction();
 int kvsal_discard_transaction();
 int kvsal_set_char(char *k, char *v);
 int kvsal_get_char(char *k, char *v);
-int kvsal_set_stat(char *k, struct stat *buf);
-int kvsal_get_stat(char *k, struct stat *buf);
 int kvsal_set_binary(char *k, char *buf, size_t size);
 int kvsal_get_binary(char *k, char *buf, size_t *size);
 int kvsal_get_list_size(char *pattern);
@@ -127,7 +125,7 @@ int kvsns_get_root(kvsns_ino_t *ino);
 int kvsns_setxattr(kvsns_cred_t *cred, kvsns_ino_t *ino,
 		   char *name, char *value, size_t size, int flags);
 int kvsns_getxattr(kvsns_cred_t *cred, kvsns_ino_t *ino,
-		   char *name, char *value, size_t size);
+		   char *name, char *value, size_t *size);
 int kvsns_listxattr(kvsns_cred_t *cred, kvsns_ino_t *ino, int offset, 
 		  kvsns_xattr_t *list, int *size);
 int kvsns_removexattr(kvsns_cred_t *cred, kvsns_ino_t *ino, char *name);
