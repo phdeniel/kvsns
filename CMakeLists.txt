@@ -32,7 +32,7 @@ endif((NOT HAVE_HIREDIS) OR (NOT HAVE_HIREDIS_H))
 
 SET(kvsns_LIB_SRCS
     kvsal_redis.c
-    kvsns_dir.c 
+    kvsns_handle.c 
     kvsns_file.c 
     kvsns_internal.c
     kvsns_xattr.c 
