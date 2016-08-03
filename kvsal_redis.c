@@ -189,6 +189,47 @@ int kvsal_get_stat(char *k, struct stat *buf)
 	return 0;
 }
 
+int kvsal_set_binary(char *k, char *buf, size_t size)
+{
+	redisReply *reply;
+	if (!k || !buf)
+		return -EINVAL;
+
+	/* Set a key */
+	reply = redisCommand(rediscontext,"SET %s %b", k, buf, size);
+	if (!reply)
+		return -1;
+
+	return 0;
+}
+
+int kvsal_get_binary(char *k, char *buf, size_t *size)
+{
+	redisReply *reply;
+	char v[VLEN];
+	int rc;
+
+	if (!k || !buf || !size)
+		return -EINVAL;
+
+	reply = redisCommand(rediscontext, "GET %s", k);
+	if ( !reply )
+		return -1;
+
+	if (reply->type != REDIS_REPLY_STRING)
+		return -1;
+
+	if (reply->len > *size)
+		return -1;
+
+	memcpy((char *)buf, reply->str, reply->len);
+	*size = reply->len;
+
+	freeReplyObject(reply);
+
+	return 0;
+}
+
 int kvsal_incr_counter(char *k, unsigned long long *v)
 {
 	redisReply *reply;

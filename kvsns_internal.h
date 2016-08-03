@@ -16,6 +16,8 @@ int kvsns_create_entry(kvsns_cred_t *cred, kvsns_ino_t *parent, char *name,
 			mode_t mode, kvsns_ino_t *newdir, enum kvsns_type type);
 
 int kvsns_delall_xattr(kvsns_cred_t *cred, kvsns_ino_t *ino);
+int kvsal_set_stat(char *k, struct stat *buf);
+int kvsal_get_stat(char *k, struct stat *buf);
 
 
 #endif

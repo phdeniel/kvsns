@@ -57,6 +57,8 @@ int kvsal_set_char(char *k, char *v);
 int kvsal_get_char(char *k, char *v);
 int kvsal_set_stat(char *k, struct stat *buf);
 int kvsal_get_stat(char *k, struct stat *buf);
+int kvsal_set_binary(char *k, char *buf, size_t size);
+int kvsal_get_binary(char *k, char *buf, size_t *size);
 int kvsal_get_list_size(char *pattern);
 int kvsal_get_list(char *pattern, int start, int *end, kvsal_item_t *items);
 int kvsal_del(char *k);
