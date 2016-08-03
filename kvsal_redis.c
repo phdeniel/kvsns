@@ -149,19 +149,18 @@ int kvsal_get_char(char *k, char *v)
 
 int kvsal_set_stat(char *k, struct stat *buf)
 {
-	char v[VLEN];
+	redisReply *reply;
+	size_t size = sizeof(struct stat);
 
 	if (!k || !buf)
 		return -EINVAL;
-	snprintf(v, VLEN, "%o|%u|%u|%u,%u|%u,%u,%u|%u,%u|%u,%u|%u,%u=",
-		 buf->st_mode, buf->st_ino, buf->st_nlink, 
-		 buf->st_uid, buf->st_gid,
-		 buf->st_size, buf->st_blksize, buf->st_blocks,
-		 buf->st_atim.tv_sec, buf->st_atim.tv_nsec,
-		 buf->st_mtim.tv_sec, buf->st_mtim.tv_nsec,
-		 buf->st_ctim.tv_sec, buf->st_ctim.tv_nsec);
 
-	return kvsal_set_char(k,v);
+	/* Set a key */
+	reply = redisCommand(rediscontext,"SET %s %b", k, buf, size);
+	if (!reply)
+		return -1;
+
+	return 0;
 }
 
 int kvsal_get_stat(char *k, struct stat *buf)
@@ -173,17 +172,19 @@ int kvsal_get_stat(char *k, struct stat *buf)
 	if (!k || !buf)
 		return -EINVAL;
 
-	rc = kvsal_get_char(k, v);
-	if (rc != 0)
-		return rc;
+	reply = redisCommand(rediscontext, "GET %s", k);
+	if ( !reply )
+		return -1;
 
-	rc = sscanf(v, "%o|%u|%u|%u,%u|%u,%u,%u|%u,%u|%u,%u|%u,%u=",
-		&buf->st_mode, &buf->st_ino, &buf->st_nlink,
-                &buf->st_uid, &buf->st_gid,
-                &buf->st_size, &buf->st_blksize, &buf->st_blocks,
-                &buf->st_atim.tv_sec, &buf->st_atim.tv_nsec,
-                &buf->st_mtim.tv_sec, &buf->st_mtim.tv_nsec,
-                &buf->st_ctim.tv_sec, &buf->st_ctim.tv_nsec);
+	if (reply->type != REDIS_REPLY_STRING)
+		return -1;
+
+	if (reply->len != sizeof(struct stat))
+		return -1;
+
+	memcpy((char *)buf, reply->str, reply->len);
+
+	freeReplyObject(reply);
 
 	return 0;
 }
