@@ -200,7 +200,7 @@ int kvsns_rmdir(kvsns_cred_t *cred, kvsns_ino_t *parent, char *name)
 	return 0;
 }
 
-int kvsns_readdir(kvsns_cred_t *cred, kvsns_ino_t *dir, int offset, 
+int kvsns_readdir(kvsns_cred_t *cred, kvsns_ino_t *dir, off_t offset, 
 		  kvsns_dentry_t *dirent, int *size)
 {
 	int rc;
@@ -223,7 +223,7 @@ int kvsns_readdir(kvsns_cred_t *cred, kvsns_ino_t *dir, int offset,
 
 
 	snprintf(pattern, KLEN, "%llu.dentries.*", *dir);
-	rc = kvsal_get_list(pattern, offset, size, items);
+	rc = kvsal_get_list(pattern, (int)offset, size, items);
 	if (rc < 0)
 		return rc;
 
