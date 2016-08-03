@@ -32,7 +32,7 @@
 #define STAT_OWNER_EXEC       	0100    /* Execute by owner.  */
 #define STAT_GROUP_READ       	0040    /* Read by group.  */
 #define STAT_GROUP_WRITE      	0020    /* Write by group.  */
-#define STAT_GROUP_EXEC	0010    /* Execute by group.  */
+#define STAT_GROUP_EXEC		0010    /* Execute by group.  */
 #define STAT_OTHER_READ       	0004    /* Read by other.  */
 #define STAT_OTHER_WRITE      	0002    /* Write by other.  */
 #define STAT_OTHER_EXEC	0001    /* Execute by other.  */
