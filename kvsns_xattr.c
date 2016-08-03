@@ -23,25 +23,23 @@ int kvsns_setxattr(kvsns_cred_t *cred, kvsns_ino_t *ino,
 			return -EEXIST;
 	}
 
-	return kvsal_set_char(k, (char *)value);
+	return kvsal_set_binary(k, (char *)value, size);
 }
 
 int kvsns_getxattr(kvsns_cred_t *cred, kvsns_ino_t *ino,
-		   char *name, char *value, size_t size)
+		   char *name, char *value, size_t *size)
 {
 	int rc;
 	char k[KLEN];
-	char v[VLEN];
 
 	if (!cred || !ino || !name || !value)
 		return -EINVAL;
 
 	snprintf(k, KLEN, "%llu.xattr.%s", *ino, name);
-	rc = kvsal_get_char(k, v);
+	rc = kvsal_get_binary(k, value, size);
 	if (rc != 0)
 		return rc;
 
-	strncpy(value, v, size);
 	return 0; 
 }
 
