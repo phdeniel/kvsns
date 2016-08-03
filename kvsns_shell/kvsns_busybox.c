@@ -270,14 +270,14 @@ int main(int argc, char *argv[])
 			return 0;
 		}
 	} else if (!strcmp(exec_name, "ns_ls")) {
-		int offset;
+		off_t offset;
 		int size;
 		kvsns_dentry_t dirent[10];
 		int i;
 
 		offset = 0;
-		size = 10;
 		do {
+			size = 10;
 			rc = kvsns_readdir(&cred, &current_inode, offset, 
 				           dirent, &size);
 			if (rc != 0) {
@@ -290,12 +290,8 @@ int main(int argc, char *argv[])
 					offset+i, current_path, dirent[i].name,
 					dirent[i].inode);
 
-			if (size == 0)
-				break;
-
 			offset += size ;
-			size = 10;
-		} while (1);
+		} while (size != 0);
 	} else if (!strcmp(exec_name, "ns_getattr")) {
 		struct stat buffstat;
 
