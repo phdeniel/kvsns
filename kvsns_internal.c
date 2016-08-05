@@ -61,35 +61,52 @@ int kvsns_parentlist2str(kvsns_ino_t *inolist, int size, char *str)
 	return 0;	
 }
 
-void kvsns_update_time(struct stat *stat, int flags)
+int kvsns_update_stat(kvsns_ino_t *ino, int flags)
 {
 	struct timeval t;
+	struct stat stat;
+	char k[KLEN];
+	int rc;
 
-	if (!stat)
-		return;
+	if (!ino)
+		return -EINVAL;
 
 	if (gettimeofday(&t, NULL) != 0)
-		return;
+		return -errno;
+
+	snprintf(k, KLEN, "%llu.stat", *ino);
+	rc = kvsal_get_stat(k, &stat);
+	if (rc != 0)
+		return rc;
 
 	if (flags & STAT_ATIME_SET) {
-		stat->st_atim.tv_sec = t.tv_sec;
-		stat->st_atim.tv_nsec = 1000 * t.tv_usec;
+		stat.st_atim.tv_sec = t.tv_sec;
+		stat.st_atim.tv_nsec = 1000 * t.tv_usec;
 	}
 
 	if (flags & STAT_MTIME_SET) {
-		stat->st_mtim.tv_sec = t.tv_sec;
-		stat->st_mtim.tv_nsec = 1000 * t.tv_usec;
+		stat.st_mtim.tv_sec = t.tv_sec;
+		stat.st_mtim.tv_nsec = 1000 * t.tv_usec;
 	}
 
 	if (flags & STAT_CTIME_SET) {
-		stat->st_ctim.tv_sec = t.tv_sec;
-		stat->st_ctim.tv_nsec = 1000 * t.tv_usec;
+		stat.st_ctim.tv_sec = t.tv_sec;
+		stat.st_ctim.tv_nsec = 1000 * t.tv_usec;
 	}
 
-	return;
+	if (flags & STAT_INCR_LINK)
+		stat.st_nlink += 1;
+
+	if (flags & STAT_DECR_LINK) {
+		if (stat.st_nlink == 1)
+			return -EINVAL; 
+	    
+		stat.st_nlink -= 1;
+	}
+
+	return kvsal_set_stat(k, &stat);
 }
 
-	
 int kvsns_create_entry(kvsns_cred_t *cred, kvsns_ino_t *parent, char *name,
 			mode_t mode, kvsns_ino_t *new_entry, enum kvsns_type type)
 {
@@ -165,6 +182,10 @@ int kvsns_create_entry(kvsns_cred_t *cred, kvsns_ino_t *parent, char *name,
 
 	snprintf(k, KLEN, "%llu.stat", *new_entry);
 	rc = kvsal_set_stat(k, &bufstat);
+	if (rc != 0)
+		return rc;
+
+	rc = kvsns_update_stat(parent, STAT_CTIME_SET|STAT_MTIME_SET);
 	if (rc != 0)
 		return rc;
 

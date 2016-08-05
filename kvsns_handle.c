@@ -7,6 +7,7 @@
 #include "kvsns.h"
 #include "kvsns_internal.h"
 
+
 int kvsns_start(void)
 {
 	int rc;
@@ -118,11 +119,6 @@ int kvsns_symlink(kvsns_cred_t *cred, kvsns_ino_t *parent, char *name,
 	if (rc != 0)
 		return rc;
 
-	rc = kvsns_getattr(cred, parent, &bufstat);
-	if (rc != 0)
-		return rc;
-
-
 	rc = kvsns_create_entry(cred, parent, name,
 				0, newlnk, KVSNS_SYMLINK);
 	if (rc)
@@ -130,7 +126,9 @@ int kvsns_symlink(kvsns_cred_t *cred, kvsns_ino_t *parent, char *name,
 
 	snprintf(k, KLEN, "%llu.link", *newlnk);
 	rc = kvsal_set_char(k, content);
-	
+
+	rc = kvsns_update_stat(parent, STAT_MTIME_SET|STAT_CTIME_SET);
+
 	return rc;
 }
 
@@ -154,6 +152,10 @@ int kvsns_readlink(kvsns_cred_t *cred, kvsns_ino_t *lnk,
 	strncpy(content, v, *size);
 	*size = strnlen(v, VLEN); 
 	
+	rc = kvsns_update_stat(lnk, STAT_ATIME_SET);
+	if (rc != 0)
+		return rc;
+
 	return 0;
 }
 
@@ -203,6 +205,10 @@ int kvsns_rmdir(kvsns_cred_t *cred, kvsns_ino_t *parent, char *name)
 	if (rc != 0)
 		return rc;
 
+	rc = kvsns_update_stat(parent, STAT_CTIME_SET|STAT_MTIME_SET);
+	if (rc != 0)
+		return rc;
+
 	return 0;
 }
 
@@ -246,6 +252,10 @@ int kvsns_readdir(kvsns_cred_t *cred, kvsns_ino_t *dir, off_t offset,
 		if (rc != 0)
 			return rc;
 	} 
+
+	rc = kvsns_update_stat(dir, STAT_ATIME_SET);
+	if (rc != 0)
+		return rc;
 
 	return 0;
 }
@@ -301,23 +311,24 @@ int kvsns_lookupp(kvsns_cred_t *cred, kvsns_ino_t *dir, kvsns_ino_t *parent)
 	return 0;
 }
 
-int kvsns_getattr(kvsns_cred_t *cred, kvsns_ino_t *ino, struct stat *buffstat) 
+int kvsns_getattr(kvsns_cred_t *cred, kvsns_ino_t *ino, struct stat *bufstat) 
 {
 	char k[KLEN];
 	int rc;
 
-	if (!cred || !ino || !buffstat)
+	if (!cred || !ino || !bufstat)
 		return -EINVAL;
 
 	snprintf(k, KLEN, "%llu.stat", *ino);
-	return kvsal_get_stat(k, buffstat);
+	return kvsal_get_stat(k, bufstat);
 }
 
 int kvsns_setattr(kvsns_cred_t *cred, kvsns_ino_t *ino, struct stat *setstat, int statflag) 
 {
 	char k[KLEN];
-	struct stat buffstat;
+	struct stat bufstat;
 	int rc;
+	struct timeval t;
 
 	if (!cred || !ino || !setstat)
 		return -EINVAL;
@@ -325,43 +336,53 @@ int kvsns_setattr(kvsns_cred_t *cred, kvsns_ino_t *ino, struct stat *setstat, in
 	if (statflag == 0)
 		return 0; /* Nothing to do */
 
+	if (gettimeofday(&t, NULL) != 0)
+		return -errno;
+
 	rc = kvsns_access(cred, ino, KVSNS_ACCESS_WRITE);
 	if (rc != 0)
 		return rc;
 
 	snprintf(k, KLEN, "%llu.stat", *ino);
-	rc = kvsal_get_stat(k, &buffstat);
+	rc = kvsal_get_stat(k, &bufstat);
 	if (rc != 0)
 		return rc;
 
+	/* ctime is to be updated if md are changed */
+	bufstat.st_ctim.tv_sec = t.tv_sec;
+	bufstat.st_ctim.tv_nsec = 1000 * t.tv_usec;
+	
 	if (statflag & STAT_MODE_SET)
-		buffstat.st_mode = setstat->st_mode;
+		bufstat.st_mode = setstat->st_mode;
 
 	if (statflag & STAT_UID_SET)
-		buffstat.st_uid = setstat->st_uid;
+		bufstat.st_uid = setstat->st_uid;
 		
 	if (statflag & STAT_GID_SET)
-		buffstat.st_gid = setstat->st_gid;
+		bufstat.st_gid = setstat->st_gid;
 		
-	if (statflag & STAT_SIZE_SET)
-		buffstat.st_size = setstat->st_size;
+	if (statflag & STAT_SIZE_SET) {
+		bufstat.st_size = setstat->st_size;
+		bufstat.st_mtim.tv_sec = t.tv_sec;
+		bufstat.st_mtim.tv_nsec = 1000 * t.tv_usec;
+	}
 		
 	if (statflag & STAT_ATIME_SET) {
-		buffstat.st_atim.tv_sec = setstat->st_atim.tv_sec;
-		buffstat.st_atim.tv_nsec = setstat->st_atim.tv_nsec;
+		bufstat.st_atim.tv_sec = setstat->st_atim.tv_sec;
+		bufstat.st_atim.tv_nsec = setstat->st_atim.tv_nsec;
 	}		
 
 	if (statflag & STAT_MTIME_SET) {
-		buffstat.st_mtim.tv_sec = setstat->st_mtim.tv_sec;
-		buffstat.st_mtim.tv_nsec = setstat->st_mtim.tv_nsec;
+		bufstat.st_mtim.tv_sec = setstat->st_mtim.tv_sec;
+		bufstat.st_mtim.tv_nsec = setstat->st_mtim.tv_nsec;
 	}		
 
 	if (statflag & STAT_CTIME_SET) {
-		buffstat.st_ctim.tv_sec = setstat->st_ctim.tv_sec;
-		buffstat.st_ctim.tv_nsec = setstat->st_ctim.tv_nsec;
+		bufstat.st_ctim.tv_sec = setstat->st_ctim.tv_sec;
+		bufstat.st_ctim.tv_nsec = setstat->st_ctim.tv_nsec;
 	}		
 
-	return kvsal_set_stat(k, &buffstat);
+	return kvsal_set_stat(k, &bufstat);
 }
 
 int kvsns_link(kvsns_cred_t *cred, kvsns_ino_t *ino, kvsns_ino_t *dino, char *dname)
@@ -372,7 +393,6 @@ int kvsns_link(kvsns_cred_t *cred, kvsns_ino_t *ino, kvsns_ino_t *dino, char *dn
 	kvsns_ino_t tmpino;
 	kvsns_ino_t parent[KVSNS_ARRAY_SIZE];
 	int size ;
-	struct stat buffstat;
 
 	if (!cred || !ino || !dino || !dname)
 		return -EINVAL;
@@ -398,16 +418,6 @@ int kvsns_link(kvsns_cred_t *cred, kvsns_ino_t *ino, kvsns_ino_t *dino, char *dn
 	if (rc != 0)
 		return rc;
 
-	snprintf(k, KLEN, "%llu.stat", *ino);
-	rc = kvsal_get_stat(k, &buffstat);
-	if (rc != 0)
-		return rc;
-
-	buffstat.st_nlink += 1;
-	kvsns_update_time(&buffstat, STAT_MTIME_SET);
-
-	rc = kvsal_set_stat(k, &buffstat);
-	if (rc != 0)
 		return rc;
 
 	snprintf(k, KLEN, "%llu.dentries.%s", 
@@ -417,6 +427,13 @@ int kvsns_link(kvsns_cred_t *cred, kvsns_ino_t *ino, kvsns_ino_t *dino, char *dn
 	if (rc != 0)
 		return rc;
 
+	kvsns_update_stat(ino, STAT_CTIME_SET|STAT_INCR_LINK);
+	if (rc != 0)
+		return rc;
+
+	kvsns_update_stat(dino, STAT_CTIME_SET|STAT_MTIME_SET);
+	if (rc != 0)
+		return rc;
 	return 0;
 }
 
@@ -429,7 +446,6 @@ int kvsns_unlink(kvsns_cred_t *cred, kvsns_ino_t *dir, char *name)
 	kvsns_ino_t parent[KVSNS_ARRAY_SIZE];
 	int size;
 	int i;
-	struct stat buffstat;
 
 	if (!cred || !dir || !name)
 		return -EINVAL;
@@ -481,21 +497,15 @@ int kvsns_unlink(kvsns_cred_t *cred, kvsns_ino_t *dir, char *name)
 		if (rc != 0)
 			return rc;
 
-		snprintf(k, KLEN, "%llu.stat", ino);
-		rc = kvsal_get_stat(k, &buffstat);
+		rc = kvsns_update_stat(&ino, STAT_CTIME_SET|STAT_DECR_LINK);
 		if (rc != 0)
 			return rc;
-
-		buffstat.st_nlink -= 1;
-
-		kvsns_update_time(&buffstat, STAT_CTIME_SET);
-
-		rc = kvsal_set_stat(k, &buffstat);
-		if (rc != 0)
-			return rc;
-
 	}
-	
+
+	rc = kvsns_update_stat(parent, STAT_MTIME_SET|STAT_CTIME_SET);
+	if (rc != 0)
+		return rc;	
+
 	return 0;
 }
 
@@ -508,7 +518,6 @@ int kvsns_rename(kvsns_cred_t *cred,  kvsns_ino_t *sino,
 	kvsns_ino_t ino;
 	kvsns_ino_t parent[KVSNS_ARRAY_SIZE];
 	int size;
-	struct stat buffstat;
 	int i;
 
 	if (!cred || !sino || !sname || !dino || !dname)
@@ -562,17 +571,15 @@ int kvsns_rename(kvsns_cred_t *cred,  kvsns_ino_t *sino,
 	if (rc != 0)
 		return rc;
 
-	snprintf(k, KLEN, "%llu.stat", ino);
-	rc = kvsal_get_stat(k, &buffstat);
+	rc = kvsns_update_stat(sino, STAT_CTIME_SET|STAT_MTIME_SET);
 	if (rc != 0)
 		return rc;
 
-	kvsns_update_time(&buffstat, STAT_CTIME_SET);
+	if (*sino != *dino) {
+		rc = kvsns_update_stat(dino, STAT_CTIME_SET|STAT_MTIME_SET);
 
-	rc = kvsal_set_stat(k, &buffstat);
-	if (rc != 0)
-		return rc;
-
-
+		if (rc != 0)
+			return rc;
+	}
 	return 0;
 }
