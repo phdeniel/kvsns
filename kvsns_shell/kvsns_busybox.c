@@ -548,6 +548,9 @@ int main(int argc, char *argv[])
 		kvsns_fsstat_t statfs;
 		rc = kvsns_fsstat(&statfs);
 		printf( "FSSTAT: nb_inodes = %llu\n", statfs.nb_inodes);
+	} else if (!strcmp(exec_name, "ns_mr_proper")) {
+		rc = kvsns_mr_proper();
+		printf("Mr Proper: rc=%d\n", rc);
 	} else
 		fprintf(stderr, "%s does not exists\n", exec_name);
 	printf("######## OK ########\n");
