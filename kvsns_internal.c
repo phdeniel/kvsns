@@ -6,6 +6,7 @@
 #include "kvsns.h"
 #include <string.h>
 #include "kvsns.h"
+#include "kvsns_internal.h"
 
 int kvsns_next_inode(kvsns_ino_t *ino)
 {
@@ -123,24 +124,18 @@ int kvsns_create_entry(kvsns_cred_t *cred, kvsns_ino_t *parent, char *name,
 	if (rc == 0)
 		return -EEXIST;
 
-	rc = kvsns_next_inode(new_entry);
-	if (rc != 0)
-		return rc;
+	RC_WRAP(rc, kvsns_next_inode, new_entry);
 
 	snprintf(k, KLEN, "%llu.dentries.%s", 
 		 *parent, name);
 	snprintf(v, VLEN, "%llu", *new_entry);
 	
-	rc = kvsal_set_char(k, v);
-	if (rc != 0)
-		return rc;
+	RC_WRAP(rc, kvsal_set_char, k, v);
 
 	snprintf(k, KLEN, "%llu.parentdir", *new_entry);
 	snprintf(v, VLEN, "%llu|", *parent);
 
-	rc = kvsal_set_char(k, v);
-	if (rc != 0)
-		return rc;
+	RC_WRAP(rc, kvsal_set_char, k, v);
 
 	/* Set stat */
 	memset(&bufstat, 0, sizeof(struct stat));
@@ -181,13 +176,9 @@ int kvsns_create_entry(kvsns_cred_t *cred, kvsns_ino_t *parent, char *name,
 	}
 
 	snprintf(k, KLEN, "%llu.stat", *new_entry);
-	rc = kvsal_set_stat(k, &bufstat);
-	if (rc != 0)
-		return rc;
+	RC_WRAP(rc, kvsal_set_stat, k, &bufstat);
 
-	rc = kvsns_update_stat(parent, STAT_CTIME_SET|STAT_MTIME_SET);
-	if (rc != 0)
-		return rc;
+	RC_WRAP(rc, kvsns_update_stat, parent, STAT_CTIME_SET|STAT_MTIME_SET);
 
 	return 0;
 }
@@ -251,9 +242,7 @@ int kvsns_access(kvsns_cred_t *cred, kvsns_ino_t *ino, int flags)
 	if (!cred || !ino)
 		return -EINVAL;
 
-	rc = kvsns_getattr(cred, ino, &stat);
-	if (rc != 0)
-		return rc;
+	RC_WRAP(rc, kvsns_getattr, cred, ino, &stat);
 
 	return kvsns_access_check(cred, &stat, flags);
 } 
