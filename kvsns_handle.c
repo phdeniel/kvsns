@@ -109,6 +109,7 @@ int kvsns_symlink(kvsns_cred_t *cred, kvsns_ino_t *parent, char *name,
 {
 	int rc;
 	char k[KLEN];
+	struct stat bufstat;
 
 	if (!cred || !parent || ! name || !content || !newlnk)
 		return -EINVAL;
@@ -116,6 +117,11 @@ int kvsns_symlink(kvsns_cred_t *cred, kvsns_ino_t *parent, char *name,
 	rc = kvsns_access(cred, parent, KVSNS_ACCESS_WRITE);
 	if (rc != 0)
 		return rc;
+
+	rc = kvsns_getattr(cred, parent, &bufstat);
+	if (rc != 0)
+		return rc;
+
 
 	rc = kvsns_create_entry(cred, parent, name,
 				0, newlnk, KVSNS_SYMLINK);
@@ -398,7 +404,8 @@ int kvsns_link(kvsns_cred_t *cred, kvsns_ino_t *ino, kvsns_ino_t *dino, char *dn
 		return rc;
 
 	buffstat.st_nlink += 1;
-	buffstat.st_ctim.tv_sec = time(NULL);
+	kvsns_update_time(&buffstat, STAT_MTIME_SET);
+
 	rc = kvsal_set_stat(k, &buffstat);
 	if (rc != 0)
 		return rc;
@@ -480,7 +487,8 @@ int kvsns_unlink(kvsns_cred_t *cred, kvsns_ino_t *dir, char *name)
 			return rc;
 
 		buffstat.st_nlink -= 1;
-		buffstat.st_ctim.tv_sec = time(NULL);
+
+		kvsns_update_time(&buffstat, STAT_CTIME_SET);
 
 		rc = kvsal_set_stat(k, &buffstat);
 		if (rc != 0)
@@ -491,7 +499,8 @@ int kvsns_unlink(kvsns_cred_t *cred, kvsns_ino_t *dir, char *name)
 	return 0;
 }
 
-int kvsns_rename(kvsns_cred_t *cred,  kvsns_ino_t *sino, char *sname, kvsns_ino_t *dino, char *dname)
+int kvsns_rename(kvsns_cred_t *cred,  kvsns_ino_t *sino,
+		 char *sname, kvsns_ino_t *dino, char *dname)
 {
 	int rc;
 	char k[KLEN];
@@ -558,7 +567,7 @@ int kvsns_rename(kvsns_cred_t *cred,  kvsns_ino_t *sino, char *sname, kvsns_ino_
 	if (rc != 0)
 		return rc;
 
-	buffstat.st_ctim.tv_sec = time(NULL);
+	kvsns_update_time(&buffstat, STAT_CTIME_SET);
 
 	rc = kvsal_set_stat(k, &buffstat);
 	if (rc != 0)

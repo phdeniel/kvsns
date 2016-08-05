@@ -61,6 +61,35 @@ int kvsns_parentlist2str(kvsns_ino_t *inolist, int size, char *str)
 	return 0;	
 }
 
+void kvsns_update_time(struct stat *stat, int flags)
+{
+	struct timeval t;
+
+	if (!stat)
+		return;
+
+	if (gettimeofday(&t, NULL) != 0)
+		return;
+
+	if (flags & STAT_ATIME_SET) {
+		stat->st_atim.tv_sec = t.tv_sec;
+		stat->st_atim.tv_nsec = 1000 * t.tv_usec;
+	}
+
+	if (flags & STAT_MTIME_SET) {
+		stat->st_mtim.tv_sec = t.tv_sec;
+		stat->st_mtim.tv_nsec = 1000 * t.tv_usec;
+	}
+
+	if (flags & STAT_CTIME_SET) {
+		stat->st_ctim.tv_sec = t.tv_sec;
+		stat->st_ctim.tv_nsec = 1000 * t.tv_usec;
+	}
+
+	return;
+}
+
+	
 int kvsns_create_entry(kvsns_cred_t *cred, kvsns_ino_t *parent, char *name,
 			mode_t mode, kvsns_ino_t *new_entry, enum kvsns_type type)
 {
@@ -68,6 +97,7 @@ int kvsns_create_entry(kvsns_cred_t *cred, kvsns_ino_t *parent, char *name,
 	char k[KLEN];
 	char v[KLEN];
 	struct stat bufstat;
+	struct timeval t;
 
 	if (!cred || !parent || !name || !new_entry)
 		return -EINVAL;
@@ -100,9 +130,18 @@ int kvsns_create_entry(kvsns_cred_t *cred, kvsns_ino_t *parent, char *name,
 	bufstat.st_uid = getuid(); 
 	bufstat.st_gid = getgid(); 
 	bufstat.st_ino = *new_entry; 
-	bufstat.st_atim.tv_sec = time(NULL);
+
+       if (gettimeofday(&t, NULL) != 0)
+                return -1;
+
+        bufstat.st_atim.tv_sec = t.tv_sec;
+        bufstat.st_atim.tv_nsec = 1000 * t.tv_usec;
+
 	bufstat.st_mtim.tv_sec = bufstat.st_atim.tv_sec;
+	bufstat.st_mtim.tv_nsec = bufstat.st_atim.tv_nsec;
+
 	bufstat.st_ctim.tv_sec = bufstat.st_atim.tv_sec;
+	bufstat.st_ctim.tv_nsec = bufstat.st_atim.tv_nsec;
 
 	switch(type) {
 	case KVSNS_DIR:
