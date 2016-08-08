@@ -7,6 +7,8 @@
 #include "kvsns.h"
 #include "kvsns_internal.h"
 
+#include "posix_store/extstore.h"
+
 static int kvsns_str2ownerlist(kvsns_open_owner_t *ownerlist, int *size,
 			        char *str)
 {
