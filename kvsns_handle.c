@@ -6,15 +6,22 @@
 #include <time.h>
 #include "kvsns.h"
 #include "kvsns_internal.h"
-
+#include "extstore.h"
 
 int kvsns_start(void)
 {
 	int rc;
+	char k[KLEN];
+	char v[VLEN];
 
-	rc = kvsal_init();
 	RC_WRAP(rc, kvsal_init);
 
+	snprintf(k, KLEN, "store_url");
+	RC_WRAP(rc, kvsal_get_char, k, v);
+
+	RC_WRAP(rc, extstore_init, v);
+
+	/** @todo : remove all existing opened FD (crash recovery) */
 	return 0;
 }
 
