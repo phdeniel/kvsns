@@ -30,6 +30,13 @@ if((NOT HAVE_HIREDIS) OR (NOT HAVE_HIREDIS_H))
       message(FATAL_ERROR "Cannot find hiredis")
 endif((NOT HAVE_HIREDIS) OR (NOT HAVE_HIREDIS_H))
 
+## Start building stuff ##
+
+# Start with object_store #
+add_subdirectory(posix_store)
+set(STORE_LIBRARY posix_store)
+
+# Now compile kvsns #
 SET(kvsns_LIB_SRCS
     kvsal_redis.c
     kvsns_handle.c 
@@ -39,10 +46,10 @@ SET(kvsns_LIB_SRCS
 )
 
 add_library(kvsns SHARED ${kvsns_LIB_SRCS})
-target_link_libraries(kvsns hiredis)
+target_link_libraries(kvsns hiredis ${STORE_LIBRARY})
 
 add_executable(kvsns_test kvsns_test.c)
-target_link_libraries(kvsns_test kvsns hiredis)
+target_link_libraries(kvsns_test kvsns hiredis ${STORE_LIBRARY})
 
 add_subdirectory(kvsns_shell)
 
