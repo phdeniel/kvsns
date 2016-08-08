@@ -102,7 +102,6 @@ typedef struct kvsns_file_open_
 {
 	kvsns_ino_t ino;
 	kvsns_open_owner_t owner;
-	int store_handle;
 	int flags;
 } kvsns_file_open_t;
 
@@ -151,10 +150,10 @@ int kvsns_open(kvsns_cred_t *cred, kvsns_ino_t *ino,
 int kvsns_openat(kvsns_cred_t *cred, kvsns_ino_t *parent, char *name,
 		 int flags, mode_t mode, kvsns_file_open_t *fd);
 int kvsns_close(kvsns_file_open_t *fd);
-ssize_t kvsns_pwrite(kvsns_cred_t *cred, kvsns_file_open_t *fd, 
-		     void *buf, size_t count, off_t offset);
-ssize_t kvsns_pread(kvsns_cred_t *cred, kvsns_file_open_t *fd, 
+ssize_t kvsns_write(kvsns_cred_t *cred, kvsns_file_open_t *fd, 
 		    void *buf, size_t count, off_t offset);
+ssize_t kvsns_read(kvsns_cred_t *cred, kvsns_file_open_t *fd, 
+		   void *buf, size_t count, off_t offset);
 
 /* Xattr */
 int kvsns_setxattr(kvsns_cred_t *cred, kvsns_ino_t *ino,

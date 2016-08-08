@@ -1,25 +1,30 @@
-#include "extstore.h"
+#include "../extstore.h"
 
 static char store_root[MAXPATHLEN];
 
-static int build_external_path(kvsns_ino_t object,
-			       char *external_path,
+static int build_extstore_path(kvsns_ino_t object,
+			       char *extstore_path,
 			       size_t pathlen)
 {
-	if (!external_path)
+	if (!extstore_path)
 		return -1;
 
-	return snprintf(external_path, pathlen, "%s/inum=%llu",
+	return snprintf(extstore_path, pathlen, "%s/inum=%llu",
 			(unsigned long long)object);
 }
 
-int external_init(char *rootpath)
+int extstore_init(char *rootpath)
 {
 	strncpy(store_root, rootpath, MAXPATHLEN);
 	return 0;
 }
 
-int external_read(kvsns_ino_t *ino, 
+int extstore_del(kvsns_ino_t *ino)
+{
+	return 0;
+}
+
+int extstore_read(kvsns_ino_t *ino, 
 		  off_t offset,
 		  size_t buffer_size,
 		  void *buffer,
@@ -32,7 +37,7 @@ int external_read(kvsns_ino_t *ino,
 	ssize_t read_bytes;
 
 
-	rc = build_external_path(*ino, storepath, MAXPATHLEN);
+	rc = build_extstore_path(*ino, storepath, MAXPATHLEN);
 	if (rc < 0)
 		return rc;
 
@@ -59,7 +64,7 @@ int external_read(kvsns_ino_t *ino,
 	return read_bytes;
 }
 
-int external_write(kvsns_ino_t *ino,
+int extstore_write(kvsns_ino_t *ino,
 		   off_t offset,
 		   size_t buffer_size,
 		   void *buffer,
@@ -74,7 +79,7 @@ int external_write(kvsns_ino_t *ino,
 	struct stat storestat;
 
 
-	rc = build_external_path(*ino, storepath, MAXPATHLEN);
+	rc = build_extstore_path(*ino, storepath, MAXPATHLEN);
 	if (rc < 0)
 		return rc;
 
@@ -109,19 +114,19 @@ int external_write(kvsns_ino_t *ino,
 	return written_bytes;
 }
 
-int external_consolidate_attrs(kvsns_ino_t *ino, struct stat *filestat)
+int extstore_consolidate_attrs(kvsns_ino_t *ino, struct stat *filestat)
 {
 	struct stat extstat;
 	char storepath[MAXPATHLEN];
 	int rc;
 
-	rc = build_external_path(*ino, storepath, MAXPATHLEN);
+	rc = build_extstore_path(*ino, storepath, MAXPATHLEN);
 	if (rc < 0)
 		return rc;
 
 	rc = stat(storepath, &extstat);
 	if (rc < 0) {
-		printf("===> external_stat: errno=%u\n", errno);
+		printf("===> extstore_stat: errno=%u\n", errno);
 		if (errno == ENOENT)
 			return 0; /* No data written yet */
 		else
@@ -134,7 +139,7 @@ int external_consolidate_attrs(kvsns_ino_t *ino, struct stat *filestat)
 	filestat->st_blksize = extstat.st_blksize;
 	filestat->st_blocks = extstat.st_blocks;
 
-	printf("=======> external_stat: %s size=%lld\n",
+	printf("=======> extstore_stat: %s size=%lld\n",
 		storepath, 
 		(long long int)filestat->st_size);
 
@@ -142,7 +147,7 @@ int external_consolidate_attrs(kvsns_ino_t *ino, struct stat *filestat)
 }
 
 #if 0
-int external_unlink(struct fsal_obj_handle *dir_hdl,
+int extstore_unlink(struct fsal_obj_handle *dir_hdl,
 		    const char *name)
 {
 	int rc;
@@ -176,7 +181,7 @@ int external_unlink(struct fsal_obj_handle *dir_hdl,
 	if (stat.st_nlink > 1)
 		return 0;
 
-	rc = build_external_path(object, storepath, MAXPATHLEN);
+	rc = build_extstore_path(object, storepath, MAXPATHLEN);
 	if (rc < 0)
 		return rc;
 
@@ -195,13 +200,13 @@ int external_unlink(struct fsal_obj_handle *dir_hdl,
 }
 #endif
 
-int external_truncate(kvsns_ino_t *ino,
+int extstore_truncate(kvsns_ino_t *ino,
 		      off_t filesize)
 {
 	int rc;
 	char storepath[MAXPATHLEN];
 
-	rc = build_external_path(*ino, storepath, MAXPATHLEN);
+	rc = build_extstore_path(*ino, storepath, MAXPATHLEN);
 	if (rc < 0)
 		return rc;
 
