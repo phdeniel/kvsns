@@ -57,13 +57,19 @@ int kvsns_init_root(int openbar)
 	snprintf(k, KLEN, "%llu.stat", ino);
 	RC_WRAP(rc, kvsal_set_stat, k, &bufstat);
 
-	store = getenv(KVSNS_STORE_ENV);
-	if (store == NULL)
-		store = kvsns_store_default;
-	
 	snprintf(k, KLEN, "store_url");
+	store = getenv(KVSNS_STORE_ENV);
+	if (store == NULL) {
+		rc = kvsal_get_char(k,v);
+		if (rc == 0)
+			store = v;
+		else
+			store = kvsns_store_default;
+	}
 	RC_WRAP( rc, kvsal_set_char, k, store);
-	
+
+	snprintf(kvsns_store_base, MAXPATHLEN, "%s", store);	
+	printf( "====> kvsns_store_base=%s\n", kvsns_store_base);
 	return 0;
 }
 
@@ -407,7 +413,7 @@ int kvsns_unlink(kvsns_cred_t *cred, kvsns_ino_t *dir, char *name)
 	RC_WRAP(rc, kvsal_get_char, k, v);
 
 	size = KVSNS_ARRAY_SIZE;
-	kvsns_str2parentlist(parent, &size, v);
+	RC_WRAP(rc, kvsns_str2parentlist, parent, &size, v);
 	if (size == 1) {
 		RC_WRAP(rc, kvsal_del, k);
 
@@ -419,10 +425,12 @@ int kvsns_unlink(kvsns_cred_t *cred, kvsns_ino_t *dir, char *name)
 	} else {
 		for(i=0; i < size ; i++)
 			if (parent[i] == *dir) {
+				/* In this list mgmt, setting value 0
+				 * will make it ignored as str is rebuilt */ 
 				parent[i] = 0;
 				break;
 			}
-		kvsns_parentlist2str(parent, size, v);
+		RC_WRAP(rc, kvsns_parentlist2str, parent, size, v);
 		RC_WRAP(rc, kvsal_set_char, k, v);
 
 		RC_WRAP(rc, kvsns_update_stat, &ino,
@@ -471,13 +479,13 @@ int kvsns_rename(kvsns_cred_t *cred,  kvsns_ino_t *sino,
 	RC_WRAP(rc, kvsal_get_char, k, v);
 
 	size = KVSNS_ARRAY_SIZE;
-	kvsns_str2parentlist(parent, &size, v);
+	RC_WRAP(rc, kvsns_str2parentlist, parent, &size, v);
 	for(i=0; i < size ; i++)
 		if (parent[i] == *sino) {
 			parent[i] = *dino;
 			break;
 		}
-	kvsns_parentlist2str(parent, size, v);
+	RC_WRAP(rc, kvsns_parentlist2str, parent, size, v);
 
 	RC_WRAP(rc, kvsal_set_char, k, v);
 
