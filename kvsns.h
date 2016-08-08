@@ -8,8 +8,10 @@
 #include <stdlib.h>
 #include <errno.h>
 #include <dirent.h>
+#include <pthread.h>
 #include <sys/stat.h>
 #include <sys/types.h>
+#include <sys/param.h>
 #include <sys/xattr.h>
 
 #define KVSNS_ROOT_INODE 2LL
@@ -47,6 +49,7 @@
 
 /* KVSAL related definitions and functions */
 static char kvsns_store_default[] = KVSNS_STORE_DEFAULT;
+static char kvsns_store_base[MAXPATHLEN];
 
 typedef unsigned long long int kvsns_ino_t;
 
@@ -89,6 +92,20 @@ typedef struct kvsns_dentry_
 	struct stat stats;
 } kvsns_dentry_t;
 
+typedef struct kvsns_open_owner_
+{
+	int pid;
+	pthread_t thrid;
+} kvsns_open_owner_t;
+
+typedef struct kvsns_file_open_
+{
+	kvsns_ino_t ino;
+	kvsns_open_owner_t owner;
+	int store_handle;
+	int flags;
+} kvsns_file_open_t;
+
 enum kvsns_type {
 	KVSNS_DIR = 1,
 	KVSNS_FILE = 2,
@@ -128,6 +145,16 @@ int kvsns_rename(kvsns_cred_t *cred,  kvsns_ino_t *sino, char *sname,
 int kvsns_fsstat(kvsns_fsstat_t *stat);
 int kvsns_get_root(kvsns_ino_t *ino);
 
+
+int kvsns_open(kvsns_cred_t *cred, kvsns_ino_t *ino, 
+	       int flags, mode_t mode, kvsns_file_open_t *fd);
+int kvsns_openat(kvsns_cred_t *cred, kvsns_ino_t *parent, char *name,
+		 int flags, mode_t mode, kvsns_file_open_t *fd);
+int kvsns_close(kvsns_file_open_t *fd);
+ssize_t kvsns_pwrite(kvsns_cred_t *cred, kvsns_file_open_t *fd, 
+		     void *buf, size_t count, off_t offset);
+ssize_t kvsns_pread(kvsns_cred_t *cred, kvsns_file_open_t *fd, 
+		    void *buf, size_t count, off_t offset);
 
 /* Xattr */
 int kvsns_setxattr(kvsns_cred_t *cred, kvsns_ino_t *ino,
