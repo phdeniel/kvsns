@@ -26,6 +26,7 @@ int kvsns_init_root(int openbar)
 	struct stat bufstat;
 	kvsns_cred_t cred;
 	kvsns_ino_t ino;
+	char *store = NULL;
 
 	cred.uid= 0;
 	cred.gid = 0;
@@ -56,6 +57,13 @@ int kvsns_init_root(int openbar)
 	snprintf(k, KLEN, "%llu.stat", ino);
 	RC_WRAP(rc, kvsal_set_stat, k, &bufstat);
 
+	store = getenv(KVSNS_STORE_ENV);
+	if (store == NULL)
+		store = kvsns_store_default;
+	
+	snprintf(k, KLEN, "store_url");
+	RC_WRAP( rc, kvsal_set_char, k, store);
+	
 	return 0;
 }
 

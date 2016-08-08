@@ -16,6 +16,8 @@
 #define KVSNS_ARRAY_SIZE 100
 #define KVSNS_ROOT_UID 0
 
+#define KVSNS_STORE_ENV "KVSNS_STORE"
+#define KVSNS_STORE_DEFAULT "/btrfs"
 #define KLEN 256
 #define VLEN 256
 
@@ -44,6 +46,8 @@
 #define KVSNS_ACCESS_EXEC	4
 
 /* KVSAL related definitions and functions */
+static char kvsns_store_default[] = KVSNS_STORE_DEFAULT;
+
 typedef unsigned long long int kvsns_ino_t;
 
 typedef struct kvsal_item__ {
