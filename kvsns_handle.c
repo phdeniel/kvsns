@@ -422,12 +422,24 @@ int kvsns_unlink(kvsns_cred_t *cred, kvsns_ino_t *dir, char *name)
 	size = KVSNS_ARRAY_SIZE;
 	RC_WRAP(rc, kvsns_str2parentlist, parent, &size, v);
 	if (size == 1) {
+		/* Last link, try to perform deletion */
 		RC_WRAP(rc, kvsal_del, k);
 
 		snprintf(k, KLEN, "%llu.stat", ino);
 		RC_WRAP(rc, kvsal_del, k);
 
-		RC_WRAP(rc, extstore_del, ino);
+		/* Storage is deleted is file is not opened */
+		snprintf(k, KLEN, "%llu.openowner", ino);
+		rc = kvsal_exists(k);
+
+		if (rc == -ENOENT) {/* No openowner */	
+			RC_WRAP(rc, extstore_del, &ino);
+		} else {
+			/* File is opened, deleted it at last close */
+			snprintf(k, KLEN, "%llu.opened_and_deleted", ino);
+			snprintf(v, VLEN, "1");
+			RC_WRAP(rc, kvsal_set_char, k, v);
+		}
 
 		/* Remove all associated xattr */
 		RC_WRAP(rc, kvsns_remove_all_xattr, cred, &ino);
