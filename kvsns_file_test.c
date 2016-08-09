@@ -87,6 +87,12 @@ int main(int argc, char *argv[])
 	printf("Buff= #%s#\n", buff);
 	printf("Buff2= #%s# at offset %lld\n", buff2, offset);
 
+	rc = kvsns_unlink(&cred, &parent, "fichier");
+	if (rc != 0) {
+		fprintf(stderr, "kvsns_unlink: err=%d\n", rc);
+		exit(1);
+	}
+
 	rc = kvsns_close(&fd);
 	if (rc != 0) {
 		fprintf(stderr, "kvsns_close: err=%d\n", rc);

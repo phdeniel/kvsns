@@ -156,6 +156,15 @@ int kvsns_close(kvsns_file_open_t *fd)
 		if (fd->owner.pid == owners[0].pid && 
 		    fd->owner.thrid == owners[0].thrid) {
 			RC_WRAP(rc, kvsal_del, k);
+	
+			/* Was the file deleted as it was opened ? */
+			/* The last close should perform actual data deletion */
+			snprintf(k, KLEN, "%llu.opened_and_deleted", fd->ino);
+			rc = kvsal_exists(k);
+			if (rc == 0) {
+				RC_WRAP(rc, extstore_del, &fd->ino);
+				RC_WRAP(rc, kvsal_del, k);
+			}
 			return 0;
 		} else
 			return -EBADF;
@@ -169,6 +178,7 @@ int kvsns_close(kvsns_file_open_t *fd)
 				break;
 			}
 	}
+
 
 	if (!found)
 		return -EBADF;
