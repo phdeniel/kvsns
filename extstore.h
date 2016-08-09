@@ -29,10 +29,6 @@ int extstore_consolidate_attrs(kvsns_ino_t *ino,
 			       struct stat *stat);
 int extstore_del(kvsns_ino_t *ino);
 
-#if 0
-int extstore_unlink(struct fsal_obj_handle *dir_hdl,
-		    const char *name);
-#endif
 int extstore_truncate(kvsns_ino_t *ino, off_t filesize);
 
 #endif

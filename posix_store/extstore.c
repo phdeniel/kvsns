@@ -21,6 +21,17 @@ int extstore_init(char *rootpath)
 
 int extstore_del(kvsns_ino_t *ino)
 {
+	char storepath[MAXPATHLEN];
+	int rc;
+
+	rc = build_extstore_path(*ino, storepath, MAXPATHLEN);
+	if (rc < 0)
+		return rc;
+
+	rc = unlink(storepath);
+	if (rc)
+		return -errno;
+
 	return 0;
 }
 
@@ -145,60 +156,6 @@ int extstore_consolidate_attrs(kvsns_ino_t *ino, struct stat *filestat)
 
 	return 0;
 }
-
-#if 0
-int extstore_unlink(struct fsal_obj_handle *dir_hdl,
-		    const char *name)
-{
-	int rc;
-	char storepath[MAXPATHLEN];
-	creden_t cred;
-	kvsns_ino_t object;
-	int type = 0;
-	struct stat stat;
-
-	cred.uid = op_ctx->creds->caller_uid;
-	cred.gid = op_ctx->creds->caller_gid;
-
-	rc = libzfswrap_lookup(clovis_get_root_pvfs(op_ctx->fsal_export),
-			       &cred,
-			       myself->handle->clovis_handle,
-			       name, &object, &type);
-	if (rc)
-		return errno;
-
-	if (type == S_IFDIR)
-		return 0;
-
-	rc = libzfswrap_getattr(clovis_get_root_pvfs(op_ctx->fsal_export),
-				&cred,
-				object,
-				&stat,
-				&type);
-	if (rc)
-		return errno;
-
-	if (stat.st_nlink > 1)
-		return 0;
-
-	rc = build_extstore_path(object, storepath, MAXPATHLEN);
-	if (rc < 0)
-		return rc;
-
-	/* file may not exist */
-	if (unlink(storepath) < 0) {
-		/* Store obj may not exist if file was
-		 * never written */
-		if (errno == ENOENT)
-			return 0;
-		else
-			return errno;
-	}
-
-	/* Should not be reach, but needed for compiler's happiness */
-	return 0;
-}
-#endif
 
 int extstore_truncate(kvsns_ino_t *ino,
 		      off_t filesize)
