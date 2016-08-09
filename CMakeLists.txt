@@ -51,6 +51,9 @@ target_link_libraries(kvsns ${STORE_LIBRARY} hiredis)
 add_executable(kvsns_test kvsns_test.c)
 target_link_libraries(kvsns_test kvsns ${STORE_LIBRARY} hiredis)
 
+add_executable(kvsns_file_test kvsns_file_test.c)
+target_link_libraries(kvsns_file_test kvsns ${STORE_LIBRARY} hiredis)
+
 add_subdirectory(kvsns_shell)
 
 # CPack / rpmbuild specific stuff
