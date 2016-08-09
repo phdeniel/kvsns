@@ -10,7 +10,7 @@ static int build_extstore_path(kvsns_ino_t object,
 		return -1;
 
 	return snprintf(extstore_path, pathlen, "%s/inum=%llu",
-			(unsigned long long)object);
+			store_root, (unsigned long long)object);
 }
 
 int extstore_init(char *rootpath)
@@ -85,7 +85,7 @@ int extstore_write(kvsns_ino_t *ino,
 
 	printf("WRITE: I got external path=%s\n", storepath);
 
-	fd = open(storepath, O_CREAT|O_WRONLY|O_SYNC);
+	fd = open(storepath, O_CREAT|O_WRONLY|O_SYNC, 0755);
 	if (fd < 0)
 		return -errno;
 

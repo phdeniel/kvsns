@@ -19,11 +19,12 @@ static int kvsns_str2ownerlist(kvsns_open_owner_t *ownerlist, int *size,
 	if (!ownerlist || !str || !size)
 		return -EINVAL;
 
+	pos = 0;
 	while((token = strtok_r(rest, "|", &rest))) {
 		sscanf(token, "%llu.%llu",
 		       &ownerlist[pos].pid, 
-		       &ownerlist[pos++].thrid);
-
+		       &ownerlist[pos].thrid);
+		pos += 1;
 		if (pos == maxsize)
 			break;
 	}
@@ -100,7 +101,7 @@ int kvsns_open(kvsns_cred_t *cred, kvsns_ino_t *ino,
 		return rc;
 
 	
-	RC_WRAP(rc, kvsal_get_char, k, v);
+	RC_WRAP(rc, kvsal_set_char, k, v);
 
 	/** @todo Do not forget store stuffs */
 	fd->ino = *ino;
@@ -131,7 +132,6 @@ int kvsns_close(kvsns_file_open_t *fd)
 {
 	kvsns_open_owner_t owners[KVSNS_ARRAY_SIZE];
 	int size = KVSNS_ARRAY_SIZE;
-	kvsns_open_owner_t me;
 	char k[KLEN];
 	char v[VLEN];
 	int i;
@@ -142,15 +142,20 @@ int kvsns_close(kvsns_file_open_t *fd)
 		return -EINVAL;
 
 	snprintf(k, KLEN, "%llu.openowner", fd->ino);
-	RC_WRAP(rc, kvsal_get_char, k, v);
+	rc = kvsal_get_char(k, v);
+	if (rc != 0) {
+		if (rc == -ENOENT)
+			return -EBADF; /* File not opened */
+		else
+			return rc;
+	}
 
 	RC_WRAP(rc, kvsns_str2ownerlist, owners, &size, v);
 
 	if (size == 1) {
-		if (me.pid == owners[0].pid && 
-		    me.thrid == owners[0].thrid) {
+		if (fd->owner.pid == owners[0].pid && 
+		    fd->owner.thrid == owners[0].thrid) {
 			RC_WRAP(rc, kvsal_del, k);
-			RC_WRAP(rc, extstore_del, &fd->ino);
 			return 0;
 		} else
 			return -EBADF;
@@ -187,7 +192,8 @@ ssize_t kvsns_write(kvsns_cred_t *cred, kvsns_file_open_t *fd,
 	RC_WRAP(rc, extstore_write, &fd->ino, offset, count,
 		buf, &write_amount, &stable, &stat);
 
-	return 0;
+	rc = write_amount;	
+	return rc;
 }
 
 ssize_t kvsns_read(kvsns_cred_t *cred, kvsns_file_open_t *fd, 
@@ -200,6 +206,7 @@ ssize_t kvsns_read(kvsns_cred_t *cred, kvsns_file_open_t *fd,
 	/** @todo use flags to check correct access */
 	RC_WRAP(rc, extstore_read, &fd->ino, offset, count, 
 		buf, &read_amount, &eof);
-	return 0;
+	rc = read_amount;
+	return rc;
 }
 
