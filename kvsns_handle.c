@@ -427,6 +427,8 @@ int kvsns_unlink(kvsns_cred_t *cred, kvsns_ino_t *dir, char *name)
 		snprintf(k, KLEN, "%llu.stat", ino);
 		RC_WRAP(rc, kvsal_del, k);
 
+		RC_WRAP(rc, extstore_del, ino);
+
 		/* Remove all associated xattr */
 		RC_WRAP(rc, kvsns_remove_all_xattr, cred, &ino);
 	} else {
