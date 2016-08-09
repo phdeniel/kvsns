@@ -108,6 +108,30 @@ int kvsal_discard_transaction()
 	return 0;
 }
 
+int kvsal_exists(char *k)
+{
+	redisReply *reply;
+	int rc;
+
+	if (!k)
+		return -EINVAL;
+
+	/* Set a key */
+	reply = redisCommand(rediscontext,"EXISTS %s", k);
+	if (!reply)
+		return -1;
+
+	if (reply->type != REDIS_REPLY_INTEGER)
+		return -1;
+
+	if( reply->integer == 0)
+		return -ENOENT;
+
+	freeReplyObject(reply);
+
+	return 0;
+}
+
 int kvsal_set_char(char *k, char *v)
 {
 	redisReply *reply;

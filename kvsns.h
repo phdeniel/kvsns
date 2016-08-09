@@ -65,6 +65,7 @@ int kvsal_init();
 int kvsal_begin_transaction();
 int kvsal_end_transaction();
 int kvsal_discard_transaction();
+int kvsal_exists(char *k);
 int kvsal_set_char(char *k, char *v);
 int kvsal_get_char(char *k, char *v);
 int kvsal_set_binary(char *k, char *buf, size_t size);

@@ -58,6 +58,12 @@ int main(int argc, char *argv[])
 	}
 	printf("kvsal_get_char: val=%s\n", val);
 
+	rc = kvsal_exists("test");
+	printf( "Check existing key rc=%d\n", rc);
+
+	rc = kvsal_exists("testfail");
+	printf( "Check non-existing key rc=%d\n", rc);
+
 	rc = kvsal_del("test");
 	if (rc != 0) {
 		fprintf(stderr, "kvsns_get_char: err=%d\n", rc);
