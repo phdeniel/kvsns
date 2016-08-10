@@ -62,7 +62,7 @@ int kvsns_creat(kvsns_cred_t *cred, kvsns_ino_t *parent, char *name,
 	int rc;
 
 	RC_WRAP(rc, kvsns_access, cred, parent, KVSNS_ACCESS_WRITE);
-	return kvsns_create_entry(cred, parent, name,
+	return kvsns_create_entry(cred, parent, name, NULL,
 				  mode, newfile, KVSNS_FILE);
 }
 
@@ -137,6 +137,7 @@ int kvsns_close(kvsns_file_open_t *fd)
 	int i;
 	int rc;
 	bool found = false;
+	bool opened_and_deleted;
 
 	if (!fd)
 		return -EINVAL;
@@ -149,21 +150,29 @@ int kvsns_close(kvsns_file_open_t *fd)
 		else
 			return rc;
 	}
+	/* Was the file deleted as it was opened ? */
+	/* The last close should perform actual data deletion */
+	snprintf(k, KLEN, "%llu.opened_and_deleted", fd->ino);
+	rc = kvsal_exists(k);
+	if ((rc != 0) && (rc != -ENOENT))
+		return rc;
+	opened_and_deleted = (rc == -ENOENT) ? false : true;
 
 	RC_WRAP(rc, kvsns_str2ownerlist, owners, &size, v);
+
+	RC_WRAP(rc, kvsal_begin_transaction);
 
 	if (size == 1) {
 		if (fd->owner.pid == owners[0].pid && 
 		    fd->owner.thrid == owners[0].thrid) {
-			RC_WRAP(rc, kvsal_del, k);
+			RC_WRAP_LABEL(rc, aborted, kvsal_del, k);
 	
 			/* Was the file deleted as it was opened ? */
-			/* The last close should perform actual data deletion */
-			snprintf(k, KLEN, "%llu.opened_and_deleted", fd->ino);
-			rc = kvsal_exists(k);
-			if (rc == 0) {
-				RC_WRAP(rc, extstore_del, &fd->ino);
-				RC_WRAP(rc, kvsal_del, k);
+			if (!opened_and_deleted) {
+				RC_WRAP_LABEL(rc, aborted,
+					      extstore_del, &fd->ino);
+				RC_WRAP_LABEL(rc, aborted,
+					      kvsal_del, k);
 			}
 			return 0;
 		} else
@@ -183,11 +192,16 @@ int kvsns_close(kvsns_file_open_t *fd)
 	if (!found)
 		return -EBADF;
 
-	RC_WRAP(rc, kvsns_ownerlist2str, owners, size, v);
+	RC_WRAP_LABEL(rc, aborted, kvsns_ownerlist2str, owners, size, v);
 
-	RC_WRAP(rc, kvsal_set_char, k, v);
+	RC_WRAP_LABEL(rc, aborted, kvsal_set_char, k, v);
 
+	RC_WRAP(rc, kvsal_end_transaction);
 	return 0;
+
+aborted:
+	kvsal_discard_transaction();
+	return rc;
 }
 
 ssize_t kvsns_write(kvsns_cred_t *cred, kvsns_file_open_t *fd, 

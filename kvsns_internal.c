@@ -64,60 +64,74 @@ int kvsns_parentlist2str(kvsns_ino_t *inolist, int size, char *str)
 
 int kvsns_update_stat(kvsns_ino_t *ino, int flags)
 {
-	struct timeval t;
-	struct stat stat;
 	char k[KLEN];
+	struct stat stat;
 	int rc;
 
 	if (!ino)
 		return -EINVAL;
 
+	snprintf(k, KLEN, "%llu.stat", *ino);
+	RC_WRAP(rc, kvsal_get_stat, k, &stat);
+	RC_WRAP(rc, kvsns_amend_stat, &stat, flags);
+	RC_WRAP(rc, kvsal_set_stat, k, &stat);
+
+	return 0;
+}
+
+int kvsns_amend_stat(struct stat *stat, int flags)
+{
+	struct timeval t;
+	int rc;
+
+	if (!stat)
+		return -EINVAL;
+
 	if (gettimeofday(&t, NULL) != 0)
 		return -errno;
 
-	snprintf(k, KLEN, "%llu.stat", *ino);
-	rc = kvsal_get_stat(k, &stat);
-	if (rc != 0)
-		return rc;
-
 	if (flags & STAT_ATIME_SET) {
-		stat.st_atim.tv_sec = t.tv_sec;
-		stat.st_atim.tv_nsec = 1000 * t.tv_usec;
+		stat->st_atim.tv_sec = t.tv_sec;
+		stat->st_atim.tv_nsec = 1000 * t.tv_usec;
 	}
 
 	if (flags & STAT_MTIME_SET) {
-		stat.st_mtim.tv_sec = t.tv_sec;
-		stat.st_mtim.tv_nsec = 1000 * t.tv_usec;
+		stat->st_mtim.tv_sec = t.tv_sec;
+		stat->st_mtim.tv_nsec = 1000 * t.tv_usec;
 	}
 
 	if (flags & STAT_CTIME_SET) {
-		stat.st_ctim.tv_sec = t.tv_sec;
-		stat.st_ctim.tv_nsec = 1000 * t.tv_usec;
+		stat->st_ctim.tv_sec = t.tv_sec;
+		stat->st_ctim.tv_nsec = 1000 * t.tv_usec;
 	}
 
 	if (flags & STAT_INCR_LINK)
-		stat.st_nlink += 1;
+		stat->st_nlink += 1;
 
 	if (flags & STAT_DECR_LINK) {
-		if (stat.st_nlink == 1)
+		if (stat->st_nlink == 1)
 			return -EINVAL; 
 	    
-		stat.st_nlink -= 1;
+		stat->st_nlink -= 1;
 	}
-
-	return kvsal_set_stat(k, &stat);
+	return 0;
 }
 
-int kvsns_create_entry(kvsns_cred_t *cred, kvsns_ino_t *parent, char *name,
-			mode_t mode, kvsns_ino_t *new_entry, enum kvsns_type type)
+int kvsns_create_entry(kvsns_cred_t *cred, kvsns_ino_t *parent, 
+		       char *name, char *lnk, mode_t mode,
+		       kvsns_ino_t *new_entry, enum kvsns_type type)
 {
 	int rc;
 	char k[KLEN];
 	char v[KLEN];
 	struct stat bufstat;
+	struct stat parent_stat;
 	struct timeval t;
 
 	if (!cred || !parent || !name || !new_entry)
+		return -EINVAL;
+
+	if ((type == KVSNS_SYMLINK) && (lnk == NULL))
 		return -EINVAL;
 
 	rc = kvsns_lookup(cred, parent, name, new_entry);
@@ -125,17 +139,20 @@ int kvsns_create_entry(kvsns_cred_t *cred, kvsns_ino_t *parent, char *name,
 		return -EEXIST;
 
 	RC_WRAP(rc, kvsns_next_inode, new_entry);
+	RC_WRAP(rc, kvsns_get_stat, parent, &parent_stat);
+
+	RC_WRAP(rc, kvsal_begin_transaction);
 
 	snprintf(k, KLEN, "%llu.dentries.%s", 
 		 *parent, name);
 	snprintf(v, VLEN, "%llu", *new_entry);
 	
-	RC_WRAP(rc, kvsal_set_char, k, v);
+	RC_WRAP_LABEL(rc, aborted, kvsal_set_char, k, v);
 
 	snprintf(k, KLEN, "%llu.parentdir", *new_entry);
 	snprintf(v, VLEN, "%llu|", *parent);
 
-	RC_WRAP(rc, kvsal_set_char, k, v);
+	RC_WRAP_LABEL(rc, aborted, kvsal_set_char, k, v);
 
 	/* Set stat */
 	memset(&bufstat, 0, sizeof(struct stat));
@@ -174,13 +191,24 @@ int kvsns_create_entry(kvsns_cred_t *cred, kvsns_ino_t *parent, char *name,
 	default:
 		return -EINVAL;
 	}
-
 	snprintf(k, KLEN, "%llu.stat", *new_entry);
-	RC_WRAP(rc, kvsal_set_stat, k, &bufstat);
+	RC_WRAP_LABEL(rc, aborted, kvsal_set_stat, k, &bufstat);
 
-	RC_WRAP(rc, kvsns_update_stat, parent, STAT_CTIME_SET|STAT_MTIME_SET);
+	if (type == KVSNS_SYMLINK) {
+		snprintf(k, KLEN, "%llu.link", *new_entry);
+		RC_WRAP_LABEL(rc, aborted, kvsal_set_char, k, lnk);
+	}
 
+	RC_WRAP_LABEL(rc, aborted, kvsns_amend_stat, &parent_stat,
+		      STAT_CTIME_SET|STAT_MTIME_SET);
+	RC_WRAP_LABEL(rc, aborted, kvsns_set_stat, parent, &parent_stat);
+
+	RC_WRAP(rc, kvsal_end_transaction);
 	return 0;
+
+aborted:
+	kvsal_discard_transaction();
+	return rc;
 }
 
 
@@ -246,4 +274,27 @@ int kvsns_access(kvsns_cred_t *cred, kvsns_ino_t *ino, int flags)
 
 	return kvsns_access_check(cred, &stat, flags);
 } 
+
+int kvsns_get_stat(kvsns_ino_t *ino, struct stat *bufstat) 
+{
+	char k[KLEN];
+	int rc;
+
+	if (!ino || !bufstat)
+		return -EINVAL;
+
+	snprintf(k, KLEN, "%llu.stat", *ino);
+	return kvsal_get_stat(k, bufstat);
+}
 	
+int kvsns_set_stat(kvsns_ino_t *ino, struct stat *bufstat) 
+{
+	char k[KLEN];
+	int rc;
+
+	if (!ino || !bufstat)
+		return -EINVAL;
+
+	snprintf(k, KLEN, "%llu.stat", *ino);
+	return kvsal_set_stat(k, bufstat);
+}
