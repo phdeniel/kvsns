@@ -8,6 +8,30 @@
 #include "kvsns_internal.h"
 #include "extstore.h"
 
+static int kvsns_set_store_url()
+{
+	int rc;
+	char k[KLEN];
+	char v[VLEN];
+	char *store = NULL;
+
+	snprintf(k, KLEN, "store_url");
+	store = getenv(KVSNS_STORE_ENV);
+	if (store == NULL) {
+		rc = kvsal_get_char(k,v);
+		if (rc == 0)
+			store = v;
+		else
+			store = kvsns_store_default;
+	}
+	RC_WRAP( rc, kvsal_set_char, k, store);
+
+	snprintf(kvsns_store_base, MAXPATHLEN, "%s", store);	
+	printf( "====> kvsns_store_base=%s\n", kvsns_store_base);
+
+	return 0;
+}
+
 int kvsns_start(void)
 {
 	int rc;
@@ -15,6 +39,8 @@ int kvsns_start(void)
 	char v[VLEN];
 
 	RC_WRAP(rc, kvsal_init);
+
+	RC_WRAP(rc, kvsns_set_store_url);
 
 	snprintf(k, KLEN, "store_url");
 	RC_WRAP(rc, kvsal_get_char, k, v);
@@ -33,11 +59,12 @@ int kvsns_init_root(int openbar)
 	struct stat bufstat;
 	kvsns_cred_t cred;
 	kvsns_ino_t ino;
-	char *store = NULL;
 
 	cred.uid= 0;
 	cred.gid = 0;
 	ino = KVSNS_ROOT_INODE;
+
+	kvsns_set_store_url();
 
 	snprintf(k, KLEN, "%llu.parentdir", ino);
 	snprintf(v, VLEN, "%llu|", ino);
@@ -64,19 +91,6 @@ int kvsns_init_root(int openbar)
 	snprintf(k, KLEN, "%llu.stat", ino);
 	RC_WRAP(rc, kvsal_set_stat, k, &bufstat);
 
-	snprintf(k, KLEN, "store_url");
-	store = getenv(KVSNS_STORE_ENV);
-	if (store == NULL) {
-		rc = kvsal_get_char(k,v);
-		if (rc == 0)
-			store = v;
-		else
-			store = kvsns_store_default;
-	}
-	RC_WRAP( rc, kvsal_set_char, k, store);
-
-	snprintf(kvsns_store_base, MAXPATHLEN, "%s", store);	
-	printf( "====> kvsns_store_base=%s\n", kvsns_store_base);
 	return 0;
 }
 
