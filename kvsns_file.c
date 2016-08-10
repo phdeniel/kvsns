@@ -150,6 +150,7 @@ int kvsns_close(kvsns_file_open_t *fd)
 		else
 			return rc;
 	}
+
 	/* Was the file deleted as it was opened ? */
 	/* The last close should perform actual data deletion */
 	snprintf(k, KLEN, "%llu.opened_and_deleted", fd->ino);
@@ -165,18 +166,24 @@ int kvsns_close(kvsns_file_open_t *fd)
 	if (size == 1) {
 		if (fd->owner.pid == owners[0].pid && 
 		    fd->owner.thrid == owners[0].thrid) {
+			snprintf(k, KLEN, "%llu.openowner", fd->ino);
 			RC_WRAP_LABEL(rc, aborted, kvsal_del, k);
 	
 			/* Was the file deleted as it was opened ? */
-			if (!opened_and_deleted) {
+			if (opened_and_deleted) {
 				RC_WRAP_LABEL(rc, aborted,
 					      extstore_del, &fd->ino);
+				snprintf(k, KLEN, "%llu.opened_and_deleted",
+					 fd->ino);
 				RC_WRAP_LABEL(rc, aborted,
 					      kvsal_del, k);
 			}
+			RC_WRAP(rc, kvsal_end_transaction);
 			return 0;
-		} else
-			return -EBADF;
+		} else {
+			rc = -EBADF;
+			goto aborted;
+		}
 	} else {
 		found = false;
 		for (i=0; i < size ; i++)
@@ -189,8 +196,10 @@ int kvsns_close(kvsns_file_open_t *fd)
 	}
 
 
-	if (!found)
-		return -EBADF;
+	if (!found) { 
+		rc = -EBADF;
+		goto aborted;
+	}
 
 	RC_WRAP_LABEL(rc, aborted, kvsns_ownerlist2str, owners, size, v);
 

@@ -485,6 +485,7 @@ int kvsns_unlink(kvsns_cred_t *cred, kvsns_ino_t *dir, char *name)
 
 	if (size == 1) {
 		/* Last link, try to perform deletion */
+		snprintf(k, KLEN, "%llu.parentdir", ino);
 		RC_WRAP_LABEL(rc, aborted, kvsal_del, k);
 
 		snprintf(k, KLEN, "%llu.stat", ino);
