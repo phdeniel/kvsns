@@ -29,14 +29,13 @@ int kvsns_setxattr(kvsns_cred_t *cred, kvsns_ino_t *ino,
 int kvsns_getxattr(kvsns_cred_t *cred, kvsns_ino_t *ino,
 		   char *name, char *value, size_t *size)
 {
-	int rc;
 	char k[KLEN];
 
 	if (!cred || !ino || !name || !value)
 		return -EINVAL;
 
 	snprintf(k, KLEN, "%llu.xattr.%s", *ino, name);
-	RC_WRAP(rc, kvsal_get_binary, k, value, size);
+	RC_WRAP(kvsal_get_binary, k, value, size);
 
 	return 0; 
 }
@@ -73,11 +72,10 @@ int kvsns_listxattr(kvsns_cred_t *cred, kvsns_ino_t *ino, int offset,
 
 int kvsns_removexattr(kvsns_cred_t *cred, kvsns_ino_t *ino, char *name)
 {
-	int rc;
 	char k[KLEN];
 
 	snprintf(k, KLEN, "%llu.xattr.%s", *ino, name);
-	RC_WRAP(rc, kvsal_del, k);
+	RC_WRAP(kvsal_del, k);
 
 	return 0;
 }
@@ -104,10 +102,9 @@ int kvsns_remove_all_xattr(kvsns_cred_t *cred, kvsns_ino_t *ino)
 			return rc;
 	
 		for (i=0; i < size ; i++) {
-			RC_WRAP(rc, kvsal_del, items[i].str);
+			RC_WRAP(kvsal_del, items[i].str);
 		}
 	} while(size > 0);
 
 	return 0;
 }
-

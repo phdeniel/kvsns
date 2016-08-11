@@ -59,9 +59,7 @@ static int kvsns_ownerlist2str(kvsns_open_owner_t *ownerlist, int size,
 int kvsns_creat(kvsns_cred_t *cred, kvsns_ino_t *parent, char *name,
 		mode_t mode, kvsns_ino_t *newfile)
 {
-	int rc;
-
-	RC_WRAP(rc, kvsns_access, cred, parent, KVSNS_ACCESS_WRITE);
+	RC_WRAP(kvsns_access, cred, parent, KVSNS_ACCESS_WRITE);
 	return kvsns_create_entry(cred, parent, name, NULL,
 				  mode, newfile, KVSNS_FILE);
 }
@@ -87,13 +85,13 @@ int kvsns_open(kvsns_cred_t *cred, kvsns_ino_t *ino,
 	snprintf(k, KLEN, "%llu.openowner", *ino);
 	rc = kvsal_get_char(k, v);
 	if (rc == 0) {
-		RC_WRAP(rc, kvsns_str2ownerlist, owners, &size, v);
+		RC_WRAP(kvsns_str2ownerlist, owners, &size, v);
 		if (size == KVSNS_ARRAY_SIZE)
 			return -EMLINK; /* Too many open files */
 		owners[size].pid = me.pid;
 		owners[size].thrid = me.thrid;
 		size += 1;
-		RC_WRAP(rc, kvsns_ownerlist2str, owners, size, v);
+		RC_WRAP(kvsns_ownerlist2str, owners, size, v);
 	} else if (rc == -ENOENT) {
 		/* Create the key => 1st fd created */
 		snprintf(v, VLEN, "%llu.%llu|", me.pid, me.thrid);
@@ -101,7 +99,7 @@ int kvsns_open(kvsns_cred_t *cred, kvsns_ino_t *ino,
 		return rc;
 
 	
-	RC_WRAP(rc, kvsal_set_char, k, v);
+	RC_WRAP(kvsal_set_char, k, v);
 
 	/** @todo Do not forget store stuffs */
 	fd->ino = *ino;
@@ -118,12 +116,11 @@ int kvsns_openat(kvsns_cred_t *cred, kvsns_ino_t *parent, char *name,
 		 int flags, mode_t mode, kvsns_file_open_t *fd)
 {
 	kvsns_ino_t ino;
-	int rc;
 
 	if (!cred || !parent || !name || !fd)
 		return -EINVAL;
 
-	RC_WRAP(rc, kvsns_lookup, cred, parent, name, &ino);
+	RC_WRAP(kvsns_lookup, cred, parent, name, &ino);
 
 	return kvsns_open(cred, &ino, flags, mode, fd);
 }
@@ -159,9 +156,9 @@ int kvsns_close(kvsns_file_open_t *fd)
 		return rc;
 	opened_and_deleted = (rc == -ENOENT) ? false : true;
 
-	RC_WRAP(rc, kvsns_str2ownerlist, owners, &size, v);
+	RC_WRAP(kvsns_str2ownerlist, owners, &size, v);
 
-	RC_WRAP(rc, kvsal_begin_transaction);
+	RC_WRAP(kvsal_begin_transaction);
 
 	if (size == 1) {
 		if (fd->owner.pid == owners[0].pid && 
@@ -178,7 +175,7 @@ int kvsns_close(kvsns_file_open_t *fd)
 				RC_WRAP_LABEL(rc, aborted,
 					      kvsal_del, k);
 			}
-			RC_WRAP(rc, kvsal_end_transaction);
+			RC_WRAP(kvsal_end_transaction);
 			return 0;
 		} else {
 			rc = -EBADF;
@@ -205,7 +202,7 @@ int kvsns_close(kvsns_file_open_t *fd)
 
 	RC_WRAP_LABEL(rc, aborted, kvsal_set_char, k, v);
 
-	RC_WRAP(rc, kvsal_end_transaction);
+	RC_WRAP(kvsal_end_transaction);
 	return 0;
 
 aborted:
@@ -219,14 +216,12 @@ ssize_t kvsns_write(kvsns_cred_t *cred, kvsns_file_open_t *fd,
 	size_t write_amount;
 	bool stable;
 	struct stat stat;
-	int rc;
 
 	/** @todo use flags to check correct access */
-	RC_WRAP(rc, extstore_write, &fd->ino, offset, count,
+	RC_WRAP(extstore_write, &fd->ino, offset, count,
 		buf, &write_amount, &stable, &stat);
 
-	rc = write_amount;	
-	return rc;
+	return write_amount;
 }
 
 ssize_t kvsns_read(kvsns_cred_t *cred, kvsns_file_open_t *fd, 
@@ -234,12 +229,10 @@ ssize_t kvsns_read(kvsns_cred_t *cred, kvsns_file_open_t *fd,
 {
 	size_t read_amount;
 	bool eof;
-	int rc;
 
 	/** @todo use flags to check correct access */
-	RC_WRAP(rc, extstore_read, &fd->ino, offset, count, 
+	RC_WRAP(extstore_read, &fd->ino, offset, count, 
 		buf, &read_amount, &eof);
-	rc = read_amount;
-	return rc;
+	return read_amount;
 }
 
