@@ -12,7 +12,7 @@
 #include "kvsns.h"
 
 int extstore_init(char *rootpath);
-int extstore_read(kvsns_ino_t *ino, 
+int extstore_read(kvsns_ino_t *ino,
 		  off_t offset,
 		  size_t buffer_size,
 		  void *buffer,

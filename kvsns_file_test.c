@@ -32,7 +32,7 @@ int main(int argc, char *argv[])
 	cred.uid = getuid();
 	cred.gid = getgid();
 
-	printf( "uid=%u gid=%u, pid=%d\n",
+	printf("uid=%u gid=%u, pid=%d\n",
 		getuid(), getgid(), getpid());
 
 	rc = kvsns_start();
@@ -51,7 +51,7 @@ int main(int argc, char *argv[])
 	rc = kvsns_creat(&cred, &parent, "fichier", 0755, &ino);
 	if (rc != 0) {
 		if (rc == -EEXIST)
-			printf("dirent exists \n");
+			fprintf(stderr, "dirent exists\n");
 		else {
 			fprintf(stderr, "kvsns_creat: err=%d\n", rc);
 			exit(1);
@@ -73,7 +73,7 @@ int main(int argc, char *argv[])
 	if (written < 0) {
 		fprintf(stderr, "kvsns_write: err=%lld\n", written);
 		exit(1);
-	}	
+	}
 
 	memset(buff2, 0, SIZE);
 
@@ -82,7 +82,7 @@ int main(int argc, char *argv[])
 	if (read < 0) {
 		fprintf(stderr, "kvsns_read: err=%lld\n", read);
 		exit(1);
-	}	
+	}
 
 	printf("Buff= #%s#\n", buff);
 	printf("Buff2= #%s# at offset %lld\n", buff2, offset);
@@ -99,7 +99,7 @@ int main(int argc, char *argv[])
 		exit(1);
 	}
 
-		
+
 	printf("######## OK ########\n");
 	return 0;
 

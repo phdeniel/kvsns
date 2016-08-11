@@ -22,7 +22,7 @@ static int kvsns_str2ownerlist(kvsns_open_owner_t *ownerlist, int *size,
 	pos = 0;
 	while((token = strtok_r(rest, "|", &rest))) {
 		sscanf(token, "%llu.%llu",
-		       &ownerlist[pos].pid, 
+		       &ownerlist[pos].pid,
 		       &ownerlist[pos].thrid);
 		pos += 1;
 		if (pos == maxsize)
@@ -45,14 +45,14 @@ static int kvsns_ownerlist2str(kvsns_open_owner_t *ownerlist, int size,
 
 	strcpy(str, "");
 
-	for (i=0; i < size ; i++)
+	for (i = 0; i < size ; i++)
 		if (ownerlist[i].pid != 0LL) {
-			snprintf(tmp, VLEN, "%llu.%llu|", 
+			snprintf(tmp, VLEN, "%llu.%llu|",
 				 ownerlist[i].pid, ownerlist[i].thrid);
 			strcat(str, tmp);
 		}
 	
-	return 0;	
+	return 0;
 }
 
 
@@ -98,7 +98,6 @@ int kvsns_open(kvsns_cred_t *cred, kvsns_ino_t *ino,
 	} else
 		return rc;
 
-	
 	RC_WRAP(kvsal_set_char, k, v);
 
 	/** @todo Do not forget store stuffs */
@@ -108,7 +107,7 @@ int kvsns_open(kvsns_cred_t *cred, kvsns_ino_t *ino,
 	fd->flags = flags;
 
 	/* In particular create a key per opened fd */
-	
+
 	return 0;
 }
 
@@ -161,11 +160,11 @@ int kvsns_close(kvsns_file_open_t *fd)
 	RC_WRAP(kvsal_begin_transaction);
 
 	if (size == 1) {
-		if (fd->owner.pid == owners[0].pid && 
+		if (fd->owner.pid == owners[0].pid &&
 		    fd->owner.thrid == owners[0].thrid) {
 			snprintf(k, KLEN, "%llu.openowner", fd->ino);
 			RC_WRAP_LABEL(rc, aborted, kvsal_del, k);
-	
+
 			/* Was the file deleted as it was opened ? */
 			if (opened_and_deleted) {
 				RC_WRAP_LABEL(rc, aborted,
@@ -183,17 +182,17 @@ int kvsns_close(kvsns_file_open_t *fd)
 		}
 	} else {
 		found = false;
-		for (i=0; i < size ; i++)
+		for (i = 0; i < size ; i++)
 			if (owners[i].pid == fd->owner.pid &&
 			    owners[i].thrid == fd->owner.thrid) {
-				owners[i].pid = 0; /* remove it from list */ 
+				owners[i].pid = 0; /* remove it from list */
 				found = true;
 				break;
 			}
 	}
 
 
-	if (!found) { 
+	if (!found) {
 		rc = -EBADF;
 		goto aborted;
 	}
@@ -210,7 +209,7 @@ aborted:
 	return rc;
 }
 
-ssize_t kvsns_write(kvsns_cred_t *cred, kvsns_file_open_t *fd, 
+ssize_t kvsns_write(kvsns_cred_t *cred, kvsns_file_open_t *fd,
 		    void *buf, size_t count, off_t offset)
 {
 	size_t write_amount;
@@ -224,14 +223,14 @@ ssize_t kvsns_write(kvsns_cred_t *cred, kvsns_file_open_t *fd,
 	return write_amount;
 }
 
-ssize_t kvsns_read(kvsns_cred_t *cred, kvsns_file_open_t *fd, 
+ssize_t kvsns_read(kvsns_cred_t *cred, kvsns_file_open_t *fd,
 		   void *buf, size_t count, off_t offset)
 {
 	size_t read_amount;
 	bool eof;
 
 	/** @todo use flags to check correct access */
-	RC_WRAP(extstore_read, &fd->ino, offset, count, 
+	RC_WRAP(extstore_read, &fd->ino, offset, count,
 		buf, &read_amount, &eof);
 	return read_amount;
 }

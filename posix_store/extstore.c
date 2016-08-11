@@ -35,7 +35,7 @@ int extstore_del(kvsns_ino_t *ino)
 	return 0;
 }
 
-int extstore_read(kvsns_ino_t *ino, 
+int extstore_read(kvsns_ino_t *ino,
 		  off_t offset,
 		  size_t buffer_size,
 		  void *buffer,
@@ -151,7 +151,7 @@ int extstore_consolidate_attrs(kvsns_ino_t *ino, struct stat *filestat)
 	filestat->st_blocks = extstat.st_blocks;
 
 	printf("=======> extstore_stat: %s size=%lld\n",
-		storepath, 
+		storepath,
 		(long long int)filestat->st_size);
 
 	return 0;

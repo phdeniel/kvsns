@@ -33,18 +33,18 @@
 #define STAT_ATIME_SET	0x10
 #define STAT_MTIME_SET	0x11
 #define STAT_CTIME_SET	0x12
-#define STAT_INCR_LINK  0x14	
-#define STAT_DECR_LINK  0x18	
+#define STAT_INCR_LINK  0x14
+#define STAT_DECR_LINK  0x18
 
-#define STAT_OWNER_READ       	0400    /* Read by owner.  */
-#define STAT_OWNER_WRITE      	0200    /* Write by owner.  */
-#define STAT_OWNER_EXEC       	0100    /* Execute by owner.  */
-#define STAT_GROUP_READ       	0040    /* Read by group.  */
-#define STAT_GROUP_WRITE      	0020    /* Write by group.  */
-#define STAT_GROUP_EXEC		0010    /* Execute by group.  */
-#define STAT_OTHER_READ       	0004    /* Read by other.  */
-#define STAT_OTHER_WRITE      	0002    /* Write by other.  */
-#define STAT_OTHER_EXEC	0001    /* Execute by other.  */
+#define STAT_OWNER_READ		0400	/* Read by owner. */
+#define STAT_OWNER_WRITE	0200	/* Write by owner. */
+#define STAT_OWNER_EXEC		0100	/* Execute by owner. */
+#define STAT_GROUP_READ		0040	/* Read by group. */
+#define STAT_GROUP_WRITE	0020	/* Write by group. */
+#define STAT_GROUP_EXEC		0010	/* Execute by group. */
+#define STAT_OTHER_READ		0004	/* Read by other. */
+#define STAT_OTHER_WRITE	0002	/* Write by other. */
+#define STAT_OTHER_EXEC		0001	/* Execute by other. */
 
 #define KVSNS_ACCESS_READ 	1
 #define KVSNS_ACCESS_WRITE	2
@@ -61,10 +61,10 @@ typedef struct kvsal_item__ {
 	char str[KLEN];
 } kvsal_item_t;
 
-int kvsal_init();
-int kvsal_begin_transaction();
-int kvsal_end_transaction();
-int kvsal_discard_transaction();
+int kvsal_init(void);
+int kvsal_begin_transaction(void);
+int kvsal_end_transaction(void);
+int kvsal_discard_transaction(void);
 int kvsal_exists(char *k);
 int kvsal_set_char(char *k, char *v);
 int kvsal_get_char(char *k, char *v);
@@ -78,32 +78,27 @@ int kvsal_del(char *k);
 int kvsal_incr_counter(char *k, unsigned long long *v);
 
 /* KVSNS related definitions and functions */
-typedef struct kvsns_cred__ 
-{
+typedef struct kvsns_cred__ {
 	uid_t uid;
 	gid_t gid;
 } kvsns_cred_t;
 
-typedef struct kvsns_fsstat_
-{
+typedef struct kvsns_fsstat_ {
 	unsigned long nb_inodes;
 } kvsns_fsstat_t;
 
-typedef struct kvsns_dentry_
-{
+typedef struct kvsns_dentry_ {
 	char name[MAXNAMLEN];
 	kvsns_ino_t inode;
 	struct stat stats;
 } kvsns_dentry_t;
 
-typedef struct kvsns_open_owner_
-{
+typedef struct kvsns_open_owner_ {
 	int pid;
 	pthread_t thrid;
 } kvsns_open_owner_t;
 
-typedef struct kvsns_file_open_
-{
+typedef struct kvsns_file_open_ {
 	kvsns_ino_t ino;
 	kvsns_open_owner_t owner;
 	int flags;
@@ -115,26 +110,25 @@ enum kvsns_type {
 	KVSNS_SYMLINK = 3
 };
 
-typedef struct kvsns_xattr__
-{
+typedef struct kvsns_xattr__ {
 	char name[MAXNAMLEN];
 } kvsns_xattr_t;
 
 int kvsns_start(void);
 int kvsns_init_root(int openbar);
-int kvsns_access(kvsns_cred_t *cred, kvsns_ino_t *ino, int flags); 
+int kvsns_access(kvsns_cred_t *cred, kvsns_ino_t *ino, int flags);
 int kvsns_creat(kvsns_cred_t *cred, kvsns_ino_t *parent, char *name,
 		mode_t mode, kvsns_ino_t *newdir);
 int kvsns_mkdir(kvsns_cred_t *cred, kvsns_ino_t *parent, char *name,
 		mode_t mode, kvsns_ino_t *newdir);
 int kvsns_symlink(kvsns_cred_t *cred, kvsns_ino_t *parent, char *name,
 		  char *content, kvsns_ino_t *newlnk);
-int kvsns_readlink(kvsns_cred_t *cred, kvsns_ino_t *link, 
-		  char *content, size_t *size); 
+int kvsns_readlink(kvsns_cred_t *cred, kvsns_ino_t *link,
+		  char *content, size_t *size);
 int kvsns_rmdir(kvsns_cred_t *cred, kvsns_ino_t *parent, char *name);
 int kvsns_lookup(kvsns_cred_t *cred, kvsns_ino_t *parent, char *name,
 		 kvsns_ino_t *myino);
-int kvsns_readdir(kvsns_cred_t *cred, kvsns_ino_t *dirt, off_t offset, 
+int kvsns_readdir(kvsns_cred_t *cred, kvsns_ino_t *dirt, off_t offset,
 		  kvsns_dentry_t *dirent, int *size);
 int kvsns_lookupp(kvsns_cred_t *cred, kvsns_ino_t *dir, kvsns_ino_t *parent);
 int kvsns_getattr(kvsns_cred_t *cred, kvsns_ino_t *ino, struct stat *buffstat);
@@ -149,14 +143,14 @@ int kvsns_fsstat(kvsns_fsstat_t *stat);
 int kvsns_get_root(kvsns_ino_t *ino);
 
 
-int kvsns_open(kvsns_cred_t *cred, kvsns_ino_t *ino, 
+int kvsns_open(kvsns_cred_t *cred, kvsns_ino_t *ino,
 	       int flags, mode_t mode, kvsns_file_open_t *fd);
 int kvsns_openat(kvsns_cred_t *cred, kvsns_ino_t *parent, char *name,
 		 int flags, mode_t mode, kvsns_file_open_t *fd);
 int kvsns_close(kvsns_file_open_t *fd);
-ssize_t kvsns_write(kvsns_cred_t *cred, kvsns_file_open_t *fd, 
+ssize_t kvsns_write(kvsns_cred_t *cred, kvsns_file_open_t *fd,
 		    void *buf, size_t count, off_t offset);
-ssize_t kvsns_read(kvsns_cred_t *cred, kvsns_file_open_t *fd, 
+ssize_t kvsns_read(kvsns_cred_t *cred, kvsns_file_open_t *fd,
 		   void *buf, size_t count, off_t offset);
 
 /* Xattr */
@@ -164,7 +158,7 @@ int kvsns_setxattr(kvsns_cred_t *cred, kvsns_ino_t *ino,
 		   char *name, char *value, size_t size, int flags);
 int kvsns_getxattr(kvsns_cred_t *cred, kvsns_ino_t *ino,
 		   char *name, char *value, size_t *size);
-int kvsns_listxattr(kvsns_cred_t *cred, kvsns_ino_t *ino, int offset, 
+int kvsns_listxattr(kvsns_cred_t *cred, kvsns_ino_t *ino, int offset,
 		  kvsns_xattr_t *list, int *size);
 int kvsns_removexattr(kvsns_cred_t *cred, kvsns_ino_t *ino, char *name);
 int kvsns_remove_all_xattr(kvsns_cred_t *cred, kvsns_ino_t *ino);
