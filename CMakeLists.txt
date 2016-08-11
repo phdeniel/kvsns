@@ -39,10 +39,10 @@ set(STORE_LIBRARY posix_store)
 # Now compile kvsns #
 SET(kvsns_LIB_SRCS
     kvsal_redis.c
-    kvsns_handle.c 
-    kvsns_file.c 
+    kvsns_handle.c
+    kvsns_file.c
     kvsns_internal.c
-    kvsns_xattr.c 
+    kvsns_xattr.c
 )
 
 add_library(kvsns SHARED ${kvsns_LIB_SRCS})
