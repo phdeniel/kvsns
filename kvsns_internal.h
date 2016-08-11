@@ -8,10 +8,10 @@
 #include "kvsns.h"
 #include <string.h>
 
-#define RC_WRAP( __rc, __function, ...) ({\
-	__rc = __function(__VA_ARGS__);\
+#define RC_WRAP(__function, ...) ({\
+	int __rc = __function(__VA_ARGS__);\
 	if (__rc != 0)        \
-		return rc;})
+		return __rc;})
 		
 #define RC_WRAP_LABEL( __rc, __label, __function, ...) ({\
 	__rc = __function(__VA_ARGS__);\
