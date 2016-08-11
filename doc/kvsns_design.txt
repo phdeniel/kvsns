@@ -1,0 +1,2 @@
+This file describe how the KVSNS library works. In particular in explain the
+dictionnary to build useful keys and how the KVS can be used for debugging.
