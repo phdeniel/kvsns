@@ -1,2 +1,40 @@
 This file describe how the KVSNS library works. In particular in explain the
 dictionnary to build useful keys and how the KVS can be used for debugging.
+
+The keys and their usage:
+
+GLOBAL keys:
+	store_url : points to the URL for data object store
+	ino_counter : the next available (not used) inum
+
+In the next defintion, <inum> is the inum of a FS object.
+
+* <inum>.stat : the "stat" structure for the inum, stored as a binary
+* <inum>.parentdir : the "ascii list" of parent directories
+* <inum>.dentries.<name> : tells what is the inum of object named <name>
+	inside a directory whose inode is <inum>
+* <inum>.link : the link content of the symbolic link hidden behind the
+	inode <inum>
+* <inum>.openowner : the list of open owners for a file
+* <inum>.opened_and_deleted : if it exists then file <inum> has been unlink
+	as it was still opened (non-empty open owner list).
+* <inum>.xattr.<name> : contains the value of xattr with name <name> and
+	associated with inum <inum>
+
+The root of the namespace has inum = 2. It is its own parent (this is the only
+directory with such a characteristic).
+
+
+LIST MANAGEMENT
+
+A few values are actually lists managed as strings. This includes the list of
+parent directories or the list of a file's open owners.
+Lists are pipe-separated. For example, if file with inode 14 is inside the
+directories whose inodes are 7, 10, 16, 31, then "14.parentdir" will contain the
+value "7|10|16|31|".
+/!\ : there is always a "|" at the end of the string. A one item list will look
+	like "<x>|"
+A list is never empty, if the variable exists in the KVS, it MUST contain at
+least one item.
+
+
