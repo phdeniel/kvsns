@@ -29,8 +29,12 @@ int extstore_del(kvsns_ino_t *ino)
 		return rc;
 
 	rc = unlink(storepath);
-	if (rc)
+	if (rc) {
+		if (errno == ENOENT)
+			return 0;
+
 		return -errno;
+	}
 
 	return 0;
 }
