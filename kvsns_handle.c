@@ -320,6 +320,7 @@ int kvsns_setattr(kvsns_cred_t *cred, kvsns_ino_t *ino,
 	char k[KLEN];
 	struct stat bufstat;
 	struct timeval t;
+	mode_t ifmt;
 
 	if (!cred || !ino || !setstat)
 		return -EINVAL;
@@ -339,8 +340,10 @@ int kvsns_setattr(kvsns_cred_t *cred, kvsns_ino_t *ino,
 	bufstat.st_ctim.tv_sec = t.tv_sec;
 	bufstat.st_ctim.tv_nsec = 1000 * t.tv_usec;
 
-	if (statflag & STAT_MODE_SET)
-		bufstat.st_mode = setstat->st_mode;
+	if (statflag & STAT_MODE_SET) {
+		ifmt = bufstat.st_mode & S_IFMT;
+		bufstat.st_mode = setstat->st_mode | ifmt;
+	}
 
 	if (statflag & STAT_UID_SET)
 		bufstat.st_uid = setstat->st_uid;
