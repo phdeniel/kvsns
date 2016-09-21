@@ -154,8 +154,8 @@ int kvsns_create_entry(kvsns_cred_t *cred, kvsns_ino_t *parent,
 
 	/* Set stat */
 	memset(&bufstat, 0, sizeof(struct stat));
-	bufstat.st_uid = getuid();
-	bufstat.st_gid = getgid();
+	bufstat.st_uid = cred->uid; 
+	bufstat.st_gid = cred->gid;
 	bufstat.st_ino = *new_entry;
 
 	if (gettimeofday(&t, NULL) != 0)
