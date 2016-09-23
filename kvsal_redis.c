@@ -35,7 +35,6 @@ int kvsal_init(void)
 	if (!reply)
 		return -1;
 
-	printf("PING: %s\n", reply->str);
 	freeReplyObject(reply);
 
 	return 0;
