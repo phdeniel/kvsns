@@ -32,10 +32,18 @@ static int kvsns_set_store_url(void)
 	return 0;
 }
 
+void kvsns_set_debug(bool debug)
+{
+	kvsns_debug = debug;
+}
+
 int kvsns_start(void)
 {
 	char k[KLEN];
 	char v[VLEN];
+
+	if (kvsns_debug)
+		fprintf(stderr, "kvsns_start()\n");
 
 	RC_WRAP(kvsal_init);
 
@@ -57,6 +65,10 @@ int kvsns_init_root(int openbar)
 	struct stat bufstat;
 	kvsns_cred_t cred;
 	kvsns_ino_t ino;
+
+	if (kvsns_debug)
+		fprintf(stderr, "kvsns_init_root(%d)\n",
+			openbar);
 
 	cred.uid = 0;
 	cred.gid = 0;
@@ -97,6 +109,9 @@ int kvsns_fsstat(kvsns_fsstat_t *stat)
 	char k[KLEN];
 	int rc;
 
+	if (kvsns_debug)
+		fprintf(stderr, "kvsns_fsstat\n");
+
 	if (!stat)
 		return -EINVAL;
 
@@ -111,6 +126,9 @@ int kvsns_fsstat(kvsns_fsstat_t *stat)
 
 int kvsns_get_root(kvsns_ino_t *ino)
 {
+	if (kvsns_debug)
+		fprintf(stderr, "kvsns_get_root\n");
+
 	if (!ino)
 		return -EINVAL;
 
@@ -121,6 +139,9 @@ int kvsns_get_root(kvsns_ino_t *ino)
 int kvsns_mkdir(kvsns_cred_t *cred, kvsns_ino_t *parent, char *name,
 		mode_t mode, kvsns_ino_t *newdir)
 {
+	if (kvsns_debug)
+		fprintf(stderr, "kvsns_mkdir\n");
+
 	RC_WRAP(kvsns_access, cred, parent, KVSNS_ACCESS_WRITE);
 
 	return kvsns_create_entry(cred, parent, name, NULL,
@@ -133,6 +154,9 @@ int kvsns_symlink(kvsns_cred_t *cred, kvsns_ino_t *parent, char *name,
 	char k[KLEN];
 	struct stat bufstat;
 	struct stat parent_stat;
+
+	if (kvsns_debug)
+		fprintf(stderr, "kvsns_symlink\n");
 
 	if (!cred || !parent || !name || !content || !newlnk)
 		return -EINVAL;
@@ -154,8 +178,10 @@ int kvsns_readlink(kvsns_cred_t *cred, kvsns_ino_t *lnk,
 	char k[KLEN];
 	char v[KLEN];
 
-	/* No access check, a symlink's content is always readable */
+	if (kvsns_debug)
+		fprintf(stderr, "kvsns_readlink\n");
 
+	/* No access check, a symlink's content is always readable */
 	if (!cred || !lnk || !content || !size)
 		return -EINVAL;
 
@@ -176,6 +202,9 @@ int kvsns_rmdir(kvsns_cred_t *cred, kvsns_ino_t *parent, char *name)
 	char k[KLEN];
 	kvsns_ino_t ino;
 	struct stat parent_stat;
+
+	if (kvsns_debug)
+		fprintf(stderr, "kvsns_rmdir\n");
 
 	if (!cred || !parent || !name)
 		return -EINVAL;
@@ -229,6 +258,9 @@ int kvsns_readdir(kvsns_cred_t *cred, kvsns_ino_t *dir, off_t offset,
 	kvsns_ino_t ino;
 	int rc;
 
+	if (kvsns_debug)
+		fprintf(stderr, "kvsns_readdir\n");
+
 	if (!cred || !dir || !dirent || !size)
 		return -EINVAL;
 
@@ -267,6 +299,9 @@ int kvsns_lookup(kvsns_cred_t *cred, kvsns_ino_t *parent, char *name,
 	char k[KLEN];
 	char v[VLEN];
 
+	if (kvsns_debug)
+		fprintf(stderr, "kvsns_lookup\n");
+
 	if (!cred || !parent || !name || !ino)
 		return -EINVAL;
 
@@ -286,6 +321,9 @@ int kvsns_lookupp(kvsns_cred_t *cred, kvsns_ino_t *dir, kvsns_ino_t *parent)
 {
 	char k[KLEN];
 	char v[VLEN];
+
+	if (kvsns_debug)
+		fprintf(stderr, "kvsns_lookupp\n");
 
 	if (!cred || !dir || !parent)
 		return -EINVAL;
@@ -307,6 +345,9 @@ int kvsns_getattr(kvsns_cred_t *cred, kvsns_ino_t *ino, struct stat *bufstat)
 	char k[KLEN];
 	int rc;
 
+	if (kvsns_debug)
+		fprintf(stderr, "kvsns_getattr\n");
+
 	if (!cred || !ino || !bufstat)
 		return -EINVAL;
 
@@ -321,6 +362,9 @@ int kvsns_setattr(kvsns_cred_t *cred, kvsns_ino_t *ino,
 	struct stat bufstat;
 	struct timeval t;
 	mode_t ifmt;
+
+	if (kvsns_debug)
+		fprintf(stderr, "kvsns_setattr\n");
 
 	if (!cred || !ino || !setstat)
 		return -EINVAL;
@@ -387,6 +431,9 @@ int kvsns_link(kvsns_cred_t *cred, kvsns_ino_t *ino,
 	struct stat ino_stat;
 	int size;
 
+	if (kvsns_debug)
+		fprintf(stderr, "kvsns_link\n");
+
 	if (!cred || !ino || !dino || !dname)
 		return -EINVAL;
 
@@ -449,6 +496,9 @@ int kvsns_unlink(kvsns_cred_t *cred, kvsns_ino_t *dir, char *name)
 
 	opened = false;
 	deleted = false;
+
+	if (kvsns_debug)
+		fprintf(stderr, "kvsns_unlink\n");
 
 	if (!cred || !dir || !name)
 		return -EINVAL;
@@ -550,6 +600,9 @@ int kvsns_rename(kvsns_cred_t *cred,  kvsns_ino_t *sino,
 	int size;
 	int i;
 
+	if (kvsns_debug)
+		fprintf(stderr, "kvsns_rename\n");
+
 	if (!cred || !sino || !sname || !dino || !dname)
 		return -EINVAL;
 
@@ -617,6 +670,9 @@ int kvsns_mr_proper(void)
 	kvsal_item_t items[KVSNS_ARRAY_SIZE];
 	int i;
 	int size;
+
+	if (kvsns_debug)
+		fprintf(stderr, "kvsns_mr_proper\n");
 
 	snprintf(pattern, KLEN, "*");
 
