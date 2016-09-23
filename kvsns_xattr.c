@@ -13,6 +13,9 @@ int kvsns_setxattr(kvsns_cred_t *cred, kvsns_ino_t *ino,
 	int rc;
 	char k[KLEN];
 
+	if (kvsns_debug)
+		fprintf(stderr, "kvsns_setxattr\n");
+
 	if (!cred || !ino || !name || !value)
 		return -EINVAL;
 
@@ -30,6 +33,9 @@ int kvsns_getxattr(kvsns_cred_t *cred, kvsns_ino_t *ino,
 		   char *name, char *value, size_t *size)
 {
 	char k[KLEN];
+
+	if (kvsns_debug)
+		fprintf(stderr, "kvsns_getxattr\n");
 
 	if (!cred || !ino || !name || !value)
 		return -EINVAL;
@@ -49,6 +55,9 @@ int kvsns_listxattr(kvsns_cred_t *cred, kvsns_ino_t *ino, int offset,
 	kvsal_item_t *items;
 	int i;
 	kvsns_ino_t tmpino;
+
+	if (kvsns_debug)
+		fprintf(stderr, "kvsns_listxattr\n");
 
 	if (!cred || !ino || !list || !size)
 		return -EINVAL;
@@ -74,6 +83,9 @@ int kvsns_removexattr(kvsns_cred_t *cred, kvsns_ino_t *ino, char *name)
 {
 	char k[KLEN];
 
+	if (kvsns_debug)
+		fprintf(stderr, "kvsns_removexattr\n");
+
 	snprintf(k, KLEN, "%llu.xattr.%s", *ino, name);
 	RC_WRAP(kvsal_del, k);
 
@@ -89,6 +101,9 @@ int kvsns_remove_all_xattr(kvsns_cred_t *cred, kvsns_ino_t *ino)
 	int i;
 	int size;
 	kvsns_ino_t tmpino;
+
+	if (kvsns_debug)
+		fprintf(stderr, "kvsns_remove_all_xattr\n");
 
 	if (!cred || !ino)
 		return -EINVAL;

@@ -12,6 +12,7 @@
 #include <pthread.h>
 #include <string.h>
 #include <time.h>
+#include <stdbool.h>
 #include <sys/stat.h>
 #include <sys/types.h>
 #include <sys/param.h>
@@ -53,6 +54,8 @@
 /* KVSAL related definitions and functions */
 static char kvsns_store_default[] = KVSNS_STORE_DEFAULT;
 static char kvsns_store_base[MAXPATHLEN];
+
+static kvsns_debug = false;
 
 typedef unsigned long long int kvsns_ino_t;
 
@@ -115,6 +118,7 @@ typedef struct kvsns_xattr__ {
 } kvsns_xattr_t;
 
 int kvsns_start(void);
+void kvsns_set_debug(bool debug);
 int kvsns_init_root(int openbar);
 int kvsns_access(kvsns_cred_t *cred, kvsns_ino_t *ino, int flags);
 int kvsns_creat(kvsns_cred_t *cred, kvsns_ino_t *parent, char *name,

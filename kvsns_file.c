@@ -74,6 +74,9 @@ int kvsns_open(kvsns_cred_t *cred, kvsns_ino_t *ino,
 	char v[VLEN];
 	int rc;
 
+	if (kvsns_debug)
+		fprintf(stderr, "kvsns_open\n");
+
 	if (!cred || !ino || !fd)
 		return -EINVAL;
 
@@ -116,6 +119,9 @@ int kvsns_openat(kvsns_cred_t *cred, kvsns_ino_t *parent, char *name,
 {
 	kvsns_ino_t ino;
 
+	if (kvsns_debug)
+		fprintf(stderr, "kvsns_openat\n");
+
 	if (!cred || !parent || !name || !fd)
 		return -EINVAL;
 
@@ -134,6 +140,9 @@ int kvsns_close(kvsns_file_open_t *fd)
 	int rc;
 	bool found = false;
 	bool opened_and_deleted;
+
+	if (kvsns_debug)
+		fprintf(stderr, "kvsns_close\n");
 
 	if (!fd)
 		return -EINVAL;
@@ -216,6 +225,9 @@ ssize_t kvsns_write(kvsns_cred_t *cred, kvsns_file_open_t *fd,
 	bool stable;
 	struct stat stat;
 
+	if (kvsns_debug)
+		fprintf(stderr, "kvsns_write\n");
+
 	/** @todo use flags to check correct access */
 	RC_WRAP(extstore_write, &fd->ino, offset, count,
 		buf, &write_amount, &stable, &stat);
@@ -228,6 +240,9 @@ ssize_t kvsns_read(kvsns_cred_t *cred, kvsns_file_open_t *fd,
 {
 	size_t read_amount;
 	bool eof;
+
+	if (kvsns_debug)
+		fprintf(stderr, "kvsns_read\n");
 
 	/** @todo use flags to check correct access */
 	RC_WRAP(extstore_read, &fd->ino, offset, count,

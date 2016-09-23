@@ -25,6 +25,8 @@ int main(int argc, char *argv[])
 	cred.uid = getuid();
 	cred.gid = getgid();
 
+	kvsns_set_debug(false);
+
 	rc = kvsns_start();
 	if (rc != 0) {
 		fprintf(stderr, "kvsns_init: err=%d\n", rc);
