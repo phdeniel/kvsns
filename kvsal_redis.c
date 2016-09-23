@@ -7,7 +7,8 @@
 #include <time.h>
 #include "kvsns.h"
 
-static redisContext *rediscontext;
+/* The REDIS context exists in the TLS, for MT-Safety */
+__thread redisContext *rediscontext = NULL;
 
 int kvsal_init(void)
 {
@@ -44,6 +45,10 @@ int kvsal_begin_transaction(void)
 {
 	redisReply *reply;
 
+	if (!rediscontext)
+		if (kvsal_init() != 0)
+			return -1;
+
 	reply = redisCommand(rediscontext, "MULTI");
 	if (!reply)
 		return -1;
@@ -66,6 +71,10 @@ int kvsal_end_transaction(void)
 {
 	redisReply *reply;
 	int i;
+
+	if (!rediscontext)
+		if (kvsal_init() != 0)
+			return -1;
 
 	reply = redisCommand(rediscontext, "EXEC");
 	if (!reply)
@@ -90,6 +99,10 @@ int kvsal_end_transaction(void)
 int kvsal_discard_transaction(void)
 {
 	redisReply *reply;
+
+	if (!rediscontext)
+		if (kvsal_init() != 0)
+			return -1;
 
 	reply = redisCommand(rediscontext, "DISCARD");
 	if (!reply)
@@ -117,6 +130,10 @@ int kvsal_exists(char *k)
 	if (!k)
 		return -EINVAL;
 
+	if (!rediscontext)
+		if (kvsal_init() != 0)
+			return -1;
+
 	/* Set a key */
 	reply = redisCommand(rediscontext, "EXISTS %s", k);
 	if (!reply)
@@ -140,6 +157,10 @@ int kvsal_set_char(char *k, char *v)
 	if (!k || !v)
 		return -EINVAL;
 
+	if (!rediscontext)
+		if (kvsal_init() != 0)
+			return -1;
+
 	/* Set a key */
 	reply = redisCommand(rediscontext, "SET %s %s", k, v);
 	if (!reply)
@@ -156,6 +177,10 @@ int kvsal_get_char(char *k, char *v)
 
 	if (!k || !v)
 		return -EINVAL;
+
+	if (!rediscontext)
+		if (kvsal_init() != 0)
+			return -1;
 
 	/* Try a GET and two INCR */
 	reply = NULL;
@@ -181,6 +206,10 @@ int kvsal_set_stat(char *k, struct stat *buf)
 	if (!k || !buf)
 		return -EINVAL;
 
+	if (!rediscontext)
+		if (kvsal_init() != 0)
+			return -1;
+
 	/* Set a key */
 	reply = redisCommand(rediscontext, "SET %s %b", k, buf, size);
 	if (!reply)
@@ -197,6 +226,10 @@ int kvsal_get_stat(char *k, struct stat *buf)
 
 	if (!k || !buf)
 		return -EINVAL;
+
+	if (!rediscontext)
+		if (kvsal_init() != 0)
+			return -1;
 
 	reply = redisCommand(rediscontext, "GET %s", k);
 	if (!reply)
@@ -222,6 +255,10 @@ int kvsal_set_binary(char *k, char *buf, size_t size)
 	if (!k || !buf)
 		return -EINVAL;
 
+	if (!rediscontext)
+		if (kvsal_init() != 0)
+			return -1;
+
 	/* Set a key */
 	reply = redisCommand(rediscontext, "SET %s %b", k, buf, size);
 	if (!reply)
@@ -238,6 +275,10 @@ int kvsal_get_binary(char *k, char *buf, size_t *size)
 
 	if (!k || !buf || !size)
 		return -EINVAL;
+
+	if (!rediscontext)
+		if (kvsal_init() != 0)
+			return -1;
 
 	reply = redisCommand(rediscontext, "GET %s", k);
 	if (!reply)
@@ -264,6 +305,10 @@ int kvsal_incr_counter(char *k, unsigned long long *v)
 	if (!k || !v)
 		return -EINVAL;
 
+	if (!rediscontext)
+		if (kvsal_init() != 0)
+			return -1;
+
 	reply = redisCommand(rediscontext, "INCR %s", k);
 	if (!reply)
 		return -1;
@@ -281,6 +326,10 @@ int kvsal_del(char *k)
 	if (!k)
 		return -EINVAL;
 
+	if (!rediscontext)
+		if (kvsal_init() != 0)
+			return -1;
+
 	/* Try a GET and two INCR */
 	reply = redisCommand(rediscontext, "DEL %s", k);
 	if (!reply)
@@ -297,6 +346,10 @@ int kvsal_get_list(char *pattern, int start, int *size, kvsal_item_t *items)
 
 	if (!pattern || !size || !items)
 		return -EINVAL;
+
+	if (!rediscontext)
+		if (kvsal_init() != 0)
+			return -1;
 
 	reply = redisCommand(rediscontext, "KEYS %s", pattern);
 	if (!reply)
@@ -323,6 +376,10 @@ int kvsal_get_list_size(char *pattern)
 
 	if (!pattern)
 		return -EINVAL;
+
+	if (!rediscontext)
+		if (kvsal_init() != 0)
+			return -1;
 
 	reply = redisCommand(rediscontext, "KEYS %s", pattern);
 	if (!reply)
