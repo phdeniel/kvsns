@@ -396,16 +396,17 @@ int kvsns_link(kvsns_cred_t *cred, kvsns_ino_t *ino,
 	if (rc == 0)
 		return -EEXIST;
 
-	RC_WRAP(kvsns_get_stat, parent, &dino_stat);
-	RC_WRAP(kvsns_get_stat, parent, &ino_stat);
+	RC_WRAP(kvsns_get_stat, dino, &dino_stat);
+	RC_WRAP(kvsns_get_stat, ino, &ino_stat);
 
-	RC_WRAP(kvsal_begin_transaction);
 
 	snprintf(k, KLEN, "%llu.parentdir", *ino);
 	RC_WRAP_LABEL(rc, aborted, kvsal_get_char, k, v);
 
 	snprintf(k, KLEN, "%llu|", *dino);
 	strcat(v, k);
+
+	RC_WRAP(kvsal_begin_transaction);
 
 	snprintf(k, KLEN, "%llu.parentdir", *ino);
 	RC_WRAP_LABEL(rc, aborted, kvsal_set_char, k, v);
@@ -475,16 +476,6 @@ int kvsns_unlink(kvsns_cred_t *cred, kvsns_ino_t *dir, char *name)
 
 	RC_WRAP(kvsal_begin_transaction);
 
-	snprintf(k, KLEN, "%llu.dentries.%s",
-		 *dir, name);
-	RC_WRAP_LABEL(rc, aborted, kvsal_del, k);
-
-	/* if object is a link, delete the link content as well */
-	if ((ino_stat.st_mode & S_IFLNK) == S_IFLNK) {
-		snprintf(k, KLEN, "%llu.link", ino);
-		RC_WRAP_LABEL(rc, aborted, kvsal_del, k);
-	}
-
 	if (size == 1) {
 		/* Last link, try to perform deletion */
 		snprintf(k, KLEN, "%llu.parentdir", ino);
@@ -519,6 +510,16 @@ int kvsns_unlink(kvsns_cred_t *cred, kvsns_ino_t *dir, char *name)
 		RC_WRAP_LABEL(rc, aborted, kvsns_amend_stat, &ino_stat,
 			 STAT_CTIME_SET|STAT_DECR_LINK);
 		RC_WRAP_LABEL(rc, aborted, kvsns_set_stat, &ino, &ino_stat);
+	}
+
+	snprintf(k, KLEN, "%llu.dentries.%s",
+		 *dir, name);
+	RC_WRAP_LABEL(rc, aborted, kvsal_del, k);
+
+	/* if object is a link, delete the link content as well */
+	if ((ino_stat.st_mode & S_IFLNK) == S_IFLNK) {
+		snprintf(k, KLEN, "%llu.link", ino);
+		RC_WRAP_LABEL(rc, aborted, kvsal_del, k);
 	}
 
 	RC_WRAP_LABEL(rc, aborted, kvsns_amend_stat, &dir_stat,
