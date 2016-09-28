@@ -553,6 +553,7 @@ int kvsns_unlink(kvsns_cred_t *cred, kvsns_ino_t *dir, char *name)
 				parent[i] = 0;
 				break;
 			}
+		snprintf(k, KLEN, "%llu.parentdir", ino);
 		RC_WRAP_LABEL(rc, aborted, kvsns_parentlist2str,
 			      parent, size, v);
 		RC_WRAP_LABEL(rc, aborted, kvsal_set_char, k, v);
