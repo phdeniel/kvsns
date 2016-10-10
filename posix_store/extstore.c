@@ -13,6 +13,38 @@ static int build_extstore_path(kvsns_ino_t object,
 			store_root, (unsigned long long)object);
 }
 
+static int extstore_consolidate_attrs(kvsns_ino_t *ino, struct stat *filestat)
+{
+	struct stat extstat;
+	char storepath[MAXPATHLEN];
+	int rc;
+
+	rc = build_extstore_path(*ino, storepath, MAXPATHLEN);
+	if (rc < 0)
+		return rc;
+
+	rc = lstat(storepath, &extstat);
+	if (rc < 0) {
+		printf("===> extstore_stat: errno=%u\n", errno);
+		if (errno == ENOENT)
+			return 0; /* No data written yet */
+		else
+			return -errno;
+	}
+
+	filestat->st_mtime = extstat.st_mtime;
+	filestat->st_atime = extstat.st_atime;
+	filestat->st_size = extstat.st_size;
+	filestat->st_blksize = extstat.st_blksize;
+	filestat->st_blocks = extstat.st_blocks;
+
+	printf("=======> extstore_stat: %s size=%lld\n",
+		storepath,
+		(long long int)filestat->st_size);
+
+	return 0;
+}
+
 int extstore_init(char *rootpath)
 {
 	strncpy(store_root, rootpath, MAXPATHLEN);
@@ -134,37 +166,6 @@ int extstore_write(kvsns_ino_t *ino,
 	return written_bytes;
 }
 
-int extstore_consolidate_attrs(kvsns_ino_t *ino, struct stat *filestat)
-{
-	struct stat extstat;
-	char storepath[MAXPATHLEN];
-	int rc;
-
-	rc = build_extstore_path(*ino, storepath, MAXPATHLEN);
-	if (rc < 0)
-		return rc;
-
-	rc = lstat(storepath, &extstat);
-	if (rc < 0) {
-		printf("===> extstore_stat: errno=%u\n", errno);
-		if (errno == ENOENT)
-			return 0; /* No data written yet */
-		else
-			return -errno;
-	}
-
-	filestat->st_mtime = extstat.st_mtime;
-	filestat->st_atime = extstat.st_atime;
-	filestat->st_size = extstat.st_size;
-	filestat->st_blksize = extstat.st_blksize;
-	filestat->st_blocks = extstat.st_blocks;
-
-	printf("=======> extstore_stat: %s size=%lld\n",
-		storepath,
-		(long long int)filestat->st_size);
-
-	return 0;
-}
 
 int extstore_truncate(kvsns_ino_t *ino,
 		      off_t filesize,
