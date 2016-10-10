@@ -43,13 +43,14 @@ int extstore_read(kvsns_ino_t *ino,
 		  off_t offset,
 		  size_t buffer_size,
 		  void *buffer,
-		  bool *end_of_file)
+		  bool *end_of_file,
+		  struct stat *stat)
 {
 	char storepath[MAXPATHLEN];
 	int rc;
 	int fd;
 	ssize_t read_bytes;
-
+	struct stat storestat;
 
 	rc = build_extstore_path(*ino, storepath, MAXPATHLEN);
 	if (rc < 0)
@@ -69,6 +70,15 @@ int extstore_read(kvsns_ino_t *ino,
 		close(fd);
 		return -errno;
 	}
+
+	rc = fstat(fd, &storestat);
+	if (rc < 0)
+		return -errno;
+
+	stat->st_mtime = storestat.st_mtime;
+	stat->st_size = storestat.st_size;
+	stat->st_blocks = storestat.st_blocks;
+	stat->st_blksize = storestat.st_blksize;
 
 	rc = close(fd);
 	if (rc < 0)

@@ -269,7 +269,8 @@ ssize_t kvsns_read(kvsns_cred_t *cred, kvsns_file_open_t *fd,
 				    offset,
 				    count,
 				    buf,
-				    &eof);
+				    &eof,
+				    &stat);
 	if (read_amount < 0)
 		return read_amount;
 
