@@ -362,6 +362,7 @@ int kvsns_setattr(kvsns_cred_t *cred, kvsns_ino_t *ino,
 	struct stat bufstat;
 	struct timeval t;
 	mode_t ifmt;
+	int rc;
 
 	if (kvsns_debug)
 		fprintf(stderr, "kvsns_setattr\n");
@@ -395,11 +396,8 @@ int kvsns_setattr(kvsns_cred_t *cred, kvsns_ino_t *ino,
 	if (statflag & STAT_GID_SET)
 		bufstat.st_gid = setstat->st_gid;
 
-	if (statflag & STAT_SIZE_SET) {
-		bufstat.st_size = setstat->st_size;
-		bufstat.st_mtim.tv_sec = t.tv_sec;
-		bufstat.st_mtim.tv_nsec = 1000 * t.tv_usec;
-	}
+	if (statflag & STAT_SIZE_SET)
+		RC_WRAP(extstore_truncate, ino, setstat->st_size, &bufstat);
 
 	if (statflag & STAT_ATIME_SET) {
 		bufstat.st_atim.tv_sec = setstat->st_atim.tv_sec;

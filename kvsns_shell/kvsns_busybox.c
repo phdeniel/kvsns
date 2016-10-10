@@ -337,6 +337,31 @@ int main(int argc, char *argv[])
 		} else
 			printf("Failed rc=%d !\n", rc);
 		return 0;
+	} else if (!strcmp(exec_name, "ns_truncate")) {
+		kvsns_ino_t fino;
+		struct stat stat;
+
+		if (argc != 3) {
+			fprintf(stderr, "truncate <file> <offset>\n");
+			exit(1);
+		}
+
+		rc = kvsns_lookup(&cred, &current_inode, argv[1], &fino);
+		if (rc != 0) {
+			fprintf(stderr, "%s/%s does not exist\n",
+				current_path, argv[1]);
+			exit(1);
+		}
+
+		stat.st_size = atoi(argv[2]);
+
+		rc = kvsns_setattr(&cred, &fino, &stat, STAT_SIZE_SET);
+		if (rc == 0)
+			printf("Truncate %llu/%s %d OK\n", current_inode,
+			       argv[1], atoi(argv[2]));
+		else
+			fprintf(stderr, "Can't unlink %llu/%s rc=%d\n",
+				current_inode, argv[1], rc);
 	} else if (!strcmp(exec_name, "ns_setxattr")) {
 		if (argc != 4) {
 			printf("ns_sexattr name xattr_name xattr_val\n");
