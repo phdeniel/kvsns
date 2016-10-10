@@ -43,7 +43,6 @@ int extstore_read(kvsns_ino_t *ino,
 		  off_t offset,
 		  size_t buffer_size,
 		  void *buffer,
-		  size_t *read_amount,
 		  bool *end_of_file)
 {
 	char storepath[MAXPATHLEN];
@@ -75,7 +74,6 @@ int extstore_read(kvsns_ino_t *ino,
 	if (rc < 0)
 		return -errno;
 
-	*read_amount = read_bytes;
 	return read_bytes;
 }
 
@@ -83,7 +81,6 @@ int extstore_write(kvsns_ino_t *ino,
 		   off_t offset,
 		   size_t buffer_size,
 		   void *buffer,
-		   size_t *write_amount,
 		   bool *fsal_stable,
 		   struct stat *stat)
 {
@@ -109,8 +106,6 @@ int extstore_write(kvsns_ino_t *ino,
 		close(fd);
 		return -errno;
 	}
-
-	*write_amount = written_bytes;
 
 	rc = fstat(fd, &storestat);
 	if (rc < 0)
