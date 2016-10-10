@@ -173,6 +173,10 @@ int extstore_truncate(kvsns_ino_t *ino,
 {
 	int rc;
 	char storepath[MAXPATHLEN];
+	struct timeval t;
+
+	if (!ino || !stat)
+		return -EINVAL;
 
 	rc = build_extstore_path(*ino, storepath, MAXPATHLEN);
 	if (rc < 0)
@@ -180,9 +184,21 @@ int extstore_truncate(kvsns_ino_t *ino,
 
 	rc = truncate(storepath, filesize);
 	if (rc == -1) {
-		if (errno == ENOENT)
+		if (errno == ENOENT) {
+			/* File does not exist in data store
+			 * it is a mere MD creature */
+			stat->st_size = filesize;
+
+			if (gettimeofday(&t, NULL) != 0)
+				return -errno;
+
+			stat->st_ctim.tv_sec = t.tv_sec;
+			stat->st_ctim.tv_nsec = 1000 * t.tv_usec;
+			stat->st_mtim.tv_sec = stat->st_ctim.tv_sec;
+			stat->st_mtim.tv_nsec = stat->st_ctim.tv_nsec;
+
 			return 0;
-		else
+		} else
 			return -errno;
 	}
 
