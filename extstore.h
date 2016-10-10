@@ -16,7 +16,8 @@ int extstore_read(kvsns_ino_t *ino,
 		  off_t offset,
 		  size_t buffer_size,
 		  void *buffer,
-		  bool *end_of_file);
+		  bool *end_of_file,
+		  struct stat *stat);
 int extstore_write(kvsns_ino_t *ino,
 		   off_t offset,
 		   size_t buffer_size,
