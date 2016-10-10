@@ -144,13 +144,13 @@ int extstore_consolidate_attrs(kvsns_ino_t *ino, struct stat *filestat)
 	if (rc < 0)
 		return rc;
 
-	rc = stat(storepath, &extstat);
+	rc = lstat(storepath, &extstat);
 	if (rc < 0) {
 		printf("===> extstore_stat: errno=%u\n", errno);
 		if (errno == ENOENT)
 			return 0; /* No data written yet */
 		else
-			return rc;
+			return -errno;
 	}
 
 	filestat->st_mtime = extstat.st_mtime;
@@ -167,7 +167,8 @@ int extstore_consolidate_attrs(kvsns_ino_t *ino, struct stat *filestat)
 }
 
 int extstore_truncate(kvsns_ino_t *ino,
-		      off_t filesize)
+		      off_t filesize,
+		      struct stat *stat)
 {
 	int rc;
 	char storepath[MAXPATHLEN];
@@ -183,6 +184,10 @@ int extstore_truncate(kvsns_ino_t *ino,
 		else
 			return -errno;
 	}
+
+	rc = extstore_consolidate_attrs(ino, stat);
+	if (rc < 0)
+		return rc;
 
 	return 0;
 }
