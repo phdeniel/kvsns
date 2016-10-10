@@ -24,10 +24,7 @@ int extstore_write(kvsns_ino_t *ino,
 		   void *buffer,
 		   bool *fsal_stable,
 		   struct stat *stat);
-int extstore_consolidate_attrs(kvsns_ino_t *ino,
-			       struct stat *stat);
 int extstore_del(kvsns_ino_t *ino);
-
 int extstore_truncate(kvsns_ino_t *ino,
 		      off_t filesize,
 		      struct stat *stat);
