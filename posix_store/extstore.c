@@ -25,7 +25,6 @@ static int extstore_consolidate_attrs(kvsns_ino_t *ino, struct stat *filestat)
 
 	rc = lstat(storepath, &extstat);
 	if (rc < 0) {
-		printf("===> extstore_stat: errno=%u\n", errno);
 		if (errno == ENOENT)
 			return 0; /* No data written yet */
 		else
@@ -37,10 +36,6 @@ static int extstore_consolidate_attrs(kvsns_ino_t *ino, struct stat *filestat)
 	filestat->st_size = extstat.st_size;
 	filestat->st_blksize = extstat.st_blksize;
 	filestat->st_blocks = extstat.st_blocks;
-
-	printf("=======> extstore_stat: %s size=%lld\n",
-		storepath,
-		(long long int)filestat->st_size);
 
 	return 0;
 }
@@ -90,8 +85,6 @@ int extstore_read(kvsns_ino_t *ino,
 
 	fd = open(storepath, O_CREAT|O_RDONLY|O_SYNC);
 	if (fd < 0) {
-		printf("READ: error %u while open %s\n",
-			errno, storepath);
 		return -errno;
 	}
 
