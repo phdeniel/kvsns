@@ -313,7 +313,6 @@ int kvsal_incr_counter(char *k, unsigned long long *v)
 	if (!reply)
 		return -1;
 
-	printf("INCR counter: %lld\n", reply->integer);
 	*v = (unsigned long long)reply->integer;
 
 	return 0;
