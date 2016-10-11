@@ -88,8 +88,6 @@ int extstore_read(kvsns_ino_t *ino,
 	if (rc < 0)
 		return rc;
 
-	printf("READ: I got external path=%s\n", storepath);
-
 	fd = open(storepath, O_CREAT|O_RDONLY|O_SYNC);
 	if (fd < 0) {
 		printf("READ: error %u while open %s\n",
@@ -136,8 +134,6 @@ int extstore_write(kvsns_ino_t *ino,
 	rc = build_extstore_path(*ino, storepath, MAXPATHLEN);
 	if (rc < 0)
 		return rc;
-
-	printf("WRITE: I got external path=%s\n", storepath);
 
 	fd = open(storepath, O_CREAT|O_WRONLY|O_SYNC, 0755);
 	if (fd < 0)
