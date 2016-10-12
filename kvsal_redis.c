@@ -14,9 +14,14 @@ int kvsal_init(void)
 {
 	unsigned int j;
 	redisReply *reply;
-	const char *hostname = "127.0.0.1";
+	char *hostname = NULL;
+	char hostname_default[] = "127.0.0.1";
 	struct timeval timeout = { 1, 500000 }; /* 1.5 seconds */
 	int port = 6379; /* REDIS default */
+
+	hostname = getenv(KVSNS_SERVER);
+	if (hostname == NULL)
+		hostname = hostname_default;
 
 	rediscontext = redisConnectWithTimeout(hostname, port, timeout);
 	if (rediscontext == NULL || rediscontext->err) {
