@@ -17,7 +17,7 @@ static int kvsns_set_store_url(void)
 	char *store = NULL;
 
 	snprintf(k, KLEN, "store_url");
-	store = getenv(KVSNS_STORE_ENV);
+	store = getenv(KVSNS_STORE);
 	if (store == NULL) {
 		rc = kvsal_get_char(k, v);
 		if (rc == 0)
