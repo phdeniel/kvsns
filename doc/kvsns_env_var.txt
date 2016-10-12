@@ -1,0 +1,20 @@
+Useful environment variables
+---------------------------
+
+KVSNS_STORE : the URL to the object store.
+	for a posix objecvt store, this a path to directory
+	whose permissions allow user to write in it.
+
+KVSNS_SERVER: the IP address for the redis server used to store keys
+	if not set 127.0.0.1 will be used.
+
+pNFS setup : make redis server capable of accept remote connections
+	You need to edit the redis config file located in either
+	/etc/redis/redis.conf or /etc/redis.conf.
+	Change the "bind" line like this
+	Before
+		bind 127.0.0.1
+	After
+		bind 127.0.0.1 10.2.3.56
+	You may add more address to listen on if needed.
+
