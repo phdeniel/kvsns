@@ -74,6 +74,9 @@ rm -rf $RPM_BUILD_ROOT
 %{_bindir}/kvsns_busybox
 
 %changelog
+* Wed Nov 16 2016 Philippe DENIEL <philippe.deniel@cea.fr> 1.0.1
+- Release candidate
+
 * Mon Aug  1 2016 Philippe DENIEL <philippe.deniel@cea.fr> 0.9.2
 - Source code tree refurbished
 
