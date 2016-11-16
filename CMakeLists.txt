@@ -50,18 +50,7 @@ SET(kvsns_LIB_SRCS
 add_library(kvsns SHARED ${kvsns_LIB_SRCS})
 target_link_libraries(kvsns ${STORE_LIBRARY} ${KVSAL_LIBRARY})
 
-add_executable(kvsns_test kvsns_test.c)
-target_link_libraries(kvsns_test kvsns ${STORE_LIBRARY}
-		      ${KVSAL_LIBRARY} )
-
-add_executable(kvsns_file_test_unlink_on_close kvsns_file_test_unlink_on_close.c)
-target_link_libraries(kvsns_file_test_unlink_on_close kvsns ${STORE_LIBRARY}
-		      ${KVSAL_LIBRARY})
-
-add_executable(kvsns_file_test_write kvsns_file_test_write.c)
-target_link_libraries(kvsns_file_test_write kvsns ${STORE_LIBRARY}
-		      ${KVSAL_LIBRARY})
-
+add_subdirectory(tests)
 add_subdirectory(kvsns_shell)
 
 # CPack / rpmbuild specific stuff

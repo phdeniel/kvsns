@@ -34,10 +34,9 @@
 #include <unistd.h>
 #include <stdlib.h>
 #include <errno.h>
-#include "kvsns.h"
-#include "kvsal/kvsal.h"
-#include "kvsns.h"
-#include "kvsns_internal.h"
+#include "../kvsal/kvsal.h"
+#include "../kvsns.h"
+#include "../kvsns_internal.h"
 
 int main(int argc, char *argv[])
 {
@@ -94,19 +93,19 @@ int main(int argc, char *argv[])
 	printf("kvsal_get_char: val=%s\n", val);
 
 	rc = kvsal_exists("test");
-	printf( "Check existing key rc=%d\n", rc);
+	printf("Check existing key rc=%d\n", rc);
 
 	rc = kvsal_exists("testfail");
-	printf( "Check non-existing key rc=%d\n", rc);
+	printf("Check non-existing key rc=%d\n", rc);
 
 	rc = kvsal_del("test");
 	if (rc != 0) {
 		fprintf(stderr, "kvsns_get_char: err=%d\n", rc);
 		exit(1);
 	}
-	printf("kvsal_get_char after del: %d\n", kvsal_get_char("test", val)); 
+	printf("kvsal_get_char after del: %d\n", kvsal_get_char("test", val));
 
-	rc = kvsal_get_list_size( "*" );
+	rc = kvsal_get_list_size("*");
 	if (rc < 0) {
 		fprintf(stderr, "kvsal_get_list_size: err=%d\n", rc);
 		exit(1);
@@ -114,24 +113,27 @@ int main(int argc, char *argv[])
 	printf("kvsal_get_list_size * : rc=%d\n", rc);
 
 	end = 10;
-	rc = kvsal_get_list( "*", 0, &end, items);
+	rc = kvsal_get_list("*", 0, &end, items);
 	if (rc != 0) {
 		fprintf(stderr, "kvsns_get_list: err=%d\n", rc);
 		exit(1);
 	}
-	for (i=0 ; i < end ; i++)
+	for (i = 0 ; i < end ; i++)
 		printf("==> LIST: %s\n", items[i].str);
 
 	printf("+++++++++++++++\n");
 	end = 10;
-	rc = kvsal_get_list( "2.dentries.*", 0, &end, items);
+	rc = kvsal_get_list("2.dentries.*", 0, &end, items);
 	if (rc != 0) {
 		fprintf(stderr, "kvsns_get_list: err=%d\n", rc);
 		exit(1);
 	}
-	for (i=0 ; i < end ; i++) {
+	for (i = 0 ; i < end ; i++) {
 		printf("==> LIST: %s\n", items[i].str);
-		sscanf(items[i].str, "%llu.dentries.%s", &ino, tmp);
+		if (sscanf(items[i].str,
+			   "%llu.dentries.%s",
+			    &ino, tmp) == EOF)
+			exit(1);
 		printf("+++> LIST: %llu %s\n", ino, tmp);
 	}
 	printf("+++++++++++++++\n");
@@ -142,7 +144,7 @@ int main(int argc, char *argv[])
 	rc = kvsns_mkdir(&cred, &parent, "mydir", 0755, &ino);
 	if (rc != 0) {
 		if (rc == -EEXIST)
-			printf("dirent exists \n");
+			printf("dirent exists\n");
 		else {
 			fprintf(stderr, "kvsns_mkdir: err=%d\n", rc);
 			exit(1);
@@ -153,7 +155,7 @@ int main(int argc, char *argv[])
 	rc = kvsns_mkdir(&cred, &parent, "mydir2", 0755, &ino);
 	if (rc != 0) {
 		if (rc == -EEXIST)
-			printf("dirent exists \n");
+			printf("dirent exists\n");
 		else {
 			fprintf(stderr, "kvsns_mkdir: err=%d\n", rc);
 			exit(1);
@@ -174,8 +176,9 @@ int main(int argc, char *argv[])
 		exit(1);
 	}
 	printf("====> INO LOOKUP = %llu|%llu\n", ino2, parent);
-	if (parent != ino2) 
-		fprintf(stderr, "kvsns_lookupp: mauvaise implémentation !!!\n");
+	if (parent != ino2)
+		fprintf(stderr,
+			"kvsns_lookupp: mauvaise implémentation !!!\n");
 
 	rc = kvsns_rmdir(&cred, &parent, "mydir");
 	if (rc != 0) {
@@ -183,7 +186,7 @@ int main(int argc, char *argv[])
 		exit(1);
 	}
 
-	printf("######## OK ########\n");
+	printf("######## THE END : OK ########\n");
 	return 0;
 
 }
