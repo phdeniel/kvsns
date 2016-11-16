@@ -37,6 +37,7 @@
 #include <string.h>
 #include <time.h>
 #include <sys/time.h>
+#include "kvsal/kvsal.h"
 #include "kvsns.h"
 #include "kvsns_internal.h"
 #include "extstore.h"
