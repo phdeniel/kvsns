@@ -36,7 +36,7 @@
 #include <hiredis/hiredis.h>
 #include <pthread.h>
 #include <time.h>
-#include "kvsns.h"
+#include "kvsal.h"
 
 /* The REDIS context exists in the TLS, for MT-Safety */
 __thread redisContext *rediscontext = NULL;
