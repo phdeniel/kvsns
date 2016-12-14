@@ -52,6 +52,7 @@ target_link_libraries(kvsns ${STORE_LIBRARY} ${KVSAL_LIBRARY})
 
 add_subdirectory(tests)
 add_subdirectory(kvsns_shell)
+add_subdirectory(kvsal_non_reg)
 
 # CPack / rpmbuild specific stuff
 set(CPACK_PACKAGE_FILE_NAME "libkvsns-Source" )
