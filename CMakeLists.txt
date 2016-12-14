@@ -14,6 +14,30 @@ set(LIBKVSNS_BASE_VERSION ${LIBKVSNS_MAJOR_VERSION}.${LIBKVSNS_MINOR_VERSION}.${
 message( STATUS "cmake version ${CMAKE_MAJOR_VERSION}.${CMAKE_MINOR_VERSION}" )
 message( STATUS "libkvsns version ${LIBKVSNS_BASE_VERSION}")
 
+# Option (for choosing KVSAL backend)
+option(USE_KVS_REDIS "Use REDIS as a KVS in KVSAL" ON)
+option(USE_KVS_MERO "USE MERO as a KVS in KVSAL" OFF)
+
+set(USE_KVS_REDIS ${USE_KVS_REDIS}
+    CACHE BOOL
+    "KVSAL is REDIS-based"
+    FORCE)
+
+set(USE_KVS_MERO ${USE_KVS_MERO}
+    CACHE BOOL
+    "KVSAL is MERO-based"
+    FORCE)
+
+if(USE_KVS_MERO)
+  set(USE_KVS_REDIS OFF)
+  message(STATUS "Mero is used, disabling REDIS")
+endif(USE_KVS_MERO)
+
+message(STATUS "USE_KVS_REDIS=${USE_KVS_REDIS}")
+message(STATUS "USE_KVS_MERO=${USE_KVS_MERO}")
+
+## Start building stuff ##
+if(USE_KVS_REDIS)
 include(CheckIncludeFiles)
 include(CheckLibraryExists)
 
@@ -29,8 +53,7 @@ check_include_files("hiredis/hiredis.h" HAVE_HIREDIS_H)
 if((NOT HAVE_HIREDIS) OR (NOT HAVE_HIREDIS_H))
       message(FATAL_ERROR "Cannot find hiredis")
 endif((NOT HAVE_HIREDIS) OR (NOT HAVE_HIREDIS_H))
-
-## Start building stuff ##
+endif(USE_KVS_REDIS)
 
 # Start with object_store #
 add_subdirectory(posix_store)
