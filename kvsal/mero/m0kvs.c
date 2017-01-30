@@ -174,7 +174,7 @@ int m0_get_kvs(struct m0_clovis_idx *idx, char *k, char *v)
              m0_bufvec_empty_alloc(&vals, 1);
 
         assert(rc == 0);
-        strcpy(keys.ov_buf[0], k);
+        strncpy(keys.ov_buf[0], k, KLEN);
 
         rc = m0_clovis_idx_op(idx, M0_CLOVIS_IC_GET,
                               &keys, &vals, &op);
@@ -189,6 +189,7 @@ int m0_get_kvs(struct m0_clovis_idx *idx, char *k, char *v)
 		goto exit;
 
         printf( "V=%s\n", (char*)vals.ov_buf[0]);
+	strncpy(v, (char *)vals.ov_buf[0], VLEN); 
 
         m0_bufvec_free(&keys);
         m0_bufvec_free(&vals);

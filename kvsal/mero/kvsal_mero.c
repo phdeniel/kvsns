@@ -73,12 +73,12 @@ int kvsal_exists(char *k)
 
 int kvsal_set_char(char *k, char *v)
 {
-	return 0;
+	return m0_set_kvs(&idx, k, v);
 }
 
 int kvsal_get_char(char *k, char *v)
 {
-	return 0;
+	return m0_get_kvs(&idx, k, v);
 }
 
 int kvsal_set_stat(char *k, struct stat *buf)
@@ -108,7 +108,7 @@ int kvsal_incr_counter(char *k, unsigned long long *v)
 
 int kvsal_del(char *k)
 {
-	return 0;
+	return m0_del_kvs(&idx, k);
 }
 
 int kvsal_get_list(char *pattern, int start, int *size, kvsal_item_t *items)
