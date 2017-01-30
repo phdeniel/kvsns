@@ -15,6 +15,7 @@ set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} ${MERO_CFLAGS}")
 set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} ${MERO_CFLAGS}")
 
 SET(kvsal_LIB_SRCS
+   kvsal_internal.c
    kvsal_mero.c
 )
 
