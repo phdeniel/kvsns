@@ -35,11 +35,12 @@
 #include <string.h>
 #include <pthread.h>
 #include <time.h>
-#include "kvsal_internal.h"
+#include "m0kvs.h"
 #include "../kvsal.h"
 
 /* The REDIS context exists in the TLS, for MT-Safety */
 
+extern struct m0_clovis_realm     clovis_uber_realm; 
 struct m0_clovis_idx idx;
 
 int kvsal_init(void)

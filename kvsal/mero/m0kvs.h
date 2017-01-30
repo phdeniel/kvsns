@@ -1,3 +1,4 @@
+/* -*- C -*- */
 /*
  * vim:noexpandtab:shiftwidth=8:tabstop=8:
  * 
@@ -25,20 +26,39 @@
  * -------------
  */
 
-
-
 #include <stdlib.h>
 #include <stdio.h>
 #include <fcntl.h>
 #include <sys/time.h>
 #include <assert.h>
+#include <fnmatch.h>
 
 #include "clovis/clovis.h"
 #include "clovis/clovis_internal.h"
 #include "clovis/clovis_idx.h"
 
+#include "../kvsal.h"
+
+extern struct m0_clovis_idx idx;
+
 int init_clovis(void); 
-int fini_clovis(void); 
+void fini_clovis(void); 
 void get_idx(struct m0_clovis_idx *idx);
 
 
+int m0_get_kvs(struct m0_clovis_idx *idx, char *k, char *v);
+int m0_set_kvs(struct m0_clovis_idx *idx, char *k, char *v);
+int m0_del_kvs(struct m0_clovis_idx *idx, char *k);
+void m0_list_kvs(struct m0_clovis_idx *idx);
+void m0_iter_kvs(struct m0_clovis_idx *idx, char *k);
+void m0_pattern_kvs(struct m0_clovis_idx *idx, char *k, char *pattern);
+
+/*
+ *  Local variables:
+ *  c-indentation-style: "K&R"
+ *  c-basic-offset: 8
+ *  tab-width: 8
+ *  fill-column: 80
+ *  scroll-step: 1
+ *  End:
+ */
