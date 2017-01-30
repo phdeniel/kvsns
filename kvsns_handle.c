@@ -42,6 +42,10 @@
 #include "kvsns_internal.h"
 #include "extstore.h"
 
+static char kvsns_store_default[] = KVSNS_STORE_DEFAULT;
+static char kvsns_store_base[MAXPATHLEN];
+extern kvsns_debug;
+
 static int kvsns_set_store_url(void)
 {
 	int rc;

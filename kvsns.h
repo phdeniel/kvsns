@@ -84,10 +84,7 @@
 #define KVSNS_ACCESS_EXEC	4
 
 /* KVSAL related definitions and functions */
-static char kvsns_store_default[] = KVSNS_STORE_DEFAULT;
-static char kvsns_store_base[MAXPATHLEN];
 
-static int kvsns_debug = false;
 
 typedef unsigned long long int kvsns_ino_t;
 

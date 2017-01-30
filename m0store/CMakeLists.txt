@@ -18,7 +18,7 @@ SET(m0store_LIB_SRCS
    extstore.c
 )
 
-add_library(m0store STATIC ${m0store_LIB_SRCS})
+add_library(m0store SHARED ${m0store_LIB_SRCS})
 
 target_link_libraries(m0store
   mero
@@ -26,21 +26,4 @@ target_link_libraries(m0store
   yaml
   gf_complete
   ${SYSTEM_LIBRARIES} 
-)
-
-add_executable(extstore_test  extstore_test.c test_routines.c extstore.c extstore.h)
-target_link_libraries(extstore_test
-  mero
-  uuid
-  yaml
-  gf_complete
-)
-
-add_executable(extstore_test_mt  extstore_test_mt.c test_routines.c extstore.c extstore.h)
-target_link_libraries(extstore_test_mt
-  pthread
-  mero
-  uuid
-  yaml
-  gf_complete
 )

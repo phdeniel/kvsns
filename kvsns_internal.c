@@ -41,6 +41,8 @@
 #include "kvsns.h"
 #include "kvsns_internal.h"
 
+int kvsns_debug = false;
+
 int kvsns_next_inode(kvsns_ino_t *ino)
 {
 	int rc;

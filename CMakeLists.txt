@@ -28,6 +28,9 @@ set(USE_KVS_MERO ${USE_KVS_MERO}
     "KVSAL is MERO-based"
     FORCE)
 
+option(USE_POSIX_STORE "Use POSIX directory as object store" ON)
+option(USE_MERO_STORE "USE MERO as object store" OFF)
+
 if(USE_KVS_MERO)
   set(USE_KVS_REDIS OFF)
   message(STATUS "Mero is used, disabling REDIS")
@@ -35,6 +38,8 @@ endif(USE_KVS_MERO)
 
 message(STATUS "USE_KVS_REDIS=${USE_KVS_REDIS}")
 message(STATUS "USE_KVS_MERO=${USE_KVS_MERO}")
+message(STATUS "USE_POSIX_STORE=${USE_POSIX_STORE}")
+message(STATUS "USE_MERO_STORE=${USE_MERO_STORE}")
 
 ## Start building stuff ##
 if(USE_KVS_REDIS)
@@ -56,8 +61,15 @@ endif((NOT HAVE_HIREDIS) OR (NOT HAVE_HIREDIS_H))
 endif(USE_KVS_REDIS)
 
 # Start with object_store #
-add_subdirectory(posix_store)
-set(STORE_LIBRARY posix_store)
+if (USE_POSIX_STORE)
+    add_subdirectory(posix_store)
+    set(STORE_LIBRARY posix_store)
+endif (USE_POSIX_STORE)
+
+if (USE_MERO_STORE)
+    add_subdirectory(m0store)
+    set(STORE_LIBRARY m0store)
+endif (USE_MERO_STORE)
 
 add_subdirectory(kvsal)
 set(KVSAL_LIBRARY kvsal)

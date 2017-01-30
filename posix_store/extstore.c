@@ -33,6 +33,10 @@
 
 #include "../extstore.h"
 
+static char kvsns_store_default[] = KVSNS_STORE_DEFAULT;
+static char kvsns_store_base[MAXPATHLEN];
+static int kvsns_debug = false;
+
 static char store_root[MAXPATHLEN];
 
 static int build_extstore_path(kvsns_ino_t object,

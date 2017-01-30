@@ -40,6 +40,8 @@
 #include "kvsns_internal.h"
 #include "extstore.h"
 
+extern int kvsns_debug;
+
 static int kvsns_str2ownerlist(kvsns_open_owner_t *ownerlist, int *size,
 			        char *str)
 {

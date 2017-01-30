@@ -39,6 +39,8 @@
 #include "kvsns.h"
 #include "kvsns_internal.h"
 
+extern int kvsns_debug;
+
 int kvsns_setxattr(kvsns_cred_t *cred, kvsns_ino_t *ino,
 		   char *name, char *value, size_t size, int flags)
 {
