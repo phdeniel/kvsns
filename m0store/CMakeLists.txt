@@ -1,5 +1,5 @@
 set(LUSTRE_PATH "/usr/src/lustre-2.7.0")
-set(MERO "/home/phil/mero")
+set(MERO_PATH "/home/phil/mero")
 
 set(MERO_CFLAGS "-D_REENTRANT -D_GNU_SOURCE -DM0_INTERNAL='' -DM0_EXTERN=extern ")
 set(MERO_CFLAGS "${MERO_CFLAGS} -include config.h ")
