@@ -71,6 +71,7 @@ static struct m0_clovis_realm     clovis_uber_realm;
 static struct m0_clovis_config    clovis_conf;
 
 /* static struct m0_clovis_idx idx;*/
+extern struct m0_clovis_idx idx;
 
 static void get_clovis_env(void)
 {
@@ -145,4 +146,20 @@ int init_clovis(void)
 err_exit:
         return rc;
 }
+
+void fini_clovis(void)
+{
+        m0_clovis_idx_fini(&idx);
+        m0_clovis_fini(&clovis_instance, true);
+}
+
+
+void get_idx(struct m0_clovis_idx *idx)
+{
+        struct m0_fid ifid = M0_FID_TINIT('i', 8, 1);
+
+         m0_clovis_idx_init(idx, &clovis_container.co_realm,
+                                (struct m0_uint128 *)&ifid);
+}
+
 
