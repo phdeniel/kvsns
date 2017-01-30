@@ -25,8 +25,8 @@
  * -------------
  */
 
-/* kvsal_redis.c
- * KVS Abstraction Layer: interface for REDIS
+/* kvsal_mero.c
+ * KVS Abstraction Layer: interface for MERO 
  */
 
 #include <errno.h>
