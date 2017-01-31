@@ -75,7 +75,9 @@ int kvsal_discard_transaction(void)
 
 int kvsal_exists(char *k)
 {
-	return 0;
+	char myval[VLEN];
+
+	return m0_get_kvs(&idx, k, myval);
 }
 
 int kvsal_set_char(char *k, char *v)
