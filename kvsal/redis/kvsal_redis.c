@@ -77,6 +77,11 @@ int kvsal_init(void)
 	return 0;
 }
 
+int kvsal_fini(void)
+{
+	return 0;
+}
+
 int kvsal_begin_transaction(void)
 {
 	redisReply *reply;

@@ -95,6 +95,11 @@ int kvsns_start(void)
 	return 0;
 }
 
+int kvsns_stop(void)
+{
+	return kvsal_fini();
+}
+
 int kvsns_init_root(int openbar)
 {
 	char k[KLEN];

@@ -64,6 +64,7 @@ typedef struct kvsal_item {
 } kvsal_item_t;
 
 int kvsal_init(void);
+int kvsal_fini(void);
 int kvsal_begin_transaction(void);
 int kvsal_end_transaction(void);
 int kvsal_discard_transaction(void);

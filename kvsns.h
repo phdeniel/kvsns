@@ -126,6 +126,7 @@ typedef struct kvsns_xattr__ {
 } kvsns_xattr_t;
 
 int kvsns_start(void);
+int kvsns_stop(void);
 void kvsns_set_debug(bool debug);
 int kvsns_init_root(int openbar);
 int kvsns_access(kvsns_cred_t *cred, kvsns_ino_t *ino, int flags);
