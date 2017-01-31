@@ -46,8 +46,10 @@ void fini_clovis(void);
 void get_idx(struct m0_clovis_idx *idx);
 
 
-int m0_get_kvs(struct m0_clovis_idx *idx, char *k, char *v);
-int m0_set_kvs(struct m0_clovis_idx *idx, char *k, char *v);
+int m0_get_kvs(struct m0_clovis_idx *idx, char *k, size_t klen,
+	       char *v, size_t vlen);
+int m0_set_kvs(struct m0_clovis_idx *idx, char *k, size_t klen,
+	       char *v, size_t vlen);
 int m0_del_kvs(struct m0_clovis_idx *idx, char *k);
 void m0_list_kvs(struct m0_clovis_idx *idx);
 void m0_iter_kvs(struct m0_clovis_idx *idx, char *k);

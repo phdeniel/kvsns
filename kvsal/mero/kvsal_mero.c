@@ -75,39 +75,65 @@ int kvsal_discard_transaction(void)
 
 int kvsal_exists(char *k)
 {
+	size_t klen;
 	char myval[VLEN];
 
-	return m0_get_kvs(&idx, k, myval);
+	klen = strnlen(k, KLEN-1)+1;
+	return m0_get_kvs(&idx, k, klen, myval, VLEN);
 }
 
 int kvsal_set_char(char *k, char *v)
 {
-	return m0_set_kvs(&idx, k, v);
+	size_t klen;
+	size_t vlen;
+
+	klen = strnlen(k, KLEN-1)+1;
+	vlen = strnlen(v, VLEN-1)+1;
+	return m0_set_kvs(&idx, k, klen, v, vlen);
 }
 
 int kvsal_get_char(char *k, char *v)
 {
-	return m0_get_kvs(&idx, k, v);
+	size_t klen;
+
+	klen = strnlen(k, KLEN-1)+1;
+	return m0_get_kvs(&idx, k, klen, v, VLEN);
 }
 
 int kvsal_set_stat(char *k, struct stat *buf)
 {
-	return 0;
+	size_t klen;
+
+	klen = strnlen(k, KLEN-1)+1;
+	return m0_set_kvs(&idx, k, klen,
+			  (char *)buf, sizeof(struct stat));
 }
 
 int kvsal_get_stat(char *k, struct stat *buf)
 {
-	return 0;
+	size_t klen;
+
+	klen = strnlen(k, KLEN-1)+1;
+	return m0_get_kvs(&idx, k, klen,
+			  (char *)buf, sizeof(struct stat));
 }
 
 int kvsal_set_binary(char *k, char *buf, size_t size)
 {
-	return 0;
+	size_t klen;
+
+	klen = strnlen(k, KLEN-1)+1;
+	return m0_set_kvs(&idx, k, klen,
+			  buf, size);
 }
 
 int kvsal_get_binary(char *k, char *buf, size_t *size)
 {
-	return 0;
+	size_t klen;
+
+	klen = strnlen(k, KLEN-1)+1;
+	return m0_get_kvs(&idx, k, klen,
+			  buf, VLEN);
 }
 
 int kvsal_incr_counter(char *k, unsigned long long *v)

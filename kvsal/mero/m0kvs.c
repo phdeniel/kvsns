@@ -163,7 +163,8 @@ void get_idx(struct m0_clovis_idx *idx)
                                 (struct m0_uint128 *)&ifid);
 }
 
-int m0_get_kvs(struct m0_clovis_idx *idx, char *k, char *v)
+int m0_get_kvs(struct m0_clovis_idx *idx, char *k, size_t klen,
+	       char *v, size_t vlen)
 {
         struct m0_bufvec keys;
         struct m0_bufvec vals;
@@ -174,7 +175,7 @@ int m0_get_kvs(struct m0_clovis_idx *idx, char *k, char *v)
              m0_bufvec_empty_alloc(&vals, 1);
 
         assert(rc == 0);
-        strncpy(keys.ov_buf[0], k, KLEN);
+	memcpy(keys.ov_buf[0], k, klen);
 
         rc = m0_clovis_idx_op(idx, M0_CLOVIS_IC_GET,
                               &keys, &vals, &op);
@@ -189,7 +190,7 @@ int m0_get_kvs(struct m0_clovis_idx *idx, char *k, char *v)
 		goto exit;
 
         printf( "V=%s\n", (char*)vals.ov_buf[0]);
-	strncpy(v, (char *)vals.ov_buf[0], VLEN); 
+	memcpy(v, (char *)vals.ov_buf[0], vlen);
 
         m0_bufvec_free(&keys);
         m0_bufvec_free(&vals);
@@ -205,7 +206,8 @@ exit:
 	return rc;
 }
 
-int m0_set_kvs(struct m0_clovis_idx *idx, char *k, char *v)
+int m0_set_kvs(struct m0_clovis_idx *idx, char *k, size_t klen, 
+	       char *v, size_t vlen)
 {
         struct m0_bufvec keys;
         struct m0_bufvec vals;
@@ -216,8 +218,8 @@ int m0_set_kvs(struct m0_clovis_idx *idx, char *k, char *v)
              m0_bufvec_alloc(&vals, 1, VLEN);
 
         assert(rc == 0);
-        strcpy(keys.ov_buf[0], k);
-        strcpy(vals.ov_buf[0], v);
+	memcpy(keys.ov_buf[0], k, klen);
+	memcpy(vals.ov_buf[0], v, vlen);
 
         rc = m0_clovis_idx_op(idx, M0_CLOVIS_IC_PUT,
                               &keys, &vals, &op);
