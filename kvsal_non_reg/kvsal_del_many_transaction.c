@@ -19,9 +19,9 @@ int main(int argc, char *argv[])
 
 	howmany = atoi(argv[2]);
 
-	rc = kvsns_start();
+	rc = kvsal_init();
 	if (rc != 0) {
-		fprintf(stderr, "kvsns_init: err=%d\n", rc);
+		fprintf(stderr, "kvsal_init: err=%d\n", rc);
 		exit(-rc);
 	}
 
@@ -46,6 +46,11 @@ int main(int argc, char *argv[])
 		exit(-rc);
 	}
 
+	rc = kvsal_fini();
+	if (rc != 0) {
+		fprintf(stderr, "kvsal_init: err=%d\n", rc);
+		exit(-rc);
+	}
 	printf("+++++++++++++++\n");
 
 	exit(0);

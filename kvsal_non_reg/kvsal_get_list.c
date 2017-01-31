@@ -21,9 +21,9 @@ int main(int argc, char *argv[])
 		exit(1);
 	}
 
-	rc = kvsns_start();
+	rc = kvsal_init();
 	if (rc != 0) {
-		fprintf(stderr, "kvsns_init: err=%d\n", rc);
+		fprintf(stderr, "kvsal_init: err=%d\n", rc);
 		exit(-rc);
 	}
 
@@ -46,6 +46,12 @@ int main(int argc, char *argv[])
 			printf("==> %d %s\n", offset+i, items[i].str);
 
 		offset += size;
+	}
+
+	rc = kvsal_fini();
+	if (rc != 0) {
+		fprintf(stderr, "kvsal_init: err=%d\n", rc);
+		exit(-rc);
 	}
 
 	printf("+++++++++++++++\n");
