@@ -127,9 +127,9 @@ int init_clovis(void)
 	}
 
 	/* Container is where Entities (object) resides.
- *	  * Currently, this feature is not implemented in Clovis.
- *		   * We have only single realm: UBER REALM. In future with multiple realms
- *			    * multiple applications can run in different containers. */
+	 * Currently, this feature is not implemented in Clovis.
+	 * We have only single realm: UBER REALM. In future with multiple realms
+	 * multiple applications can run in different containers. */
 	m0_clovis_container_init(&clovis_container,
 				 NULL, &M0_CLOVIS_UBER_REALM,
 				 clovis_instance);
