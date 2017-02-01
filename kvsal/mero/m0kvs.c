@@ -164,7 +164,7 @@ void get_idx(struct m0_clovis_idx *idx)
 }
 
 int m0_get_kvs(struct m0_clovis_idx *idx, char *k, size_t klen,
-	       char *v, size_t vlen)
+	       char *v, size_t *vlen)
 {
         struct m0_bufvec keys;
         struct m0_bufvec vals;
@@ -189,8 +189,10 @@ int m0_get_kvs(struct m0_clovis_idx *idx, char *k, size_t klen,
 	if (rc != 0)
 		goto exit;
 
-        printf( "V=%s\n", (char*)vals.ov_buf[0]);
-	memcpy(v, (char *)vals.ov_buf[0], vlen);
+        printf("V=%s len=%lld\n", (char*)vals.ov_buf[0],
+		(long long int)vals.ov_vec.v_count[0]);
+	*vlen = (size_t)vals.ov_vec.v_count[0];
+	memcpy(v, (char *)vals.ov_buf[0], *vlen);
 
         m0_bufvec_free(&keys);
         m0_bufvec_free(&vals);

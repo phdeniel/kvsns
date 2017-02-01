@@ -47,7 +47,7 @@ void get_idx(struct m0_clovis_idx *idx);
 
 
 int m0_get_kvs(struct m0_clovis_idx *idx, char *k, size_t klen,
-	       char *v, size_t vlen);
+	       char *v, size_t *vlen);
 int m0_set_kvs(struct m0_clovis_idx *idx, char *k, size_t klen,
 	       char *v, size_t vlen);
 int m0_del_kvs(struct m0_clovis_idx *idx, char *k);
