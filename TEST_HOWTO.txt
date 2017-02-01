@@ -1,0 +1,13 @@
+1- Start mero (as root, from mero sources)
+	clovis/st/utils/mero_services.sh start
+
+2- Create the index in MERO (as root from c0cp sources)
+	 ./c0kvscreate 10.2.3.199@tcp:12345:33:100 10.2.3.199@tcp:12345:34:1 10.2.3.199@tcp:12345:33:100 '<0x7000000000000001:0>' '<0x7200000000000000:0>' /tmp
+
+3- set env (from kvsns sources)
+	it seems only root can use MERO
+
+	./set_clovis_env.sh
+	==> copy/paste the line to set environment
+
+4- you are ready to test kvsns and kvsal non-regression test

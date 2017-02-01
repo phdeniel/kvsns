@@ -148,10 +148,22 @@ int kvsal_del(char *k)
 
 int kvsal_get_list(char *pattern, int start, int *size, kvsal_item_t *items)
 {
+	char initk[KLEN];
+
+	strncpy(initk, pattern, KLEN);
+	initk[strnlen(pattern, KLEN)-1] = '\0';
+	printf("===> pattern=%s, initk=%s\n", pattern, initk);
+
+	exit(0);
 	return 0;
 }
 
 int kvsal_get_list_size(char *pattern)
 {
-	return 0;
+	char initk[KLEN];
+
+	strncpy(initk, pattern, KLEN);
+	initk[strnlen(pattern, KLEN)-1] = '\0';
+
+	return m0_pattern_kvs_size(&idx, initk, pattern);
 }

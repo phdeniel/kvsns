@@ -53,7 +53,8 @@ int m0_set_kvs(struct m0_clovis_idx *idx, char *k, size_t klen,
 int m0_del_kvs(struct m0_clovis_idx *idx, char *k);
 void m0_list_kvs(struct m0_clovis_idx *idx);
 void m0_iter_kvs(struct m0_clovis_idx *idx, char *k);
-void m0_pattern_kvs(struct m0_clovis_idx *idx, char *k, char *pattern);
+int m0_pattern_kvs(struct m0_clovis_idx *idx, char *k, char *pattern);
+int m0_pattern_kvs_size(struct m0_clovis_idx *idx, char *k, char *pattern);
 
 /*
  *  Local variables:

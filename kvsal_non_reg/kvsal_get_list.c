@@ -34,6 +34,7 @@ int main(int argc, char *argv[])
 		exit(1);
 	}
 	maxsize = rc;
+	printf("kvsal_get_list_size: found %d items\n", rc);
 
 	while (offset < maxsize) {
 		size = LIST_TRUNK;
