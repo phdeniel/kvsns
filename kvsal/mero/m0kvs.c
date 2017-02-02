@@ -402,7 +402,6 @@ int m0_pattern_kvs_size(struct m0_clovis_idx *idx, char *k, char *pattern)
                         return rc;
                 }
 
-                printf("keys.ov_vec.v_nr =%d\n", keys.ov_vec.v_nr);
                 for (i = 0; i < keys.ov_vec.v_nr ; i++) {
                         if (keys.ov_buf[i] == NULL) {
                                 stop = true;
@@ -414,17 +413,13 @@ int m0_pattern_kvs_size(struct m0_clovis_idx *idx, char *k, char *pattern)
 
                                 /* Avoid last one and use it as first
 				 *  of next pass */
-                                if ((i != keys.ov_vec.v_nr -1) && !stop) {
+                                if ((i != keys.ov_vec.v_nr -1) && !stop)
                                         size += 1;
-                                        printf("%d, key=%s vals=%s\n", i,
-                                                (char *)keys.ov_buf[i],
-                                                (char *)vals.ov_buf[i]);
-                                }
+                                
                                 if (startp == false)
                                         startp = true;
                         } else {
                                 if (startp == true) {
-                                        printf("Stop by pattern\n");
                                         stop = true;
                                         break;
                                 }
@@ -528,33 +523,6 @@ int m0_pattern_kvs(struct m0_clovis_idx *idx, char *k, char *pattern)
 
 	return size;
 }
-
-void m0_list_kvs(struct m0_clovis_idx *idx)
-{
-	int rc;
-	struct m0_clovis_op       *op = NULL;
-        struct m0_bufvec           keys;
-
-	/* List all indices (only one exists). */
-	rc = m0_bufvec_alloc(&keys, 2, sizeof(struct m0_fid));
-	assert(rc == 0);
-
-	rc = m0_clovis_idx_op(idx, M0_CLOVIS_IC_LIST, &keys, NULL, &op);
-	assert(rc == 0);
-
-        m0_clovis_op_launch(&op, 1);
-        rc = m0_clovis_op_wait(op, M0_BITS(M0_CLOVIS_OS_STABLE),
-                               m0_time_from_now(3,0));
-        assert(rc == 0);
-        assert(keys.ov_vec.v_nr == 2);
-        assert(keys.ov_vec.v_count[0] == sizeof(struct m0_fid));
-        //assert(m0_fid_eq(keys.ov_buf[0], &ifid));
-        assert(keys.ov_vec.v_count[1] == sizeof(struct m0_fid));
-
-        m0_clovis_op_fini(op);
-        m0_free0(&op);
-}
-
 
 /*
  *  Local variables:
