@@ -186,3 +186,26 @@ int kvsal_get_list_size(char *pattern)
 
 	return m0_pattern_kvs_size(&idx, initk, pattern);
 }
+
+int kvsal_fetch_list(char *pattern, kvsal_list_t *list)
+{
+       if (!pattern || !list)
+                return -EINVAL;
+
+        return 0;
+}
+
+int kvsal_dispose_list(kvsal_list_t *list)
+{
+        if (!list)
+                return -EINVAL;
+
+        return 0;
+}
+
+int kvsal_get_list2(kvsal_list_t *list, int start, int *end,
+                    kvsal_item_t *items)
+{
+	return 0;
+}
+

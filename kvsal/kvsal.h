@@ -63,6 +63,12 @@ typedef struct kvsal_item {
 	char str[KLEN];
 } kvsal_item_t;
 
+typedef struct kvsal_list {
+	char pattern[KLEN];
+	kvsal_item_t *content;
+	size_t size;
+} kvsal_list_t;
+
 int kvsal_init(void);
 int kvsal_fini(void);
 int kvsal_begin_transaction(void);
@@ -76,8 +82,12 @@ int kvsal_get_binary(char *k, char *buf, size_t *size);
 int kvsal_set_stat(char *k, struct stat *buf);
 int kvsal_get_stat(char *k, struct stat *buf);
 int kvsal_get_list_size(char *pattern);
-int kvsal_get_list(char *pattern, int start, int *end, kvsal_item_t *items);
 int kvsal_del(char *k);
 int kvsal_incr_counter(char *k, unsigned long long *v);
+
+int kvsal_get_list(char *pattern, int start, int *end, kvsal_item_t *items);
+int kvsal_get_list2(kvsal_list_t *list, int start, int *end, kvsal_item_t *items);
+int kvsal_fetch_list(char *pattern, kvsal_list_t *list);
+int kvsal_dispose_list(kvsal_list_t *list);
 
 #endif

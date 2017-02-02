@@ -431,3 +431,35 @@ int kvsal_get_list_size(char *pattern)
 	freeReplyObject(reply);
 	return rc;
 }
+
+int kvsal_fetch_list(char *pattern, kvsal_list_t *list)
+{
+	if (!pattern || !list)
+		return -EINVAL;
+
+	/* REDIS manages KVS in RAM. Nothing to do */
+	strncpy(list->pattern , pattern, KLEN);
+
+	return 0;
+}
+
+int kvsal_dispose_list(kvsal_list_t *list)
+{
+	if (!list)
+		return -EINVAL;
+
+	/* REDIS manages KVS in RAM. Nothing to do */
+	return 0;
+}
+
+int kvsal_get_list2(kvsal_list_t *list, int start, int *end,
+		    kvsal_item_t *items)
+{
+	if (!list)
+		return -EINVAL;
+
+	return kvsal_get_list(list->pattern, 
+			      start, 
+			      end,
+			      items);
+}
