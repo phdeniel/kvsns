@@ -89,6 +89,7 @@ int kvsns_listxattr(kvsns_cred_t *cred, kvsns_ino_t *ino, int offset,
 	kvsal_item_t *items;
 	int i;
 	kvsns_ino_t tmpino;
+	kvsal_list_t l;
 
 	if (kvsns_debug)
 		fprintf(stderr, "kvsns_listxattr\n");
@@ -101,8 +102,16 @@ int kvsns_listxattr(kvsns_cred_t *cred, kvsns_ino_t *ino, int offset,
 	if (items == NULL)
 		return -ENOMEM;
 
+	rc = kvsal_fetch_list(pattern, &l);
+	if (rc < 0)
+		return rc;
 
-	rc = kvsal_get_list(pattern, offset, size, items);
+
+	rc = kvsal_get_list2(&l, offset, size, items);
+	if (rc < 0)
+		return rc;
+
+	rc = kvsal_dispose_list(&l);
 	if (rc < 0)
 		return rc;
 
