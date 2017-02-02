@@ -45,9 +45,9 @@ int main(int argc, char *argv[])
 
 	while (offset < maxsize) {
 		size = LIST_TRUNK;
-		rc = kvsal_get_list2(&list, offset, &size, items);
+		rc = kvsal_get_list(&list, offset, &size, items);
 		if (rc < 0) {
-			fprintf(stderr, "kvsal_get_list2: err=%d\n", rc);
+			fprintf(stderr, "kvsal_get_list: err=%d\n", rc);
 			exit(-rc);
 		}
 		for (i = 0; i < size ; i++)

@@ -113,9 +113,9 @@ int main(int argc, char *argv[])
 	printf("kvsal_get_list_size * : rc=%d\n", rc);
 
 	end = 10;
-	rc = kvsal_get_list("*", 0, &end, items);
+	rc = kvsal_get_list_pattern("*", 0, &end, items);
 	if (rc != 0) {
-		fprintf(stderr, "kvsns_get_list: err=%d\n", rc);
+		fprintf(stderr, "kvsns_get_list_pattern: err=%d\n", rc);
 		exit(1);
 	}
 	for (i = 0 ; i < end ; i++)
@@ -123,9 +123,9 @@ int main(int argc, char *argv[])
 
 	printf("+++++++++++++++\n");
 	end = 10;
-	rc = kvsal_get_list("2.dentries.*", 0, &end, items);
+	rc = kvsal_get_list_pattern("2.dentries.*", 0, &end, items);
 	if (rc != 0) {
-		fprintf(stderr, "kvsns_get_list: err=%d\n", rc);
+		fprintf(stderr, "kvsns_get_list_pattern: err=%d\n", rc);
 		exit(1);
 	}
 	for (i = 0 ; i < end ; i++) {

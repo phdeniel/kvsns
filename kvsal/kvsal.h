@@ -85,8 +85,8 @@ int kvsal_get_list_size(char *pattern);
 int kvsal_del(char *k);
 int kvsal_incr_counter(char *k, unsigned long long *v);
 
-int kvsal_get_list(char *pattern, int start, int *end, kvsal_item_t *items);
-int kvsal_get_list2(kvsal_list_t *list, int start, int *end, kvsal_item_t *items);
+int kvsal_get_list_pattern(char *pattern, int start, int *end, kvsal_item_t *items);
+int kvsal_get_list(kvsal_list_t *list, int start, int *end, kvsal_item_t *items);
 int kvsal_fetch_list(char *pattern, kvsal_list_t *list);
 int kvsal_dispose_list(kvsal_list_t *list);
 

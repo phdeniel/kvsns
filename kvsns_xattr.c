@@ -107,7 +107,7 @@ int kvsns_listxattr(kvsns_cred_t *cred, kvsns_ino_t *ino, int offset,
 		return rc;
 
 
-	rc = kvsal_get_list2(&l, offset, size, items);
+	rc = kvsal_get_list(&l, offset, size, items);
 	if (rc < 0)
 		return rc;
 
@@ -144,6 +144,7 @@ int kvsns_remove_all_xattr(kvsns_cred_t *cred, kvsns_ino_t *ino)
 	int i;
 	int size;
 	kvsns_ino_t tmpino;
+	kvsal_list_t list;
 
 	if (kvsns_debug)
 		fprintf(stderr, "kvsns_remove_all_xattr\n");
@@ -153,9 +154,13 @@ int kvsns_remove_all_xattr(kvsns_cred_t *cred, kvsns_ino_t *ino)
 
 	snprintf(pattern, KLEN, "%llu.xattr.*", *ino);
 
+	rc = kvsal_fetch_list(pattern, &list);
+	if (rc < 0)
+		return rc;
+
 	do {
 		size = KVSNS_ARRAY_SIZE;
-		rc = kvsal_get_list(pattern, 0, &size, items);
+		rc = kvsal_get_list(&list, 0, &size, items);
 		if (rc < 0)
 			return rc;
 
@@ -163,6 +168,10 @@ int kvsns_remove_all_xattr(kvsns_cred_t *cred, kvsns_ino_t *ino)
 			RC_WRAP(kvsal_del, items[i].str);
 
 	} while (size > 0);
+
+	rc = kvsal_dispose_list(&list);
+	if (rc < 0)
+		return rc;
 
 	return 0;
 }

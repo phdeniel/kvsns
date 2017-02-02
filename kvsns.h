@@ -115,6 +115,11 @@ typedef struct kvsns_file_open_ {
 	int flags;
 } kvsns_file_open_t;
 
+typedef struct kvsns_dir {
+	kvsns_ino_t ino;
+	kvsal_list_t list;
+} kvsns_dir_t;
+
 enum kvsns_type {
 	KVSNS_DIR = 1,
 	KVSNS_FILE = 2,
@@ -141,8 +146,10 @@ int kvsns_readlink(kvsns_cred_t *cred, kvsns_ino_t *link,
 int kvsns_rmdir(kvsns_cred_t *cred, kvsns_ino_t *parent, char *name);
 int kvsns_lookup(kvsns_cred_t *cred, kvsns_ino_t *parent, char *name,
 		 kvsns_ino_t *myino);
-int kvsns_readdir(kvsns_cred_t *cred, kvsns_ino_t *dirt, off_t offset,
+int kvsns_opendir(kvsns_cred_t *cred, kvsns_ino_t *dir, kvsns_dir_t *ddir);
+int kvsns_readdir(kvsns_cred_t *cred, kvsns_dir_t *dir, off_t offset,
 		  kvsns_dentry_t *dirent, int *size);
+int kvsns_closedir(kvsns_dir_t *ddir);
 int kvsns_lookupp(kvsns_cred_t *cred, kvsns_ino_t *dir, kvsns_ino_t *parent);
 int kvsns_getattr(kvsns_cred_t *cred, kvsns_ino_t *ino, struct stat *buffstat);
 int kvsns_setattr(kvsns_cred_t *cred, kvsns_ino_t *ino, struct stat *setstat,

@@ -165,17 +165,6 @@ int kvsal_del(char *k)
 	return m0_del_kvs(&idx, k);
 }
 
-int kvsal_get_list(char *pattern, int start, int *size, kvsal_item_t *items)
-{
-	char initk[KLEN];
-
-	strncpy(initk, pattern, KLEN);
-	initk[strnlen(pattern, KLEN)-1] = '\0';
-	printf("===> pattern=%s, initk=%s\n", pattern, initk);
-
-	exit(0);
-	return 0;
-}
 
 int kvsal_get_list_size(char *pattern)
 {
@@ -203,9 +192,38 @@ int kvsal_dispose_list(kvsal_list_t *list)
         return 0;
 }
 
-int kvsal_get_list2(kvsal_list_t *list, int start, int *end,
+int kvsal_get_list(kvsal_list_t *list, int start, int *end,
                     kvsal_item_t *items)
 {
 	return 0;
 }
 
+/* Since the implementation should preftech the list in memory,
+ * this call can become pretty expensive */
+int kvsal_get_list_pattern(char *pattern, int start, int *size,
+			   kvsal_item_t *items)
+{
+	char initk[KLEN];
+	kvsal_list_t list;
+	int rc;
+
+	strncpy(initk, pattern, KLEN);
+	initk[strnlen(pattern, KLEN)-1] = '\0';
+	printf("===> pattern=%s, initk=%s\n", pattern, initk);
+
+	rc = kvsal_fetch_list(pattern, &list);
+	if (rc < 0 )
+		return rc;
+
+	rc = kvsal_get_list(&list, start, size, items);
+	if (rc < 0) {
+		kvsal_dispose_list(&list); /* Try to clean up */
+		return rc;
+	}
+
+	rc = kvsal_dispose_list(&list);
+	if (rc < 0 )
+		return rc;
+
+	return 0;
+}

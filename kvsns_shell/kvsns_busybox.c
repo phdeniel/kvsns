@@ -8,6 +8,7 @@
 #include <sys/types.h>
 #include <sys/param.h>
 #include <libgen.h>
+#include "../kvsal/kvsal.h"
 #include "../kvsns.h"
 
 int main(int argc, char *argv[])
@@ -274,12 +275,19 @@ int main(int argc, char *argv[])
 		off_t offset;
 		int size;
 		kvsns_dentry_t dirent[10];
+		kvsns_dir_t dirfd;
 		int i;
+
+		rc = kvsns_opendir(&cred, &current_inode, &dirfd);
+		if (rc != 0) {
+			printf("==> opendir failed rc=%d\n", rc);
+			exit(1);
+		}
 
 		offset = 0;
 		do {
 			size = 10;
-			rc = kvsns_readdir(&cred, &current_inode, offset,
+			rc = kvsns_readdir(&cred, &dirfd, offset,
 					   dirent, &size);
 			if (rc != 0) {
 				printf("==> readdir failed rc=%d\n", rc);
@@ -293,6 +301,13 @@ int main(int argc, char *argv[])
 
 			offset += size;
 		} while (size != 0);
+
+		rc = kvsns_closedir(&dirfd);
+		if (rc != 0) {
+			printf("==> closedir failed rc=%d\n", rc);
+			exit(1);
+		}
+
 	} else if (!strcmp(exec_name, "ns_getattr")) {
 		struct stat buffstat;
 

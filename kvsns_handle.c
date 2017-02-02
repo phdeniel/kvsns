@@ -290,7 +290,27 @@ aborted:
 	return rc;
 }
 
-int kvsns_readdir(kvsns_cred_t *cred, kvsns_ino_t *dir, off_t offset,
+int kvsns_opendir(kvsns_cred_t *cred, kvsns_ino_t *dir, kvsns_dir_t *ddir)
+{
+	char pattern[KLEN];
+	if (!cred || ! dir || !ddir)
+		return -EINVAL;
+	
+	snprintf(pattern, KLEN, "%llu.dentries.*", *dir);
+
+	ddir->ino = *dir;
+	return kvsal_fetch_list(pattern , &ddir->list);
+}
+
+int kvsns_closedir(kvsns_dir_t *dir)
+{
+	if (!dir)
+		return -EINVAL;
+
+	return kvsal_dispose_list(&dir->list);
+}
+
+int kvsns_readdir(kvsns_cred_t *cred, kvsns_dir_t *dir, off_t offset,
 		  kvsns_dentry_t *dirent, int *size)
 {
 	char pattern[KLEN];
@@ -306,7 +326,7 @@ int kvsns_readdir(kvsns_cred_t *cred, kvsns_ino_t *dir, off_t offset,
 	if (!cred || !dir || !dirent || !size)
 		return -EINVAL;
 
-	RC_WRAP(kvsns_access, cred, dir, KVSNS_ACCESS_READ);
+	RC_WRAP(kvsns_access, cred, &dir->ino, KVSNS_ACCESS_READ);
 
 	items = (kvsal_item_t *)malloc(*size*sizeof(kvsal_item_t));
 	if (items == NULL)
@@ -314,7 +334,7 @@ int kvsns_readdir(kvsns_cred_t *cred, kvsns_ino_t *dir, off_t offset,
 
 
 	snprintf(pattern, KLEN, "%llu.dentries.*", *dir);
-	rc = kvsal_get_list(pattern, (int)offset, size, items);
+	rc = kvsal_get_list(&dir->list, (int)offset, size, items);
 	if (rc < 0)
 		return rc;
 
@@ -330,7 +350,7 @@ int kvsns_readdir(kvsns_cred_t *cred, kvsns_ino_t *dir, off_t offset,
 			 &dirent[i].stats);
 	}
 
-	RC_WRAP(kvsns_update_stat, dir, STAT_ATIME_SET);
+	RC_WRAP(kvsns_update_stat, &dir->ino, STAT_ATIME_SET);
 
 	return 0;
 }
@@ -711,15 +731,20 @@ int kvsns_mr_proper(void)
 	kvsal_item_t items[KVSNS_ARRAY_SIZE];
 	int i;
 	int size;
+	kvsal_list_t list;
 
 	if (kvsns_debug)
 		fprintf(stderr, "kvsns_mr_proper\n");
 
 	snprintf(pattern, KLEN, "*");
 
+	rc = kvsal_fetch_list(pattern, &list);
+	if (rc < 0)
+		return rc;
+
 	do {
 		size = KVSNS_ARRAY_SIZE;
-		rc = kvsal_get_list(pattern, 0, &size, items);
+		rc = kvsal_get_list(&list, 0, &size, items);
 		if (rc < 0)
 			return rc;
 
@@ -727,6 +752,10 @@ int kvsns_mr_proper(void)
 			RC_WRAP(kvsal_del, items[i].str);
 
 	} while (size > 0);
+
+	rc = kvsal_fetch_list(pattern, &list);
+	if (rc < 0)
+		return rc;
 
 	return 0;
 }
