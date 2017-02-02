@@ -115,7 +115,6 @@ int kvsal_get_stat(char *k, struct stat *buf)
 {
 	size_t klen;
 	size_t vlen = sizeof(struct stat);
-	int rc;
 
 	klen = strnlen(k, KLEN-1)+1;
 	return m0_get_kvs(&idx, k, klen,
@@ -142,6 +141,22 @@ int kvsal_get_binary(char *k, char *buf, size_t *size)
 
 int kvsal_incr_counter(char *k, unsigned long long *v)
 {
+	int rc;
+	char buf[VLEN];
+	size_t vlen = VLEN;
+
+	rc = m0_get_kvs(&idx, k, KLEN, buf, &vlen);
+	if (rc != 0)
+		return rc;
+
+	sscanf(buf, "%llu", v);
+	*v += 1; 
+	snprintf(buf, VLEN, "%llu", *v);
+
+	rc = m0_set_kvs(&idx, k, KLEN, buf, vlen);
+	if (rc != 0)
+		return rc;
+
 	return 0;
 }
 
