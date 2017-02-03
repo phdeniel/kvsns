@@ -28,6 +28,12 @@ int main(int argc, char *argv[])
 		exit(-rc);
 	}
 
+	rc = kvsal_init_list(&list);
+	if (rc != 0) {
+		fprintf(stderr, "kvsal_init_list: err=%d\n", rc);
+		exit(-rc);
+	}
+
 	snprintf(key, KLEN, "%s*", argv[1]);
 	rc = kvsal_get_list_size(key);
 	if (rc < 0) {

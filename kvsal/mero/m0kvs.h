@@ -45,6 +45,8 @@ int init_clovis(void);
 void fini_clovis(void); 
 void get_idx(struct m0_clovis_idx *idx);
 
+typedef bool (*get_list_cb)(char * k, void *arg);
+
 
 int m0_get_kvs(struct m0_clovis_idx *idx, char *k, size_t klen,
 	       char *v, size_t *vlen);
@@ -53,6 +55,8 @@ int m0_set_kvs(struct m0_clovis_idx *idx, char *k, size_t klen,
 int m0_del_kvs(struct m0_clovis_idx *idx, char *k);
 void m0_iter_kvs(struct m0_clovis_idx *idx, char *k);
 int m0_pattern_kvs(struct m0_clovis_idx *idx, char *k, char *pattern);
+int m0_pattern_kvs_cb(struct m0_clovis_idx *idx, char *k, char *pattern,
+		  get_list_cb cb, void *arg_cb);
 int m0_pattern_kvs_size(struct m0_clovis_idx *idx, char *k, char *pattern);
 
 /*

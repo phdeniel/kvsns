@@ -524,6 +524,95 @@ int m0_pattern_kvs(struct m0_clovis_idx *idx, char *k, char *pattern)
 	return size;
 }
 
+
+
+int m0_pattern_kvs_cb(struct m0_clovis_idx *idx, char *k, char *pattern,
+		  get_list_cb cb, void *arg_cb)
+{
+        struct m0_bufvec           keys;
+        struct m0_bufvec           vals;
+        struct m0_clovis_op       *op = NULL;
+        int i = 0;
+        int rc;
+        bool stop = false;
+        char myk[KLEN];
+	bool startp = false;
+	int size = 0;
+
+        strcpy(myk, k);
+
+        do {
+                /* Iterate over all records in the index. */
+                rc = m0_bufvec_empty_alloc(&keys, CNT) ?:
+                     m0_bufvec_empty_alloc(&vals, CNT);
+		if(rc != 0)
+			return rc;
+
+                keys.ov_buf[0] = m0_alloc(strlen(myk)+1);
+                keys.ov_vec.v_count[0] = strlen(myk)+1;
+                strcpy(keys.ov_buf[0], myk);
+
+                rc = m0_clovis_idx_op(idx, M0_CLOVIS_IC_NEXT, &keys, &vals, &op);
+		if(rc != 0) {
+                	m0_bufvec_free(&keys);
+                	m0_bufvec_free(&vals);
+			return rc;
+		}
+                m0_clovis_op_launch(&op, 1);
+                rc = m0_clovis_op_wait(op, M0_BITS(M0_CLOVIS_OS_STABLE),
+                                       m0_time_from_now(3,0));
+		if(rc != 0) {
+                	m0_bufvec_free(&keys);
+                	m0_bufvec_free(&vals);
+                	m0_clovis_op_fini(op);
+                	m0_free0(&op);
+			return rc;
+		}
+
+                printf("keys.ov_vec.v_nr =%d\n", keys.ov_vec.v_nr);
+                for (i = 0; i < keys.ov_vec.v_nr ; i++) {
+                        if (keys.ov_buf[i] == NULL) {
+                                stop = true;
+                                break;
+                        }
+
+			/* Small state machine to display things
+ 			 * (they are sorted) */
+			if (!fnmatch(pattern, (char *)keys.ov_buf[i], 0)) {
+
+				/* Avoid last one and use it as first
+				 *  of next pass */
+				if ((i != keys.ov_vec.v_nr -1) && !stop) {
+					if (!cb((char *)keys.ov_buf[i],
+						  arg_cb))
+						break;
+                        		printf("%d, key=%s vals=%s\n", i,
+                               			(char *)keys.ov_buf[i],
+					        (char *)vals.ov_buf[i]);
+				}
+				if (startp == false)
+					startp = true;
+			} else {
+				if (startp == true) {
+					printf("Stop by pattern\n");
+					stop = true;
+					break;
+				}
+			}
+
+                        strcpy(myk, (char *)keys.ov_buf[i]);
+                }
+
+                m0_bufvec_free(&keys);
+                m0_bufvec_free(&vals);
+                m0_clovis_op_fini(op);
+                m0_free0(&op);
+
+        } while (!stop);
+
+	return size;
+}
+
 /*
  *  Local variables:
  *  c-indentation-style: "K&R"

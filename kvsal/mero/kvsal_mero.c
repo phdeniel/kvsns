@@ -165,23 +165,91 @@ int kvsal_del(char *k)
 	return m0_del_kvs(&idx, k);
 }
 
+bool get_list_cb_size(char *k, void *arg)
+{
+	int size;
+	
+	memcpy((char *)&size, (char *)arg, sizeof(int)); 
+	size += 1;
+	memcpy((char *)arg, (char *)&size, sizeof(int)); 
+	
+	return true;
+}
+
+int kvsal_init_list(kvsal_list_t *list)
+{
+	if (!list)
+		return -EINVAL;
+
+	list->size = 0;
+	list->content = NULL;
+
+	return 0;
+}
+
 
 int kvsal_get_list_size(char *pattern)
 {
 	char initk[KLEN];
+	int size;	
+	int rc;
 
 	strncpy(initk, pattern, KLEN);
 	initk[strnlen(pattern, KLEN)-1] = '\0';
 
-	return m0_pattern_kvs_size(&idx, initk, pattern);
+	rc = m0_pattern_kvs_cb(&idx, initk, pattern,
+			       get_list_cb_size, &size);
+	if (rc < 0)
+		return rc;
+
+	return size;
+}
+
+bool populate_list(char *k, void *arg)
+{
+	kvsal_list_t *list;
+	kvsal_item_t *item;
+	kvsal_item_t *content;
+
+	list = (kvsal_list_t *)arg;
+
+	printf("+-+-+-> k=%s arg=%p\n", k, arg);
+	if (!list)
+		return false;
+
+	list->size +=1;
+	content = list->content;
+	printf("+-+-+-> list=%p size=%d content=%p\n",
+		list, (int)list->size, content);
+
+	list->content = realloc(content, list->size*sizeof(kvsal_item_t));
+	if (list->content == NULL)
+		return false;
+
+	item = &list->content[list->size - 1];
+
+	strncpy(item->str, k, KLEN);
+	item->offset = list->size -1;
+
+	printf("END == list=%p content=%p str=%s\n", 
+		list, list->content, list->content[list->size-1].str);
+
+	return true;
 }
 
 int kvsal_fetch_list(char *pattern, kvsal_list_t *list)
 {
-       if (!pattern || !list)
+	char initk[KLEN];
+
+        if (!pattern || !list)
                 return -EINVAL;
 
-        return 0;
+
+	strncpy(initk, pattern, KLEN);
+	initk[strnlen(pattern, KLEN)-1] = '\0';
+
+	return  m0_pattern_kvs_cb(&idx, initk, pattern,
+				  populate_list, list);
 }
 
 int kvsal_dispose_list(kvsal_list_t *list)
@@ -192,9 +260,22 @@ int kvsal_dispose_list(kvsal_list_t *list)
         return 0;
 }
 
-int kvsal_get_list(kvsal_list_t *list, int start, int *end,
+/** @todo: too many strncpy and mallocs, this should be optimized */
+int kvsal_get_list(kvsal_list_t *list, int start, int *size,
                     kvsal_item_t *items)
 {
+	int i;
+
+	if (list->size < (start + *size))
+		*size = list->size - start;
+
+
+	for (i = start; i < start + *size ; i++) {
+		items[i-start].offset = i;
+		strncpy(items[i-start].str,
+			list->content[i].str, KLEN);
+	}
+
 	return 0;
 }
 
