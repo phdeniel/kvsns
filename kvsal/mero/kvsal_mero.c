@@ -197,8 +197,8 @@ int kvsal_get_list_size(char *pattern)
 	strncpy(initk, pattern, KLEN);
 	initk[strnlen(pattern, KLEN)-1] = '\0';
 
-	rc = m0_pattern_kvs_cb(&idx, initk, pattern,
-			       get_list_cb_size, &size);
+	rc = m0_pattern_kvs(&idx, initk, pattern,
+			    get_list_cb_size, &size);
 	if (rc < 0)
 		return rc;
 
@@ -248,8 +248,8 @@ int kvsal_fetch_list(char *pattern, kvsal_list_t *list)
 	strncpy(initk, pattern, KLEN);
 	initk[strnlen(pattern, KLEN)-1] = '\0';
 
-	return  m0_pattern_kvs_cb(&idx, initk, pattern,
-				  populate_list, list);
+	return  m0_pattern_kvs(&idx, initk, pattern,
+				populate_list, list);
 }
 
 int kvsal_dispose_list(kvsal_list_t *list)
