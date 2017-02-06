@@ -433,6 +433,17 @@ int kvsal_get_list_size(char *pattern)
 	return rc;
 }
 
+int kvsal_init_list(kvsal_list_t *list)
+{
+	if (!list)
+		return -EINVAL;
+
+	list->size = 0;
+	list->content = NULL;
+
+	return 0;
+}
+
 int kvsal_fetch_list(char *pattern, kvsal_list_t *list)
 {
 	if (!pattern || !list)
