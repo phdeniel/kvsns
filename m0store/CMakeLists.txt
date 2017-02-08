@@ -16,6 +16,7 @@ set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} ${MERO_CFLAGS}")
 
 SET(m0store_LIB_SRCS
    extstore.c
+   m0store.c
 )
 
 add_library(m0store SHARED ${m0store_LIB_SRCS})

@@ -10,6 +10,7 @@
 int m0store_create_object(struct m0_uint128 id);
 int m0_pread(struct m0_uint128 id, char *buff, int block_size, int block_count);
 int m0_pwrite(struct m0_uint128 id, char *buff, int block_size, int block_count);
+int m0store_init(void);
 
 /*
  *  Local variables:
