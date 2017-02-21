@@ -95,8 +95,11 @@ int kvsns_creat(kvsns_cred_t *cred, kvsns_ino_t *parent, char *name,
 		mode_t mode, kvsns_ino_t *newfile)
 {
 	RC_WRAP(kvsns_access, cred, parent, KVSNS_ACCESS_WRITE);
-	return kvsns_create_entry(cred, parent, name, NULL,
+	RC_WRAP(kvsns_create_entry, cred, parent, name, NULL,
 				  mode, newfile, KVSNS_FILE);
+	RC_WRAP(extstore_create, *newfile);
+
+	return 0;
 }
 
 int kvsns_open(kvsns_cred_t *cred, kvsns_ino_t *ino, 
