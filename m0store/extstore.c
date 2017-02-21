@@ -39,6 +39,11 @@ int extstore_init(char *rootpath)
 	return 0;
 }
 
+int extstore_create(kvsns_ino_t object)
+{
+	return 0;
+}
+
 int extstore_del(kvsns_ino_t *ino)
 {
 	return 0;

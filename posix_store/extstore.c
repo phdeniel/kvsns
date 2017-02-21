@@ -77,6 +77,11 @@ static int extstore_consolidate_attrs(kvsns_ino_t *ino, struct stat *filestat)
 	return 0;
 }
 
+int extstore_create(kvsns_ino_t object)
+{
+	return 0;
+}
+
 int extstore_init(char *rootpath)
 {
 	strncpy(store_root, rootpath, MAXPATHLEN);
