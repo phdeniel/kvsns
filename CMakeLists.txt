@@ -18,28 +18,25 @@ message( STATUS "libkvsns version ${LIBKVSNS_BASE_VERSION}")
 option(USE_KVS_REDIS "Use REDIS as a KVS in KVSAL" ON)
 option(USE_KVS_MERO "USE MERO as a KVS in KVSAL" OFF)
 
-set(USE_KVS_REDIS ${USE_KVS_REDIS}
-    CACHE BOOL
-    "KVSAL is REDIS-based"
-    FORCE)
-
-set(USE_KVS_MERO ${USE_KVS_MERO}
-    CACHE BOOL
-    "KVSAL is MERO-based"
-    FORCE)
-
 option(USE_POSIX_STORE "Use POSIX directory as object store" ON)
 option(USE_MERO_STORE "USE MERO as object store" OFF)
+option(USE_POSIX_OBJ "USE POSIX with objs and keys" OFF)
 
 if(USE_KVS_MERO)
   set(USE_KVS_REDIS OFF)
-  message(STATUS "Mero is used, disabling REDIS")
+  message(STATUS "Disabling REDIS")
 endif(USE_KVS_MERO)
+
+if (USE_POSIX_OBJ OR USE_MERO_STORE)
+  set(USE_POSIX_STORE OFF)
+  message(STATUS "Disabling POSIX Store")
+endif(USE_POSIX_OBJ OR USE_MERO_STORE)
 
 message(STATUS "USE_KVS_REDIS=${USE_KVS_REDIS}")
 message(STATUS "USE_KVS_MERO=${USE_KVS_MERO}")
 message(STATUS "USE_POSIX_STORE=${USE_POSIX_STORE}")
 message(STATUS "USE_MERO_STORE=${USE_MERO_STORE}")
+message(STATUS "USE_POSIX_OBJ=${USE_POSIX_OBJ}")
 
 ## Start building stuff ##
 if(USE_KVS_REDIS)
@@ -65,6 +62,11 @@ if (USE_POSIX_STORE)
     add_subdirectory(posix_store)
     set(STORE_LIBRARY posix_store)
 endif (USE_POSIX_STORE)
+
+if (USE_POSIX_OBJ)
+    add_subdirectory(posix_obj)
+    set(STORE_LIBRARY posix_obj)
+endif (USE_POSIX_OBJ)
 
 if (USE_MERO_STORE)
     add_subdirectory(m0store)
