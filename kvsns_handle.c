@@ -594,9 +594,7 @@ int kvsns_unlink(kvsns_cred_t *cred, kvsns_ino_t *dir, char *name)
 		snprintf(k, KLEN, "%llu.stat", ino);
 		RC_WRAP_LABEL(rc, aborted, kvsal_del, k);
 
-		if (!opened) {
-			RC_WRAP_LABEL(rc, aborted, extstore_del, &ino);
-		} else {
+		if (opened) {
 			/* File is opened, deleted it at last close */
 			snprintf(k, KLEN, "%llu.opened_and_deleted", ino);
 			snprintf(v, VLEN, "1");
@@ -638,6 +636,10 @@ int kvsns_unlink(kvsns_cred_t *cred, kvsns_ino_t *dir, char *name)
 	RC_WRAP_LABEL(rc, aborted, kvsns_set_stat, dir, &dir_stat);
 
 	RC_WRAP(kvsal_end_transaction);
+
+	/* Call to object store : do not mix with metadata transaction */
+	if (!opened)
+		RC_WRAP(extstore_del, &ino);
 
 	if (deleted)
 		RC_WRAP(kvsns_remove_all_xattr, cred, &ino);

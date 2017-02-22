@@ -178,6 +178,7 @@ int kvsns_close(kvsns_file_open_t *fd)
 	int rc;
 	bool found = false;
 	bool opened_and_deleted;
+	bool delete_object = false;
 
 	if (kvsns_debug)
 		fprintf(stderr, "kvsns_close\n");
@@ -214,14 +215,17 @@ int kvsns_close(kvsns_file_open_t *fd)
 
 			/* Was the file deleted as it was opened ? */
 			if (opened_and_deleted) {
-				RC_WRAP_LABEL(rc, aborted,
-					      extstore_del, &fd->ino);
+				delete_object = true;
 				snprintf(k, KLEN, "%llu.opened_and_deleted",
 					 fd->ino);
 				RC_WRAP_LABEL(rc, aborted,
 					      kvsal_del, k);
 			}
 			RC_WRAP(kvsal_end_transaction);
+
+			if (delete_object)
+				RC_WRAP(extstore_del, &fd->ino);
+
 			return 0;
 		} else {
 			rc = -EBADF;
@@ -249,6 +253,11 @@ int kvsns_close(kvsns_file_open_t *fd)
 	RC_WRAP_LABEL(rc, aborted, kvsal_set_char, k, v);
 
 	RC_WRAP(kvsal_end_transaction);
+
+	/* To be done outside of the previous transaction */
+	if (delete_object)
+		RC_WRAP(extstore_del, &fd->ino);
+
 	return 0;
 
 aborted:
