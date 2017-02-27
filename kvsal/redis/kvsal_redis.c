@@ -256,6 +256,8 @@ int kvsal_set_stat(char *k, struct stat *buf)
 	if (!reply)
 		return -1;
 
+	freeReplyObject(reply);
+
 	return 0;
 }
 
