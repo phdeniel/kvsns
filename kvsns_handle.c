@@ -37,10 +37,10 @@
 #include <string.h>
 #include <time.h>
 #include <sys/time.h>
+#include "extstore/extstore.h"
 #include "kvsal/kvsal.h"
 #include "kvsns.h"
 #include "kvsns_internal.h"
-#include "extstore.h"
 
 static char kvsns_store_default[] = KVSNS_STORE_DEFAULT;
 static char kvsns_store_base[MAXPATHLEN];

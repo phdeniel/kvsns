@@ -36,10 +36,10 @@
 #include <stdlib.h>
 #include <string.h>
 #include <time.h>
+#include "extstore/extstore.h"
 #include "kvsal/kvsal.h"
 #include "kvsns.h"
 #include "kvsns_internal.h"
-#include "extstore.h"
 
 extern int kvsns_debug;
 

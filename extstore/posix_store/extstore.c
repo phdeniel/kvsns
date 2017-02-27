@@ -31,7 +31,7 @@
 
 
 
-#include "../../extstore.h"
+#include "../extstore.h"
 
 static char kvsns_store_default[] = KVSNS_STORE_DEFAULT;
 static char kvsns_store_base[MAXPATHLEN];

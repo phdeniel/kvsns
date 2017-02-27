@@ -32,7 +32,7 @@
 
 #include <hiredis/hiredis.h>
 
-#include "../../extstore.h"
+#include "../extstore.h"
 
 /* The REDIS context exists in the TLS, for MT-Safety */
 __thread redisContext *rediscontext = NULL;
