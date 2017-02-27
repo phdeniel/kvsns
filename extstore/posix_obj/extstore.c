@@ -31,8 +31,12 @@
 
 
 #include <hiredis/hiredis.h>
-
 #include "../extstore.h"
+
+#define RC_WRAP(__function, ...) ({\
+	int __rc = __function(__VA_ARGS__);\
+	if (__rc != 0)        \
+		return __rc; })
 
 /* The REDIS context exists in the TLS, for MT-Safety */
 __thread redisContext *rediscontext = NULL;
@@ -67,12 +71,76 @@ static int build_extstore_path(kvsns_ino_t object,
 	return 0;
 }
 
+enum update_stat_how {
+	UP_ST_CREATE = 0,
+	UP_ST_WRITE = 1,
+	UP_ST_READ = 2,
+	UP_ST_TRUNCATE =3
+};
+
+static int update_stat(struct stat *stat, enum update_stat_how how,
+		       off_t size)
+{
+	struct timeval t;
+
+	if (!stat)
+		return -EINVAL;
+
+	if (gettimeofday(&t, NULL) != 0)
+		return -errno;
+
+	switch (how) {
+	case UP_ST_CREATE:
+		stat->st_size = 0;
+		stat->st_blocks = 0;
+		stat->st_blksize = DEV_BSIZE;
+		stat->st_mtim.tv_sec = t.tv_sec;
+		stat->st_mtim.tv_nsec = 1000 * t.tv_usec;
+		stat->st_atim = stat->st_mtim;
+		stat->st_ctim = stat->st_mtim;
+
+		break;
+
+	case UP_ST_WRITE:
+		stat->st_mtim.tv_sec = t.tv_sec;
+		stat->st_mtim.tv_nsec = 1000 * t.tv_usec;
+		stat->st_ctim = stat->st_mtim;
+		if (size > stat->st_size) {
+			stat->st_size = size;
+			stat->st_blocks = size / DEV_BSIZE;
+		}
+		break;
+
+	case UP_ST_READ:
+		stat->st_atim.tv_sec = t.tv_sec;
+		stat->st_atim.tv_nsec = 1000 * t.tv_usec;
+		break;
+
+	case UP_ST_TRUNCATE:
+		stat->st_ctim.tv_sec = t.tv_sec;
+		stat->st_ctim.tv_nsec = 1000 * t.tv_usec;
+		stat->st_mtim = stat->st_ctim;
+		stat->st_size = size;
+		stat->st_blocks = size / DEV_BSIZE;
+		break;
+
+	default: /* Should not occur */
+		return -EINVAL;
+		break;
+	}
+
+	return 0;
+}
+
 int extstore_create(kvsns_ino_t object)
 {
 	char k[KLEN];
 	char v[VLEN];
 	redisReply *reply;
 	int fd;
+	struct stat stat;
+	size_t size;
+	struct timeval t;
 
 	snprintf(k, KLEN, "%llu.data", object);
 	snprintf(v, VLEN, "%s/inum=%llu",
@@ -84,6 +152,29 @@ int extstore_create(kvsns_ino_t object)
 		return -1;
 	freeReplyObject(reply);
 
+	/* Create initial attrs */
+	if (gettimeofday(&t, NULL) != 0)
+		return -errno;
+	
+	snprintf(k, KLEN, "%llu.data_ext", object);
+	size = sizeof(struct stat);
+	memset((char *)&stat, 0 , sizeof(struct stat));
+	RC_WRAP(update_stat, &stat, UP_ST_CREATE, 0LL);
+
+	reply = NULL;
+	reply = redisCommand(rediscontext, "SET %s %b", k, &stat, size);
+	if (!reply)
+		return -1;
+	freeReplyObject(reply);
+
+	snprintf(k, KLEN, "%llu.data_ext", object);
+	snprintf(v, VLEN, "");
+	reply = NULL;
+	reply = redisCommand(rediscontext, "SET %s %s", k, v);
+	if (!reply)
+		return -1;
+
+	freeReplyObject(reply);
 	fd = creat(v, 0777);
 	if (fd == -1)
 		return -errno;
@@ -92,31 +183,50 @@ int extstore_create(kvsns_ino_t object)
 	return 0;
 }
 
-static int extstore_consolidate_attrs(kvsns_ino_t *ino, struct stat *filestat)
+static int set_stat(kvsns_ino_t *ino, struct stat *buf)
 {
-	struct stat extstat;
-	char storepath[MAXPATHLEN];
-	int rc;
+        redisReply *reply;
+	char k[KLEN];
 
-	rc = build_extstore_path(*ino, storepath, MAXPATHLEN);
-	if (rc < 0)
-		return rc;
+        size_t size = sizeof(struct stat);
 
-	rc = lstat(storepath, &extstat);
-	if (rc < 0) {
-		if (errno == ENOENT)
-			return 0; /* No data written yet */
-		else
-			return -errno;
-	}
+        if (!ino || !buf)
+                return -EINVAL;
 
-	filestat->st_mtime = extstat.st_mtime;
-	filestat->st_atime = extstat.st_atime;
-	filestat->st_size = extstat.st_size;
-	filestat->st_blksize = extstat.st_blksize;
-	filestat->st_blocks = extstat.st_blocks;
+	snprintf(k, KLEN, "%llu.data_ext", *ino);
+        reply = redisCommand(rediscontext, "SET %s %b", k, buf, size);
+        if (!reply)
+                return -1;
 
-	return 0;
+	freeReplyObject(reply);
+        return 0;
+}
+
+static int get_stat(kvsns_ino_t *ino, struct stat *buf)
+{
+        redisReply *reply;
+        char k[KLEN];
+        int rc;
+
+        if (!ino || !buf)
+                return -EINVAL;
+
+	snprintf(k, KLEN, "%llu.data_ext", *ino);
+        reply = redisCommand(rediscontext, "GET %s", k);
+        if (!reply)
+                return -1;
+
+        if (reply->type != REDIS_REPLY_STRING)
+                return -1;
+
+        if (reply->len != sizeof(struct stat))
+                return -1;
+
+        memcpy((char *)buf, reply->str, reply->len);
+
+        freeReplyObject(reply);
+
+        return 0;
 }
 
 int extstore_init(char *rootpath)
@@ -162,9 +272,7 @@ int extstore_del(kvsns_ino_t *ino)
 	int rc;
         redisReply *reply;
 
-	rc = build_extstore_path(*ino, storepath, MAXPATHLEN);
-	if (rc < 0)
-		return rc;
+	RC_WRAP(build_extstore_path, *ino, storepath, MAXPATHLEN);
 
 	rc = unlink(storepath);
 	if (rc) {
@@ -174,7 +282,24 @@ int extstore_del(kvsns_ino_t *ino)
 		return -errno;
 	}
 
+	/* delete <inode>.data */
 	snprintf(k, KLEN, "%llu.data", *ino);	
+	reply = NULL;
+	reply = redisCommand(rediscontext, "DEL %s", k);
+	if (!reply)
+		return -1;
+	freeReplyObject(reply);
+
+	/* delete <inode>.data_attr */	
+	snprintf(k, KLEN, "%llu.data_attr", *ino);	
+	reply = NULL;
+	reply = redisCommand(rediscontext, "DEL %s", k);
+	if (!reply)
+		return -1;
+	freeReplyObject(reply);
+
+	/* delete <inode>.data_ext */	
+	snprintf(k, KLEN, "%llu.data_ext", *ino);	
 	reply = NULL;
 	reply = redisCommand(rediscontext, "DEL %s", k);
 	if (!reply)
@@ -196,10 +321,8 @@ int extstore_read(kvsns_ino_t *ino,
 	int fd;
 	ssize_t read_bytes;
 	struct stat storestat;
-
-	rc = build_extstore_path(*ino, storepath, MAXPATHLEN);
-	if (rc < 0)
-		return rc;
+	
+	RC_WRAP(build_extstore_path, *ino, storepath, MAXPATHLEN);
 
 	fd = open(storepath, O_CREAT|O_RDONLY|O_SYNC);
 	if (fd < 0) {
@@ -212,18 +335,19 @@ int extstore_read(kvsns_ino_t *ino,
 		return -errno;
 	}
 
-	rc = fstat(fd, &storestat);
-	if (rc < 0)
-		return -errno;
+	RC_WRAP(get_stat, ino, &storestat);
+	RC_WRAP(update_stat, &storestat, UP_ST_READ, 0);
 
-	stat->st_mtime = storestat.st_mtime;
+	stat->st_atim = storestat.st_mtim;
+	stat->st_mtim = storestat.st_mtim;
 	stat->st_size = storestat.st_size;
-	stat->st_blocks = storestat.st_blocks;
-	stat->st_blksize = storestat.st_blksize;
+
+	RC_WRAP(set_stat, ino, &storestat);
 
 	rc = close(fd);
 	if (rc < 0)
 		return -errno;
+
 
 	return read_bytes;
 }
@@ -242,9 +366,7 @@ int extstore_write(kvsns_ino_t *ino,
 	struct stat storestat;
 
 
-	rc = build_extstore_path(*ino, storepath, MAXPATHLEN);
-	if (rc < 0)
-		return rc;
+	RC_WRAP(build_extstore_path, *ino, storepath, MAXPATHLEN);
 
 	fd = open(storepath, O_CREAT|O_WRONLY|O_SYNC, 0755);
 	if (fd < 0)
@@ -280,7 +402,7 @@ int extstore_truncate(kvsns_ino_t *ino,
 {
 	int rc;
 	char storepath[MAXPATHLEN];
-	struct timeval t;
+	struct stat mystat;
 
 	if (!ino || !stat)
 		return -EINVAL;
@@ -289,29 +411,21 @@ int extstore_truncate(kvsns_ino_t *ino,
 	if (rc < 0)
 		return rc;
 
+	RC_WRAP(get_stat, ino, &mystat);
+
 	rc = truncate(storepath, filesize);
-	if (rc == -1) {
-		if (errno == ENOENT) {
-			/* File does not exist in data store
-			 * it is a mere MD creature */
-			stat->st_size = filesize;
-
-			if (gettimeofday(&t, NULL) != 0)
-				return -errno;
-
-			stat->st_ctim.tv_sec = t.tv_sec;
-			stat->st_ctim.tv_nsec = 1000 * t.tv_usec;
-			stat->st_mtim.tv_sec = stat->st_ctim.tv_sec;
-			stat->st_mtim.tv_nsec = stat->st_ctim.tv_nsec;
-
-			return 0;
-		} else
-			return -errno;
-	}
-
-	rc = extstore_consolidate_attrs(ino, stat);
 	if (rc < 0)
-		return rc;
+		return -errno;
+
+	stat->st_size = filesize;
+	mystat.st_size = filesize;
+
+	RC_WRAP(update_stat, &mystat, UP_ST_TRUNCATE, filesize);
+
+	stat->st_ctim = mystat.st_ctim;
+	stat->st_mtim = mystat.st_mtim;
+
+	RC_WRAP(set_stat, ino, &mystat);	
 
 	return 0;
 }
