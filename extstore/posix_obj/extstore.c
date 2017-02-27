@@ -136,6 +136,7 @@ int extstore_create(kvsns_ino_t object)
 {
 	char k[KLEN];
 	char v[VLEN];
+	char path[VLEN];
 	redisReply *reply;
 	int fd;
 	struct stat stat;
@@ -143,8 +144,9 @@ int extstore_create(kvsns_ino_t object)
 	struct timeval t;
 
 	snprintf(k, KLEN, "%llu.data", object);
-	snprintf(v, VLEN, "%s/inum=%llu",
+	snprintf(path, VLEN, "%s/inum=%llu",
 		store_root, (unsigned long long)object);
+	strncpy(v, path, VLEN);
 
 	reply = NULL;
 	reply = redisCommand(rediscontext, "SET %s %s", k, v);
@@ -156,7 +158,7 @@ int extstore_create(kvsns_ino_t object)
 	if (gettimeofday(&t, NULL) != 0)
 		return -errno;
 	
-	snprintf(k, KLEN, "%llu.data_ext", object);
+	snprintf(k, KLEN, "%llu.data_attr", object);
 	size = sizeof(struct stat);
 	memset((char *)&stat, 0 , sizeof(struct stat));
 	RC_WRAP(update_stat, &stat, UP_ST_CREATE, 0LL);
@@ -175,7 +177,7 @@ int extstore_create(kvsns_ino_t object)
 		return -1;
 
 	freeReplyObject(reply);
-	fd = creat(v, 0777);
+	fd = creat(path, 0777);
 	if (fd == -1)
 		return -errno;
 
