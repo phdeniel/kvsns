@@ -57,19 +57,17 @@ if((NOT HAVE_HIREDIS) OR (NOT HAVE_HIREDIS_H))
 endif((NOT HAVE_HIREDIS) OR (NOT HAVE_HIREDIS_H))
 endif(USE_KVS_REDIS)
 
+add_subdirectory(extstore)
 # Start with object_store #
 if (USE_POSIX_STORE)
-    add_subdirectory(posix_store)
     set(STORE_LIBRARY posix_store)
 endif (USE_POSIX_STORE)
 
 if (USE_POSIX_OBJ)
-    add_subdirectory(posix_obj)
     set(STORE_LIBRARY posix_obj)
 endif (USE_POSIX_OBJ)
 
 if (USE_MERO_STORE)
-    add_subdirectory(m0store)
     set(STORE_LIBRARY m0store)
 endif (USE_MERO_STORE)
 
