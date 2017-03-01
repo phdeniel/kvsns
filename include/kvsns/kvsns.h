@@ -49,6 +49,8 @@
 #include <sys/param.h>
 #include <sys/xattr.h>
 
+#include <kvsns/kvsal.h>
+
 #define KVSNS_ROOT_INODE 2LL
 #define KVSNS_ARRAY_SIZE 100
 #define KVSNS_ROOT_UID 0

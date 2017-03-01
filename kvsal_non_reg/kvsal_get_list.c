@@ -2,7 +2,7 @@
 #include <unistd.h>
 #include <stdlib.h>
 #include <errno.h>
-#include "../kvsal/kvsal.h"
+#include <kvsns/kvsal.h>
 
 #define LIST_TRUNK 10
 

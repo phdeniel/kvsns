@@ -35,8 +35,8 @@
 #include <stdlib.h>
 #include <string.h>
 #include <time.h>
-#include "kvsal/kvsal.h"
-#include "kvsns.h"
+#include <kvsns/kvsal.h>
+#include <kvsns/kvsns.h>
 #include "kvsns_internal.h"
 
 extern int kvsns_debug;

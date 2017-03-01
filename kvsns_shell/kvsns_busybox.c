@@ -8,8 +8,8 @@
 #include <sys/types.h>
 #include <sys/param.h>
 #include <libgen.h>
-#include "../kvsal/kvsal.h"
-#include "../kvsns.h"
+#include <kvsns/kvsal.h>
+#include <kvsns/kvsns.h>
 
 int main(int argc, char *argv[])
 {

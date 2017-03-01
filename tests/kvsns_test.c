@@ -34,9 +34,8 @@
 #include <unistd.h>
 #include <stdlib.h>
 #include <errno.h>
-#include "../kvsal/kvsal.h"
-#include "../kvsns.h"
-#include "../kvsns_internal.h"
+#include <kvsns/kvsal.h>
+#include <kvsns/kvsns.h>
 
 int main(int argc, char *argv[])
 {

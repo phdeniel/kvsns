@@ -36,10 +36,9 @@
 #include <errno.h>
 #include <time.h>
 #include <sys/time.h>
-#include "kvsal/kvsal.h"
-#include "kvsns.h"
 #include <string.h>
-#include "kvsns.h"
+#include <kvsns/kvsal.h>
+#include <kvsns/kvsns.h>
 #include "kvsns_internal.h"
 
 int kvsns_debug = false;
