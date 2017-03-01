@@ -37,8 +37,8 @@
 #include <sys/types.h>
 #include <sys/stat.h>
 #include <fcntl.h>
-#include "../kvsal/kvsal.h"
-#include "../kvsns.h"
+#include <kvsns/kvsal.h>
+#include <kvsns/kvsns.h>
 
 #define SIZE 1024
 

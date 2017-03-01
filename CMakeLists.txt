@@ -7,7 +7,7 @@ set(LIBKVSNS_MINOR_VERSION 1)
 set(LIBKVSNS_PATCH_LEVEL 1)
 set(LIBKVSNS_EXTRA_VERSION -rc-1)
 
-set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -fPIC -g")
+set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -I${CMAKE_SOURCE_DIR}/include -fPIC -g")
 
 set(LIBKVSNS_BASE_VERSION ${LIBKVSNS_MAJOR_VERSION}.${LIBKVSNS_MINOR_VERSION}.${LIBKVSNS_PATCH_LEVEL})
 
@@ -64,16 +64,7 @@ set(STORE_LIBRARY extstore)
 add_subdirectory(kvsal)
 set(KVSAL_LIBRARY kvsal)
 
-# Now compile kvsns #
-SET(kvsns_LIB_SRCS
-    kvsns_handle.c
-    kvsns_file.c
-    kvsns_internal.c
-    kvsns_xattr.c
-)
-
-add_library(kvsns SHARED ${kvsns_LIB_SRCS})
-target_link_libraries(kvsns ${STORE_LIBRARY} ${KVSAL_LIBRARY})
+add_subdirectory(kvsns)
 
 add_subdirectory(tests)
 add_subdirectory(kvsns_shell)

@@ -29,9 +29,7 @@
  * KVSNS: implement a dummy object store inside a POSIX directory
  */
 
-
-
-#include "../extstore.h"
+#include <kvsns/extstore.h>
 
 static char kvsns_store_default[] = KVSNS_STORE_DEFAULT;
 static char kvsns_store_base[MAXPATHLEN];

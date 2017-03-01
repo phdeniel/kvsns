@@ -31,7 +31,7 @@
 
 
 
-#include "../extstore.h"
+#include <kvsns/extstore.h>
 
 
 int extstore_init(char *rootpath)

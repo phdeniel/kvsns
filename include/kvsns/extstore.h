@@ -40,8 +40,8 @@
 #include <fcntl.h>
 #include <unistd.h>
 #include <stdbool.h>
-#include "../kvsal/kvsal.h"
-#include "../kvsns.h"
+#include <kvsns/kvsal.h>
+#include <kvsns/kvsns.h>
 
 int extstore_init(char *rootpath);
 int extstore_create(kvsns_ino_t object);

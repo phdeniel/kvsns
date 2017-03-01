@@ -31,7 +31,7 @@
 
 
 #include <hiredis/hiredis.h>
-#include "../extstore.h"
+#include <kvsns/extstore.h>
 
 #define RC_WRAP(__function, ...) ({\
 	int __rc = __function(__VA_ARGS__);\
