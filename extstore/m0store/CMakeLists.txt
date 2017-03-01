@@ -14,17 +14,21 @@ include_directories("/usr/include/mero")
 set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} ${MERO_CFLAGS}")
 set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} ${MERO_CFLAGS}")
 
-SET(m0store_LIB_SRCS
+SET(extstore_LIB_SRCS
    extstore.c
    m0store.c
 )
 
-add_library(m0store SHARED ${m0store_LIB_SRCS})
+add_library(extstore SHARED ${extstore_LIB_SRCS})
 
-target_link_libraries(m0store
+target_link_libraries(extstore
   mero
   uuid
   yaml
   gf_complete
   ${SYSTEM_LIBRARIES} 
 )
+
+add_custom_command(TARGET extstore
+                   COMMAND /usr/bin/cp libextstore.so ..)
+

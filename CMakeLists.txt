@@ -3,7 +3,7 @@ cmake_policy(SET CMP0017 NEW)
 
 PROJECT(libkvsns C)
 set(LIBKVSNS_MAJOR_VERSION 1)
-set(LIBKVSNS_MINOR_VERSION 0)
+set(LIBKVSNS_MINOR_VERSION 1)
 set(LIBKVSNS_PATCH_LEVEL 1)
 set(LIBKVSNS_EXTRA_VERSION -rc-1)
 
@@ -57,19 +57,9 @@ if((NOT HAVE_HIREDIS) OR (NOT HAVE_HIREDIS_H))
 endif((NOT HAVE_HIREDIS) OR (NOT HAVE_HIREDIS_H))
 endif(USE_KVS_REDIS)
 
+# Build ancillary libs
 add_subdirectory(extstore)
-# Start with object_store #
-if (USE_POSIX_STORE)
-    set(STORE_LIBRARY posix_store)
-endif (USE_POSIX_STORE)
-
-if (USE_POSIX_OBJ)
-    set(STORE_LIBRARY posix_obj)
-endif (USE_POSIX_OBJ)
-
-if (USE_MERO_STORE)
-    set(STORE_LIBRARY m0store)
-endif (USE_MERO_STORE)
+set(STORE_LIBRARY extstore)
 
 add_subdirectory(kvsal)
 set(KVSAL_LIBRARY kvsal)

@@ -1,7 +1,9 @@
 
-SET(posix_store_LIB_SRCS
+SET(extstore_LIB_SRCS
    extstore.c
 )
 
-add_library(posix_store SHARED ${posix_store_LIB_SRCS})
+add_library(extstore SHARED ${extstore_LIB_SRCS})
 
+add_custom_command(TARGET extstore
+                   COMMAND /usr/bin/cp libextstore.so ..)

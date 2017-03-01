@@ -28,3 +28,5 @@ target_link_libraries(kvsal
   gf_complete
 )
 
+add_custom_command(TARGET kvsal
+		   COMMAND /usr/bin/cp libkvsal.so ..)
