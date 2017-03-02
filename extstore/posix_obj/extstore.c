@@ -195,7 +195,7 @@ static int set_stat(kvsns_ino_t *ino, struct stat *buf)
         if (!ino || !buf)
                 return -EINVAL;
 
-	snprintf(k, KLEN, "%llu.data_ext", *ino);
+	snprintf(k, KLEN, "%llu.data_attr", *ino);
         reply = redisCommand(rediscontext, "SET %s %b", k, buf, size);
         if (!reply)
                 return -1;
@@ -213,7 +213,7 @@ static int get_stat(kvsns_ino_t *ino, struct stat *buf)
         if (!ino || !buf)
                 return -EINVAL;
 
-	snprintf(k, KLEN, "%llu.data_ext", *ino);
+	snprintf(k, KLEN, "%llu.data_attr", *ino);
         reply = redisCommand(rediscontext, "GET %s", k);
         if (!reply)
                 return -1;
@@ -274,7 +274,13 @@ int extstore_del(kvsns_ino_t *ino)
 	int rc;
         redisReply *reply;
 
-	RC_WRAP(build_extstore_path, *ino, storepath, MAXPATHLEN);
+	rc = build_extstore_path(*ino, storepath, MAXPATHLEN);
+	if (rc) {
+		if (rc == -ENOENT) /* No data created */
+			return 0;
+
+		return rc;
+	}
 
 	rc = unlink(storepath);
 	if (rc) {
