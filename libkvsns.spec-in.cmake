@@ -13,6 +13,34 @@ BuildRequires: cmake hiredis-devel
 BuildRequires: gcc
 Requires: redis hiredis
 
+# Conditionally enable KVS and object stores
+#
+# 1. rpmbuild accepts these options (gpfs as example):
+#    --with mero
+#    --without redis
+
+%define on_off_switch() %%{?with_%1:ON}%%{!?with_%1:OFF}
+
+# A few explanation about %bcond_with and %bcond_without
+# /!\ be careful: this syntax can be quite messy
+# %bcond_with means you add a "--with" option, default = without this feature
+# %bcond_without adds a"--without" so the feature is enabled by default
+
+@BCOND_KVS_REDIS@ kvs_redis
+%global use_kvs_redis %{on_off_switch kvs_redis}
+
+@BCOND_KVS_MERO@ kvs_mero
+%global use_kvs_mero %{on_off_switch kvs_mero}
+
+@BCOND_POSIX_STORE@ posix_store
+%global use_posix_store %{on_off_switch posix_store}
+
+@BCOND_POSIX_OBJ@ posix_obj
+%global use_posix_obj %{on_off_switch posix_obj}
+
+@BCOND_MERO_STORE@ mero_store
+%global use_mero_store %{on_off_switch mero_store}
+
 %description
 The libkvsns is a library that allows of a POSIX namespace built on top of
 a Key-Value Store.
@@ -43,7 +71,12 @@ This package contains the tools for libkvsns.
 %setup -q -n %{sourcename}
 
 %build
-cmake .
+cmake . -DUSE_KVS_REDIS=%{use_kvs_redis}     \
+	-DUSE_KVS_MERO=%{use_kvs_mero}       \
+	-DUSE_POSIX_STORE=%{use_posix_store} \
+	-DUSE_POSIX_OBJ=%{use_posix_obj}     \
+	-DUSE_MERO_STORE=%{use_mero_store}
+
 make %{?_smp_mflags} || make %{?_smp_mflags} || make
 
 %install

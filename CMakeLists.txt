@@ -22,11 +22,49 @@ option(USE_POSIX_STORE "Use POSIX directory as object store" ON)
 option(USE_MERO_STORE "USE MERO as object store" OFF)
 option(USE_POSIX_OBJ "USE POSIX with objs and keys" OFF)
 
+if(USE_FSAL_LUSTRE)
+    set(BCOND_LUSTRE "%bcond_without")
+else(USE_FSAL_LUSTRE)
+    set(BCOND_LUSTRE "%bcond_with")
+endif(USE_FSAL_LUSTRE)
+
 if(USE_KVS_MERO)
   set(USE_KVS_REDIS OFF)
   message(STATUS "Disabling REDIS")
 endif(USE_KVS_MERO)
 
+# BCOND* variables for spec file */
+if (USE_KVS_REDIS)
+	set(BCOND_KVS_REDIS "%bcond_without")
+else (USE_KVS_REDIS)
+	set(BCOND_KVS_REDIS "%bcond_with")
+endif (USE_KVS_REDIS)
+
+if (USE_KVS_MERO)
+	set(BCOND_KVS_MERO "%bcond_without")
+else (USE_KVS_MERO)
+	set(BCOND_KVS_MERO "%bcond_with")
+endif (USE_KVS_MERO)
+
+if (USE_POSIX_STORE)
+	set(BCOND_POSIX_STORE "%bcond_without")
+else (USE_POSIX_STORE)
+	set(BCOND_POSIX_STORE "%bcond_with")
+endif (USE_POSIX_STORE)
+
+if (USE_POSIX_OBJ)
+	set(BCOND_POSIX_OBJ "%bcond_without")
+else (USE_POSIX_OBJ)
+	set(BCOND_POSIX_OBJ "%bcond_with")
+endif (USE_POSIX_OBJ)
+
+if (USE_MERO_STORE)
+	set(BCOND_MERO_STORE "%bcond_without")
+else (USE_MERO_STORE)
+	set(BCOND_MERO_STORE "%bcond_with")
+endif (USE_MERO_STORE)
+
+# Final tuning
 if (USE_POSIX_OBJ OR USE_MERO_STORE)
   set(USE_POSIX_STORE OFF)
   message(STATUS "Disabling POSIX Store")
