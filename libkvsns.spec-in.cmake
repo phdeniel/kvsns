@@ -85,12 +85,12 @@ mkdir -p %{buildroot}%{_bindir}
 mkdir -p %{buildroot}%{_libdir}
 mkdir -p %{buildroot}%{_libdir}/pkgconfig
 mkdir -p %{buildroot}%{_includedir}/kvsns
-install -m 644 kvsns/libkvsns.so %{buildroot}%{_libdir}
-install -m 644 kvsal/libkvsal.so %{buildroot}%{_libdir}
-install -m 644 extstore/libextstore.so %{buildroot}%{_libdir}
 install -m 644 include/kvsns/kvsns.h  %{buildroot}%{_includedir}/kvsns
 install -m 644 include/kvsns/kvsal.h  %{buildroot}%{_includedir}/kvsns
 install -m 644 include/kvsns/extstore.h  %{buildroot}%{_includedir}/kvsns
+install -m 644 kvsal/libkvsal.so %{buildroot}%{_libdir}
+install -m 644 extstore/libextstore.so %{buildroot}%{_libdir}
+install -m 644 kvsns/libkvsns.so %{buildroot}%{_libdir}
 install -m 644 libkvsns.pc  %{buildroot}%{_libdir}/pkgconfig
 install -m 755 kvsns_shell/kvsns_busybox %{buildroot}%{_bindir}
 
@@ -99,9 +99,9 @@ rm -rf $RPM_BUILD_ROOT
 
 %files
 %defattr(-,root,root)
-%{_libdir}/libkvsns.so*
 %{_libdir}/libkvsal.so*
 %{_libdir}/libextstore.so*
+%{_libdir}/libkvsns.so*
 
 %files devel
 %defattr(-,root,root)

@@ -1,17 +1,49 @@
 /* -*- C -*- */
+#ifndef _M0_STORE_H
+#define _M0_STORE_H
 #include <stdlib.h>
 #include <stdio.h>
+#include <sys/param.h>
 #include <sys/time.h>
+#include <sys/stat.h>
+#include <sys/types.h>
+#include <string.h>
 #include <assert.h>
+#include <fcntl.h>
+#include <stdbool.h>
+#include <errno.h>
 
 #include "clovis/clovis.h"
 #include "clovis/clovis_idx.h"
 
 int m0store_create_object(struct m0_uint128 id);
-int m0_pread(struct m0_uint128 id, char *buff, int block_size, int block_count);
-int m0_pwrite(struct m0_uint128 id, char *buff, int block_size, int block_count);
 int m0store_init(void);
 
+
+#define BLK_SIZE 0200
+#define BLK_COUNT 10
+
+enum io_type {
+	IO_READ = 1,
+	IO_WRITE = 2
+};
+
+ssize_t m0_do_io(int fd, enum io_type iotype, off_t x, size_t len,
+	      size_t bs, char *buff);
+
+static inline ssize_t m0_pwrite(struct m0_uint128 id, off_t x,
+			        size_t len, size_t bs, char *buff)
+{
+	return do_io(fd, IO_WRITE, x, len, bs, buff);
+}
+
+static inline ssize_t m0_pread(struct m0_uint128 id, off_t x,
+			       size_t len, size_t bs, char *buff)
+{
+	return m0_do_io(fd, IO_READ, x, len, bs, buff);
+}
+
+#endif
 /*
  *  Local variables:
  *  c-indentation-style: "K&R"

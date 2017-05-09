@@ -2,12 +2,22 @@
 #include <stdlib.h>
 #include <stdio.h>
 #include <sys/time.h>
+#include <sys/param.h>
+#include <sys/types.h>
+#include <sys/stat.h>
+#include <fcntl.h>
+#include <stdbool.h>
+#include <errno.h>
+#include <string.h>
 #include <assert.h>
 
 #include "clovis/clovis.h"
 #include "clovis/clovis_internal.h"
 #include "clovis/clovis_idx.h"
 #include "m0store.h"
+
+#define BLK_SIZE 0200
+#define BLK_COUNT 10
 
 
 /* To be passed as argument */
@@ -67,111 +77,36 @@ static void get_clovis_env(void)
 }
 
 static int init_ctx(struct clovis_io_ctx *ioctx,
-                    int block_size,
-                    int block_count)
+                    int block_count, int block_size)
 {
-        int rc;
-        int i;
-	uint64_t                last_index = 0LL;
+	int                rc;
+	int                i;
+	uint64_t           last_index;
 
-        /* Allocate block_count * 4K data buffer. */
-        rc = m0_bufvec_empty_alloc(&ioctx->data, block_count);
-        if (rc != 0)
-                return rc;
-
-        /* Allocate bufvec and indexvec for write. */
-        rc = m0_bufvec_alloc(&ioctx->attr, block_count, 1);
-        if(rc != 0)
-                return rc;
-
-        rc = m0_indexvec_alloc(&ioctx->ext, block_count);
-        if (rc != 0)
-                return rc;
-
-        for (i = 0; i < block_count; i++) {
-                ioctx->ext.iv_index[i] = last_index;
-                ioctx->ext.iv_vec.v_count[i] = block_size;
-                last_index += block_size;
-
-                /* we don't want any attributes */
-                ioctx->attr.ov_vec.v_count[i] = 0;
-        }
-
-        return 0;
-};
-
-static void free_ctx(struct clovis_io_ctx *ioctx)
-{
-        m0_indexvec_free(&ioctx->ext);
-        m0_bufvec_free(&ioctx->data);
-        m0_bufvec_free(&ioctx->attr);
-}
-
-static int read_data_from_object(struct m0_uint128 id,
-				 struct clovis_io_ctx *ioctx)
-{
-	int rc = 0;
-	struct m0_clovis_op    *ops[1] = {NULL};
-	struct m0_clovis_obj    obj;
-
-	/* Read the requisite number of blocks from the entity */
-	m0_clovis_obj_init(&obj, &clovis_uber_realm, &id);
-	/* Create the read request */
-	m0_clovis_obj_op(&obj, M0_CLOVIS_OC_READ,
-			 &ioctx->ext, &ioctx->data, &ioctx->attr,
-			 0, &ops[0]);
-        assert(rc == 0);
-        assert(ops[0] != NULL);
-        assert(ops[0]->op_sm.sm_rc == 0);
-	m0_clovis_op_launch(ops, 1);
-
-	/* wait */
-	rc = m0_clovis_op_wait(ops[0],
-			    M0_BITS(M0_CLOVIS_OS_FAILED,
-				    M0_CLOVIS_OS_STABLE),
-		     M0_TIME_NEVER);
-	assert(rc == 0);
-	assert(ops[0]->op_sm.sm_state == M0_CLOVIS_OS_STABLE);
-	assert(ops[0]->op_sm.sm_rc == 0);
-
-	/* fini and release */
-	m0_clovis_op_fini(ops[0]);
-	m0_clovis_op_free(ops[0]);
-	m0_clovis_entity_fini(&obj.ob_entity);
-
-	return rc;
-}
-
-int m0_pread(struct m0_uint128 id, char *buff, int block_size, int block_count)
-{
-	int                     i;
-	int                     rc;
-	struct clovis_io_ctx    ioctx;
-
-
-        /* Read data from source file. */
-        rc = init_ctx(&ioctx, block_size, block_count);
-        if (rc != 0)
-                return rc;
-
-        for (i = 0; i < block_count; i++) {
-                ioctx.data.ov_buf[i] = (char *)(buff+i*block_size);
-                ioctx.data.ov_vec.v_count[i] = block_size;
-        }
-
-	rc = read_data_from_object(id, &ioctx);
-	if (rc != 0) {
-		fprintf(stderr, "Reading from object failed rc=%d\n", rc);
+	/* Allocate block_count * 4K data buffer. */
+	rc = m0_bufvec_alloc(&ioctx->data, block_count, block_size);
+	if (rc != 0)
 		return rc;
+
+	/* Allocate bufvec and indexvec for write. */
+	rc = m0_bufvec_alloc(&ioctx->attr, block_count, 1);
+	if(rc != 0)
+		return rc;
+
+	rc = m0_indexvec_alloc(&ioctx->ext, block_count);
+	if (rc != 0)
+		return rc;
+
+	last_index = 0;
+	for (i = 0; i < block_count; i++) {
+		ioctx->ext.iv_index[i] = last_index ;
+		ioctx->ext.iv_vec.v_count[i] = block_size;
+		last_index += block_size;
+
+	/* we don't want any attributes */
+	ioctx->attr.ov_vec.v_count[i] = 0;
 	}
 
-        /* Free bufvec's and indexvec's */
-        for (i = 0; i < block_count; i++) {
-                ioctx.data.ov_buf[i] = NULL;
-                ioctx.data.ov_vec.v_count[i] = 0;
-        }
-	free_ctx(&ioctx);
-	
 	return 0;
 }
 
@@ -200,71 +135,134 @@ int m0store_create_object(struct m0_uint128 id)
 	return rc;
 }
 
-static int write_data_to_object(struct m0_uint128 id,
-				struct clovis_io_ctx *ioctx)
+static int write_data_aligned(struct m0_uint128 id, char *buff, off_t off,
+                                int block_count, int block_size)
 {
-	int                  rc;  
+	int                  rc;
+	int                  op_rc;
+	int                  i;
+	int                  nr_tries = 10;
 	struct m0_clovis_obj obj;
 	struct m0_clovis_op *ops[1] = {NULL};
+	struct clovis_io_ctx    ioctx;
 
+again:
 	memset(&obj, 0, sizeof(struct m0_clovis_obj));
 
-	/* Set the object entity we want to write */
+	init_ctx(&ioctx, block_count, block_size);
+
+	for (i = 0; i < block_count; i++)
+		memcpy(ioctx.data.ov_buf[i],
+		       (char *)(buff+i*block_size),
+		       block_size);
+
+	/* Set the  bject entity we want to write */
 	m0_clovis_obj_init(&obj, &clovis_uber_realm, &id);
 
 	/* Create the write request */
-	m0_clovis_obj_op(&obj, M0_CLOVIS_OC_WRITE, 
-			 &ioctx->ext, &ioctx->data, &ioctx->attr,
-			 0, &ops[0]);
+	m0_clovis_obj_op(&obj, M0_CLOVIS_OC_WRITE,
+			 &ioctx.ext, &ioctx.data, &ioctx.attr, 0, &ops[0]);
 
 	/* Launch the write request*/
 	m0_clovis_op_launch(ops, 1);
 
 	/* wait */
 	rc = m0_clovis_op_wait(ops[0],
-			M0_BITS(M0_CLOVIS_OS_FAILED,
-				M0_CLOVIS_OS_STABLE),
-			M0_TIME_NEVER);
+			       M0_BITS(M0_CLOVIS_OS_FAILED,
+			       M0_CLOVIS_OS_STABLE),
+			       M0_TIME_NEVER);
+	op_rc = ops[0]->op_sm.sm_rc;
 
 	/* fini and release */
 	m0_clovis_op_fini(ops[0]);
 	m0_clovis_op_free(ops[0]);
 	m0_clovis_entity_fini(&obj.ob_entity);
 
+	if (op_rc == -EINVAL && nr_tries != 0) {
+		nr_tries--;
+		ops[0] = NULL;
+		printf("try writing data to object again ... \n");
+		sleep(5);
+		goto again;
+	}
+
+	/* Free bufvec's and indexvec's */
+	m0_indexvec_free(&ioctx.ext);
+	m0_bufvec_free(&ioctx.data);
+	m0_bufvec_free(&ioctx.attr);
 	return rc;
 }
 
-int m0_pwrite(struct m0_uint128 id, char *buff, int block_size, int block_count)
-{ 
+static int read_data_aligned(struct m0_uint128 id,
+                             char *buff, off_t off, 
+                             int block_count, int block_size)
+{
+	int                     i;
+	int                     rc;
+	struct m0_clovis_op    *ops[1] = {NULL};
+	struct m0_clovis_obj    obj;
+	uint64_t                last_index;
 	struct clovis_io_ctx ioctx;
-	int i = 0;
-	int rc = 0;
 
-	/* Read data from source file. */
-	rc = init_ctx(&ioctx, block_size, block_count);
+	rc = m0_indexvec_alloc(&ioctx.ext, block_count);
 	if (rc != 0)
 		return rc;
 
+	rc = m0_bufvec_alloc(&ioctx.data, block_count, block_size);
+	if (rc != 0)
+		return rc;
+	rc = m0_bufvec_alloc(&ioctx.attr, block_count, 1);
+	if(rc != 0)
+		return rc;
+
+	last_index = 0;
 	for (i = 0; i < block_count; i++) {
-		ioctx.data.ov_buf[i] = (char *)(buff+i*block_size);
-		ioctx.data.ov_vec.v_count[i] = block_size;
+		ioctx.ext.iv_index[i] = last_index ;
+		ioctx.ext.iv_vec.v_count[i] = block_size;
+		last_index += block_size;
+
+	ioctx.attr.ov_vec.v_count[i] = 0;
 	}
 
-	/* Copy data to the object*/
-	rc = write_data_to_object(id, &ioctx);
-	if (rc != 0) {
-		fprintf(stderr, "Writing to object failed!\n");
-		return rc;
-	}
-	
-	
-	/* Free bufvec's and indexvec's */
+	/* Read the requisite number of blocks from the entity */
+	m0_clovis_obj_init(&obj, &clovis_uber_realm, &id);
+
+	/* Create the read request */
+	m0_clovis_obj_op(&obj, M0_CLOVIS_OC_READ,
+			 &ioctx.ext, &ioctx.data, &ioctx.attr,
+			 0, &ops[0]);
+	assert(rc == 0);
+	assert(ops[0] != NULL);
+	assert(ops[0]->op_sm.sm_rc == 0);
+
+	m0_clovis_op_launch(ops, 1);
+
+	/* wait */
+	rc = m0_clovis_op_wait(ops[0],
+			       M0_BITS(M0_CLOVIS_OS_FAILED,
+			       M0_CLOVIS_OS_STABLE),
+			       M0_TIME_NEVER);
+	assert(rc == 0);
+	assert(ops[0]->op_sm.sm_state == M0_CLOVIS_OS_STABLE);
+	assert(ops[0]->op_sm.sm_rc == 0);
+
 	for (i = 0; i < block_count; i++) {
-		ioctx.data.ov_buf[i] = NULL;
-		ioctx.data.ov_vec.v_count[i] = 0;
+		memcpy((char *)(buff + block_size*i),
+		       (char *)ioctx.data.ov_buf[i],
+		       ioctx.data.ov_vec.v_count[i]);
+		*len += ioctx.data.ov_vec.v_count[i];
 	}
-	free_ctx(&ioctx);
-	
+
+
+	/* fini and release */
+	m0_clovis_op_fini(ops[0]);
+	m0_clovis_op_free(ops[0]);
+	m0_clovis_entity_fini(&obj.ob_entity);
+
+	m0_indexvec_free(&ioctx.ext);
+	m0_bufvec_free(&ioctx.data);
+	m0_bufvec_free(&ioctx.attr);
+
 	return 0;
 }
 
@@ -353,3 +351,329 @@ int m0store_init()
  *  scroll-step: 1
  *  End:
  */
+
+
+/*
+ * The following functions makes random IO by blocks
+ *
+ */
+
+/*
+ * Those two functions compute the Upper and Lower limits
+ * for the block that contains the absolution offset <x>
+ * For related variables will be named Lx and Ux in the code
+ *
+ * ----|-----------x-------|-----
+ *     Lx                  Ux
+ *
+ * Note: Lx and Ux are multiples of the block size 
+ */
+static off_t lower(off_t x, size_t bs)
+{
+	return (x/bs)*bs;
+}
+
+static off_t upper(off_t x, size_t bs)
+{
+	return ((x/bs)+1)*bs;
+}
+
+/* equivalent of pwrite, but does only IO on full blocks */
+ssize_t m0_do_io(struct m0_uint128 id, , enum io_type iotype, 
+		 off_t x, size_t len, size_t bs, char *buff)
+{
+	off_t Lx1, Lx2, Ux1, Ux2;
+	off_t Lio, Uio, Ubond, Lbond;
+	bool bprev, bnext, insider;
+	off_t x1, x2;
+	int bcount = 0;
+	int rc;
+	int delta_pos = 0;
+	int delta_tmp = 0;
+	ssize_t done = 0;
+	char tmpbuff[BLK_SIZE];
+
+	/*
+	 * IO will not be considered the usual offset+len way
+	 * but as segment starting from x1 to x2
+	 */
+	x1 = x;
+	x2 = x+len;
+
+	/* Compute Lower and Upper Limits for IO */
+	Lx1 = lower(x1, bs);
+	Lx2 = lower(x2, bs);
+	Ux1 = upper(x1, bs);
+	Ux2 = upper(x2, bs);
+
+	/* Those flags preserve state related to the way
+	 * the IO should be done.
+	 * - insider is true : x1 and x2 belong to the 
+	 *   same block (the IO is fully inside a single block)
+	 * - bprev is true : x1 is not a block limit
+	 * - bnext is true : x2 is not a block limit 
+	 */
+	bprev = false;
+	bnext = false;
+	insider = false;
+
+	/* If not an "insider case", the IO can be made in 3 steps
+ 	 * a) inside [x1,x2], find a set of contiguous aligned blocks
+ 	 *    and do the IO on them
+ 	 * b) if x1 is not aligned on block size, do a small IO on the
+ 	 *    block just before the "aligned blocks"
+ 	 * c) if x2 is not aligned in block size, do a small IO on the 
+ 	 *    block just after the "aligned blocks"
+ 	 *
+ 	 * Example: x1 and x2 are located so
+ 	 *           x <--------------- len ------------------>
+ 	 *  ---|-----x1-----|------------|------------|-------x2--|----  
+ 	 *     Lx1          Ux1                       Lx2         Ux2 
+ 	 *     		    
+ 	 * We should (write case)
+ 	 *   1) read block [Lx1, Ux1] and update range [x1, Ux1]
+ 	 *     then write updated [Lx1, Ux1]
+ 	 *   3) read block [Lx2, Ux2], update [Lx2, x2] and 
+ 	 *       then writes back updated [Lx2, Ux2]
+ 	 */
+	printf("IO (write): (%lld, %llu) = [%lld, %lld]\n", 
+		x, len, x1, x2);
+	printf("  Bornes: %lld < %lld < %lld ||| %lld < %lld < %lld\n", 
+		Lx1, x1, Ux1, Lx2, x2, Ux2);
+
+	if ( x1 >= x2 )
+		return;
+
+	/* In the following code, the variables of interest are:
+	 *  - Lio and Uio are block aligned offset that limit
+	 *    the "aligned blocks IO"
+	 *  - Ubond and Lbound are the Up and Low limit for the 
+	 *    full IO, showing every block that was touched. It is
+	 *    used for debug purpose */
+	if ((Lx1 == Lx2) && (Ux1 ==  Ux2)) {
+		/* Insider case, x1 and x2 are so :
+ 		 *  ---|-x1---x2----|---
+	  	 */
+		bprev = bnext = false;
+
+		insider = true;
+		Lio = Uio = 0LL;
+		Ubond = Ux1;
+		Lbond = Lx1;
+	} else {
+		/* Left side */
+		if (x1 == Lx1) {
+			/* Aligned on the left 
+			* --|------------|----
+			*   x1
+			*   Lio
+			*   Lbond
+			*/    
+			Lio = x1;	
+			bprev = false;
+			Lbond = x1;
+		} else {
+			/* Not aligned on the left
+			* --|-----x1------|----
+			*                 Lio
+			*   Lbond              
+			*/    
+			Lio = Ux1;
+			bprev = true;
+			Lbond = Lx1;
+		}
+
+		/* Right side */
+		if (x2 == Lx2) {
+			/* Aligned on the right 
+			* --|------------|----
+			*                x2
+			*                Uio
+			*                Ubond
+			*/    
+			Uio = x2;
+			bnext = false;
+			Ubond = x2;
+		} else {
+			/* Not aligned on the left
+			* --|---------x2--|----
+			*   Uio
+			*                 Ubond
+			*/    
+			Uio = Lx2;
+			bnext = true;
+			Ubond = Ux2;
+		}
+	}
+	
+	/* delta_pos is the offset position in input buffer "buff"
+	 * What is before buff+delta_pos has already been done */
+	delta_pos = 0;	
+
+	printf("IO on [%lld, %lld]:\n", x1, x2);
+	if (bprev) {
+		printf("PREVIOUS: Get block [%lld, %lld] and work on [%lld, %lld]\n",
+			Lx1, Ux1, x1, Ux1);
+
+		/* Reads block [Lx1, Ux1] before aligned [Lio, Uio] */
+		memset(tmpbuff, 0, bs);
+		rc = read_data_aligned(id, tmpbuff, Lx1, 1, bs);
+		if (rc < 0 || rc != bs)
+			return -1;
+
+		/* Update content of read block 
+		 * --|-----------------------x1-----------|---
+		 *   Lx1                                  Ux1
+		 *                              WORK HERE
+		 *    <----------------------><---------->
+		 *          x1-Lx1                Ux1-x1
+		 */
+		delta_tmp = x1 - Lx1;
+		switch(iotype) {
+		case IO_WRITE:
+			memcpy((char *)(tmpbuff+delta_tmp),
+			       buff, (Ux1 - x1));
+
+			/* Writes block [Lx1, Ux1] once updated */
+			rc = write_data_aligned(id, tmpbuff, Lx1, 1, bs);
+			if (rc < 0 || rc != bs)
+				return -1;
+
+			break;
+
+		case IO_READ:
+			 memcpy(buff, (char *)(tmpbuff+delta_tmp),
+			       (Ux1 - x1));
+			break;
+
+		default:
+			return -EINVAL;
+		}
+		
+		delta_pos += Ux1 - x1;
+		done += Ux1 - x1;
+	}
+
+	if (Lio != Uio) {
+		/* Easy case: aligned IO on aligned limit [Lio, Uio] */
+		/* If no aligned block were found, then Uio == Lio */
+		printf("ALIGNED: do IO on [%lld, %lld]\n", Lio, Uio);
+
+		bcount = (Uio - Lio)/bs;	
+		switch(iotype) {
+		case IO_WRITE:
+			rc = write_data_aligned(id, (char *)(buff + delta_pos),
+						Lio, bcount, bs);
+
+			if (rc < 0)
+				return -1;
+			break;
+
+		case IO_READ:
+			rc = read_data_aligned(id, (char *)(buff + delta_pos),
+					       Lio, bcount, bs);
+
+			if (rc < 0)
+				return -1;
+			break;
+
+		default:
+			return -EINVAL;
+		}
+
+		if (rc != (bcount*bs))
+			return -1;
+
+		done += rc;
+		delta_pos += done;
+	}
+
+	if (bnext) {
+		printf("NEXT: Get block [%lld, %lld] and work on [%lld, %lld]\n",
+			Lx2, Ux2, Lx2, x2);
+
+		/* Reads block [Lx2, Ux2] after aligned [Lio, Uio] */
+		memset(tmpbuff, 0, bs);
+		rc = read_data_aligned(id, tmpbuff, Lx2, 1, bs);
+		if (rc < 0)
+			return -1;
+
+		/* Update content of read block 
+		 * --|---------------x2------------------|---
+		 *   Lx2                                 Ux2
+		 *       WORK HERE                    
+		 *    <--------------><------------------>
+		 *          x2-Lx2           Ux2-x2
+		 */
+		switch(iotype) {
+		case IO_WRITE:
+			memcpy(tmpbuff, (char *)(buff + delta_pos),
+			      (x2 - Lx2));
+
+			/* Writes block [Lx2, Ux2] once updated */
+			/* /!\ This writes extraenous ending zeros */
+			rc = write_data_aligned(fd, tmpbuff, Lx2, 1, bs); 
+			if (rc < 0)
+				return -1;
+			break;
+
+		case IO_READ:
+			memcpy((char *)(buff + delta_pos), tmpbuff,
+			       (x2 - Lx2));
+			break;
+
+		default:
+			return -EINVAL;
+		}
+
+		done += x2 - Lx2;
+	}
+
+	if (insider) {
+		printf("INSIDER: Get block [%lld, %lld] and work on [%lld, %lld]\n",
+			Lx1, Ux1, x1, x2);
+
+		/* Insider case read/update/write */
+		memset(tmpbuff, 0, bs);
+		rc = read_data_aligned(id, tmpbuff, Lx1, 1, bs);
+		if (rc < 0)
+			return -1;
+
+		/* --|----------x1---------x2------------|---
+		 *   Lx1=Lx2                             Ux1=Ux2 
+		 *                  UPDATE                     
+		 *    <---------><---------->
+		 *       x1-Lx1      x2-x1
+		 */
+		delta_tmp = x1 - Lx1;
+		switch(iotype) {
+		case IO_WRITE:
+			memcpy((char *)(tmpbuff+delta_tmp), buff,
+			       (x2 - x1));
+
+			/* /!\ This writes extraenous ending zeros */
+			rc = write_data_aligned(id, tmpbuff, Lx1, 1, bs);
+			if (rc < 0)
+				return -1;
+			break;
+
+		case IO_READ:
+			memcpy(buff, (char *)(tmpbuff+delta_tmp),
+			       (x2 - x1));
+			break;
+
+		default:
+			return -EINVAL;
+		}
+
+		done += x2 - x1; 
+	}
+
+	printf("Complete IO : [%lld, %lld] => [%lld, %lld]\n", 
+		x1, x2, Lbond, Ubond);
+
+	printf("End of IO : len=%u  done=%lld\n\n", len, done);
+
+	return done;
+}
+
