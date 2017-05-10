@@ -28,7 +28,7 @@ int copy_to_mero(int fd_source, struct m0_uint128 id,
 		if (rsize < 0)
 			return -1;
 
-		wsize = m0_pwrite(id, off, rsize, BLK_SIZE, buff);
+		wsize = m0store_pwrite(id, off, rsize, BLK_SIZE, buff);
 		if (wsize < 0)
 			return -1;
 

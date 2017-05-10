@@ -204,7 +204,7 @@ static int read_data_aligned(struct m0_uint128 id,
 	uint64_t                last_index;
 	struct clovis_io_ctx ioctx;
 
-	printf("write_data_aligned: offset=%lld, bcount=%u bs=%u\n",
+	printf("read_data_aligned: offset=%lld, bcount=%u bs=%u\n",
 		(long long)off, block_count, block_size);
 
 	sleep(1);
@@ -378,8 +378,8 @@ static off_t upper(off_t x, size_t bs)
 }
 
 /* equivalent of pwrite, but does only IO on full blocks */
-ssize_t m0_do_io(struct m0_uint128 id, enum io_type iotype,
-		 off_t x, size_t len, size_t bs, char *buff)
+ssize_t m0store_do_io(struct m0_uint128 id, enum io_type iotype,
+		      off_t x, size_t len, size_t bs, char *buff)
 {
 	off_t Lx1, Lx2, Ux1, Ux2;
 	off_t Lio, Uio, Ubond, Lbond;

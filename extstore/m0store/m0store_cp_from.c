@@ -25,7 +25,7 @@ int copy_from_mero(struct m0_uint128 id, int fd_dest,
 	while (off < filesize) {
 		len = (remains > iolen) ? iolen : remains;
 
-		rsize = m0_pread(id, off, len, BLK_SIZE, buff);
+		rsize = m0store_pread(id, off, len, BLK_SIZE, buff);
 		if (rsize < 0)
 			return -1;
 
@@ -53,7 +53,6 @@ int main(int argc, char *argv[])
 {
 	int fdd;
 	struct m0_uint128 id;
-	struct stat stat;
 	int iolen;
 	int rc;
 	size_t filesize;
@@ -85,7 +84,7 @@ int main(int argc, char *argv[])
 		exit(1);
 	}
 	/* Must read and write on fd */
-	if (copy_from_mero(id, fdd, iolen, stat.st_size) < 0) {
+	if (copy_from_mero(id, fdd, iolen, filesize) < 0) {
 		fprintf(stderr, "Can't copy to %s to MERO\n",
 			argv[1]);
 		exit(1);
