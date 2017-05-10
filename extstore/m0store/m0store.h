@@ -28,19 +28,19 @@ enum io_type {
 	IO_WRITE = 2
 };
 
-ssize_t m0_do_io(int fd, enum io_type iotype, off_t x, size_t len,
-	      size_t bs, char *buff);
+ssize_t m0_do_io(struct m0_uint128 id, enum io_type iotype, off_t x, size_t len,
+		 size_t bs, char *buff);
 
 static inline ssize_t m0_pwrite(struct m0_uint128 id, off_t x,
 			        size_t len, size_t bs, char *buff)
 {
-	return do_io(fd, IO_WRITE, x, len, bs, buff);
+	return m0_do_io(id, IO_WRITE, x, len, bs, buff);
 }
 
 static inline ssize_t m0_pread(struct m0_uint128 id, off_t x,
 			       size_t len, size_t bs, char *buff)
 {
-	return m0_do_io(fd, IO_READ, x, len, bs, buff);
+	return m0_do_io(id, IO_READ, x, len, bs, buff);
 }
 
 #endif
