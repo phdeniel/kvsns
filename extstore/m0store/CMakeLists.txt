@@ -1,5 +1,5 @@
 set(LUSTRE_PATH "/usr/src/lustre-2.7.0")
-set(MERO_PATH "/home/phil/mero")
+set(MERO_PATH "/root/mero_master")
 
 set(MERO_CFLAGS "-D_REENTRANT -D_GNU_SOURCE -DM0_INTERNAL='' -DM0_EXTERN=extern ")
 set(MERO_CFLAGS "${MERO_CFLAGS} -include config.h ")
@@ -28,6 +28,12 @@ target_link_libraries(extstore
   gf_complete
   ${SYSTEM_LIBRARIES} 
 )
+
+add_executable(m0store_cp_to m0store_cp_to.c)
+target_link_libraries(m0store_cp_to extstore)
+
+add_executable(m0store_cp_from m0store_cp_from.c)
+target_link_libraries(m0store_cp_from extstore)
 
 add_custom_command(TARGET extstore
                    COMMAND /usr/bin/cp libextstore.so ..)
