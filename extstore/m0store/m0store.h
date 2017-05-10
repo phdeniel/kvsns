@@ -18,9 +18,9 @@
 
 int m0store_create_object(struct m0_uint128 id);
 int m0store_init(void);
+void m0store_fini(void);
 
-
-#define BLK_SIZE 0200
+#define BLK_SIZE 4096
 #define BLK_COUNT 10
 
 enum io_type {

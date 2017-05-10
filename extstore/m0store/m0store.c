@@ -17,10 +17,6 @@
 #include "clovis/clovis_idx.h"
 #include "m0store.h"
 
-#define BLK_SIZE 0200
-#define BLK_COUNT 10
-
-
 /* To be passed as argument */
 extern struct m0_clovis_realm     clovis_uber_realm; 
 
@@ -69,7 +65,7 @@ static void get_clovis_env(void)
 	assert(clovis_proc_fid != NULL);
 }
 
-static int init_ctx(struct clovis_io_ctx *ioctx,
+static int init_ctx(struct clovis_io_ctx *ioctx, off_t off,
                     int block_count, int block_size)
 {
 	int                rc;
@@ -90,14 +86,14 @@ static int init_ctx(struct clovis_io_ctx *ioctx,
 	if (rc != 0)
 		return rc;
 
-	last_index = 0;
+	last_index = off;
 	for (i = 0; i < block_count; i++) {
 		ioctx->ext.iv_index[i] = last_index ;
 		ioctx->ext.iv_vec.v_count[i] = block_size;
 		last_index += block_size;
 
-	/* we don't want any attributes */
-	ioctx->attr.ov_vec.v_count[i] = 0;
+		/* we don't want any attributes */
+		ioctx->attr.ov_vec.v_count[i] = 0;
 	}
 
 	return 0;
@@ -119,8 +115,8 @@ int m0store_create_object(struct m0_uint128 id)
 
 	rc = m0_clovis_op_wait(
 		ops[0], M0_BITS(M0_CLOVIS_OS_FAILED, M0_CLOVIS_OS_STABLE),
-		m0_time_from_now(3,0));
-	
+		M0_TIME_NEVER);
+
 	m0_clovis_op_fini(ops[0]);
 	m0_clovis_op_free(ops[0]);
 	m0_clovis_entity_fini(&obj.ob_entity);
@@ -139,10 +135,15 @@ static int write_data_aligned(struct m0_uint128 id, char *buff, off_t off,
 	struct m0_clovis_op *ops[1] = {NULL};
 	struct clovis_io_ctx    ioctx;
 
+	printf("write_data_aligned: offset=%lld, bcount=%u bs=%u\n",
+		(long long)off, block_count, block_size);
+
+	sleep(1);
+
 again:
 	memset(&obj, 0, sizeof(struct m0_clovis_obj));
 
-	init_ctx(&ioctx, block_count, block_size);
+	init_ctx(&ioctx, off, block_count, block_size);
 
 	for (i = 0; i < block_count; i++)
 		memcpy(ioctx.data.ov_buf[i],
@@ -183,7 +184,13 @@ again:
 	m0_indexvec_free(&ioctx.ext);
 	m0_bufvec_free(&ioctx.data);
 	m0_bufvec_free(&ioctx.attr);
-	return rc;
+
+	/*
+	 *    /!\    /!\    /!\    /!\
+	 *
+	 * As far as I have understood, MERO does the IO in full
+	 * or does nothing at all, so returned size is aligned sized */
+	return (block_count*block_size);
 }
 
 static int read_data_aligned(struct m0_uint128 id,
@@ -197,6 +204,11 @@ static int read_data_aligned(struct m0_uint128 id,
 	uint64_t                last_index;
 	struct clovis_io_ctx ioctx;
 
+	printf("write_data_aligned: offset=%lld, bcount=%u bs=%u\n",
+		(long long)off, block_count, block_size);
+
+	sleep(1);
+
 	rc = m0_indexvec_alloc(&ioctx.ext, block_count);
 	if (rc != 0)
 		return rc;
@@ -208,7 +220,7 @@ static int read_data_aligned(struct m0_uint128 id,
 	if(rc != 0)
 		return rc;
 
-	last_index = 0;
+	last_index = off;
 	for (i = 0; i < block_count; i++) {
 		ioctx.ext.iv_index[i] = last_index ;
 		ioctx.ext.iv_vec.v_count[i] = block_size;
@@ -254,7 +266,12 @@ static int read_data_aligned(struct m0_uint128 id,
 	m0_bufvec_free(&ioctx.data);
 	m0_bufvec_free(&ioctx.attr);
 
-	return 0;
+	/*
+	 *    /!\    /!\    /!\    /!\
+	 *
+	 * As far as I have understood, MERO does the IO in full
+	 * or does nothing at all, so returned size is aligned sized */
+	return (block_count*block_size);
 }
 
 static int init_clovis(void)
@@ -316,6 +333,12 @@ int m0store_init()
 	assert(rc == 0);
 	
 	return 0;
+}
+
+void m0store_fini(void)
+{
+	/* Finalize Clovis instance */
+	m0_clovis_fini(&clovis_instance, true);
 }
 
 /*
