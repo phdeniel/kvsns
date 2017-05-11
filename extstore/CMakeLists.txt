@@ -10,3 +10,9 @@ if(USE_MERO_STORE)
 	add_subdirectory(m0store)
 endif(USE_MERO_STORE)
 
+add_executable(extstore_cp_to extstore_cp_to.c)
+target_link_libraries(extstore_cp_to extstore)
+
+add_executable(extstore_cp_from extstore_cp_from.c)
+target_link_libraries(extstore_cp_from extstore)
+
