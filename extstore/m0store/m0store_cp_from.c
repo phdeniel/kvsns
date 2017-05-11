@@ -18,14 +18,14 @@ int copy_from_mero(struct m0_uint128 id, int fd_dest,
 	int rc;
 	int remains;
 	size_t len;
-	char buff[BLK_COUNT*BLK_SIZE];
+	char buff[M0STORE_BLK_COUNT*M0STORE_BLK_SIZE];
 
 	remains = filesize;
 	off = 0LL;
 	while (off < filesize) {
 		len = (remains > iolen) ? iolen : remains;
 
-		rsize = m0store_pread(id, off, len, BLK_SIZE, buff);
+		rsize = m0store_pread(id, off, len, M0STORE_BLK_SIZE, buff);
 		if (rsize < 0)
 			return -1;
 
@@ -69,7 +69,7 @@ int main(int argc, char *argv[])
 	}
 
 	iolen = atoi(argv[3]);
-	printf("Start: bs=%u iolen=%u\n", BLK_SIZE, iolen);
+	printf("Start: bs=%u iolen=%u\n", M0STORE_BLK_SIZE, iolen);
 
 	id = M0_CLOVIS_ID_APP;
 	id.u_lo = atoi(argv[1]);

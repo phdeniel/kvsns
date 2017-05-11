@@ -124,6 +124,32 @@ int m0store_create_object(struct m0_uint128 id)
 	return rc;
 }
 
+int m0store_delete_object(struct m0_uint128 id)
+{
+	int                  rc;
+	struct m0_clovis_obj obj;
+	struct m0_clovis_op *ops[1] = {NULL};
+
+	memset(&obj, 0, sizeof(struct m0_clovis_obj));
+
+	m0_clovis_obj_init(&obj, &clovis_uber_realm, &id);
+
+	m0_clovis_entity_delete(&obj.ob_entity, &ops[0]);
+
+	m0_clovis_op_launch(ops, ARRAY_SIZE(ops));
+
+	rc = m0_clovis_op_wait(
+		ops[0], M0_BITS(M0_CLOVIS_OS_FAILED, M0_CLOVIS_OS_STABLE),
+		M0_TIME_NEVER);
+
+	m0_clovis_op_fini(ops[0]);
+	m0_clovis_op_free(ops[0]);
+	m0_clovis_entity_fini(&obj.ob_entity);
+
+	return rc;
+}
+
+
 static int write_data_aligned(struct m0_uint128 id, char *buff, off_t off,
                                 int block_count, int block_size)
 {
@@ -390,7 +416,7 @@ ssize_t m0store_do_io(struct m0_uint128 id, enum io_type iotype,
 	int delta_pos = 0;
 	int delta_tmp = 0;
 	ssize_t done = 0;
-	char tmpbuff[BLK_SIZE];
+	char tmpbuff[M0STORE_BLK_SIZE];
 
 	/*
 	 * IO will not be considered the usual offset+len way
