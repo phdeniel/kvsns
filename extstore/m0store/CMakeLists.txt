@@ -22,6 +22,7 @@ SET(extstore_LIB_SRCS
 add_library(extstore SHARED ${extstore_LIB_SRCS})
 
 target_link_libraries(extstore
+  hiredis
   mero
   uuid
   yaml
