@@ -44,7 +44,8 @@
 #include <kvsns/kvsns.h>
 
 int extstore_init(char *rootpath);
-int extstore_create(kvsns_ino_t object);
+int extstore_create(kvsns_ino_t object,
+		    struct stat *stat);
 int extstore_read(kvsns_ino_t *ino,
 		  off_t offset,
 		  size_t buffer_size,

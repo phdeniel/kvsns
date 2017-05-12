@@ -90,7 +90,7 @@ int main(int argc, char *argv[])
 		exit(1);
 	}
 
-	rc = extstore_create(ino);
+	rc = extstore_create(ino, &stat);
 	if (rc != 0) {
 		fprintf(stderr, "Can't create object rc=%d\n", rc);
 		exit(1);

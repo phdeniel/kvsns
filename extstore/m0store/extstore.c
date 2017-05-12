@@ -124,13 +124,12 @@ static int update_stat(struct stat *stat, enum update_stat_how how,
 	return 0;
 }
 
-int extstore_create(kvsns_ino_t object)
+int extstore_create(kvsns_ino_t object, struct stat *stat)
 {
 	char k[KLEN];
 	char v[VLEN];
 	redisReply *reply;
 	int rc;
-	struct stat stat;
 	size_t size;
 	struct timeval t;
 	struct m0_uint128 id;
@@ -152,11 +151,10 @@ int extstore_create(kvsns_ino_t object)
 
 	snprintf(k, KLEN, "%llu.data_attr", object);
 	size = sizeof(struct stat);
-	memset((char *)&stat, 0, sizeof(struct stat));
-	RC_WRAP(update_stat, &stat, UP_ST_CREATE, 0LL);
+	RC_WRAP(update_stat, stat, UP_ST_CREATE, 0LL);
 
 	reply = NULL;
-	reply = redisCommand(rediscontext, "SET %s %b", k, &stat, size);
+	reply = redisCommand(rediscontext, "SET %s %b", k, stat, size);
 	if (!reply)
 		return -1;
 	freeReplyObject(reply);

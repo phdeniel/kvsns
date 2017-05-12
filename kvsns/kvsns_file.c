@@ -94,10 +94,13 @@ static int kvsns_ownerlist2str(kvsns_open_owner_t *ownerlist, int size,
 int kvsns_creat(kvsns_cred_t *cred, kvsns_ino_t *parent, char *name,
 		mode_t mode, kvsns_ino_t *newfile)
 {
+	struct stat stat;
+
 	RC_WRAP(kvsns_access, cred, parent, KVSNS_ACCESS_WRITE);
 	RC_WRAP(kvsns_create_entry, cred, parent, name, NULL,
 				  mode, newfile, KVSNS_FILE);
-	RC_WRAP(extstore_create, *newfile);
+	RC_WRAP(kvsns_get_stat, newfile, &stat);
+	RC_WRAP(extstore_create, *newfile, &stat);
 
 	return 0;
 }

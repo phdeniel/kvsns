@@ -72,7 +72,6 @@ static int build_extstore_path(kvsns_ino_t object,
 }
 
 enum update_stat_how {
-	UP_ST_CREATE = 0,
 	UP_ST_WRITE = 1,
 	UP_ST_READ = 2,
 	UP_ST_TRUNCATE =3
@@ -90,17 +89,6 @@ static int update_stat(struct stat *stat, enum update_stat_how how,
 		return -errno;
 
 	switch (how) {
-	case UP_ST_CREATE:
-		stat->st_size = 0;
-		stat->st_blocks = 0;
-		stat->st_blksize = DEV_BSIZE;
-		stat->st_mtim.tv_sec = t.tv_sec;
-		stat->st_mtim.tv_nsec = 1000 * t.tv_usec;
-		stat->st_atim = stat->st_mtim;
-		stat->st_ctim = stat->st_mtim;
-
-		break;
-
 	case UP_ST_WRITE:
 		stat->st_mtim.tv_sec = t.tv_sec;
 		stat->st_mtim.tv_nsec = 1000 * t.tv_usec;
@@ -132,14 +120,13 @@ static int update_stat(struct stat *stat, enum update_stat_how how,
 	return 0;
 }
 
-int extstore_create(kvsns_ino_t object)
+int extstore_create(kvsns_ino_t object, struct stat *stat)
 {
 	char k[KLEN];
 	char v[VLEN];
 	char path[VLEN];
 	redisReply *reply;
 	int fd;
-	struct stat stat;
 	size_t size;
 	struct timeval t;
 
@@ -160,11 +147,9 @@ int extstore_create(kvsns_ino_t object)
 	
 	snprintf(k, KLEN, "%llu.data_attr", object);
 	size = sizeof(struct stat);
-	memset((char *)&stat, 0 , sizeof(struct stat));
-	RC_WRAP(update_stat, &stat, UP_ST_CREATE, 0LL);
 
 	reply = NULL;
-	reply = redisCommand(rediscontext, "SET %s %b", k, &stat, size);
+	reply = redisCommand(rediscontext, "SET %s %b", k, stat, size);
 	if (!reply)
 		return -1;
 	freeReplyObject(reply);
@@ -328,7 +313,6 @@ int extstore_read(kvsns_ino_t *ino,
 	int rc;
 	int fd;
 	ssize_t read_bytes;
-	struct stat storestat;
 	
 	RC_WRAP(build_extstore_path, *ino, storepath, MAXPATHLEN);
 
@@ -343,14 +327,8 @@ int extstore_read(kvsns_ino_t *ino,
 		return -errno;
 	}
 
-	RC_WRAP(get_stat, ino, &storestat);
-	RC_WRAP(update_stat, &storestat, UP_ST_READ, 0);
-
-	stat->st_atim = storestat.st_mtim;
-	stat->st_mtim = storestat.st_mtim;
-	stat->st_size = storestat.st_size;
-
-	RC_WRAP(set_stat, ino, &storestat);
+	RC_WRAP(update_stat, stat, UP_ST_READ, 0);
+	RC_WRAP(set_stat, ino, stat);
 
 	rc = close(fd);
 	if (rc < 0)
@@ -371,8 +349,7 @@ int extstore_write(kvsns_ino_t *ino,
 	int rc;
 	int fd;
 	ssize_t written_bytes;
-	struct stat storestat;
-
+	struct stat objstat;
 
 	RC_WRAP(build_extstore_path, *ino, storepath, MAXPATHLEN);
 
@@ -386,18 +363,19 @@ int extstore_write(kvsns_ino_t *ino,
 		return -errno;
 	}
 
-	rc = fstat(fd, &storestat);
-	if (rc < 0)
-		return -errno;
-
-	stat->st_mtime = storestat.st_mtime;
-	stat->st_size = storestat.st_size;
-	stat->st_blocks = storestat.st_blocks;
-	stat->st_blksize = storestat.st_blksize;
-
 	rc = close(fd);
 	if (rc < 0)
 		return -errno;
+
+	RC_WRAP(get_stat, ino, &objstat);
+	RC_WRAP(update_stat, &objstat, UP_ST_WRITE,
+		offset+written_bytes);
+	RC_WRAP(set_stat, ino, &objstat);
+
+	stat->st_size = objstat.st_size;
+	stat->st_blocks = objstat.st_blocks;
+	stat->st_mtim = objstat.st_mtim;
+	stat->st_ctim = objstat.st_ctim;
 
 	*fsal_stable = true;
 	return written_bytes;
@@ -410,7 +388,7 @@ int extstore_truncate(kvsns_ino_t *ino,
 {
 	int rc;
 	char storepath[MAXPATHLEN];
-	struct stat mystat;
+	struct stat objstat;
 
 	if (!ino || !stat)
 		return -EINVAL;
@@ -419,21 +397,21 @@ int extstore_truncate(kvsns_ino_t *ino,
 	if (rc < 0)
 		return rc;
 
-	RC_WRAP(get_stat, ino, &mystat);
+	RC_WRAP(get_stat, ino, &objstat);
 
 	rc = truncate(storepath, filesize);
 	if (rc < 0)
 		return -errno;
 
 	stat->st_size = filesize;
-	mystat.st_size = filesize;
+	objstat.st_size = filesize;
 
-	RC_WRAP(update_stat, &mystat, UP_ST_TRUNCATE, filesize);
+	RC_WRAP(update_stat, &objstat, UP_ST_TRUNCATE, filesize);
 
-	stat->st_ctim = mystat.st_ctim;
-	stat->st_mtim = mystat.st_mtim;
+	stat->st_ctim = objstat.st_ctim;
+	stat->st_mtim = objstat.st_mtim;
 
-	RC_WRAP(set_stat, ino, &mystat);	
+	RC_WRAP(set_stat, ino, &objstat);
 
 	return 0;
 }
