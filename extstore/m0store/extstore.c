@@ -64,7 +64,6 @@ static int build_m0store_id(kvsns_ino_t         object,
 }
 
 enum update_stat_how {
-	UP_ST_CREATE = 0,
 	UP_ST_WRITE = 1,
 	UP_ST_READ = 2,
 	UP_ST_TRUNCATE = 3
@@ -82,17 +81,6 @@ static int update_stat(struct stat *stat, enum update_stat_how how,
 		return -errno;
 
 	switch (how) {
-	case UP_ST_CREATE:
-		stat->st_size = 0;
-		stat->st_blocks = 0;
-		stat->st_blksize = DEV_BSIZE;
-		stat->st_mtim.tv_sec = t.tv_sec;
-		stat->st_mtim.tv_nsec = 1000 * t.tv_usec;
-		stat->st_atim = stat->st_mtim;
-		stat->st_ctim = stat->st_mtim;
-
-		break;
-
 	case UP_ST_WRITE:
 		stat->st_mtim.tv_sec = t.tv_sec;
 		stat->st_mtim.tv_nsec = 1000 * t.tv_usec;
@@ -131,28 +119,20 @@ int extstore_create(kvsns_ino_t object, struct stat *stat)
 	redisReply *reply;
 	int rc;
 	size_t size;
-	struct timeval t;
 	struct m0_uint128 id;
 
 	snprintf(k, KLEN, "%llu.data", object);
 	id = M0_CLOVIS_ID_APP;
 	id.u_lo += (unsigned long long)object;
 	snprintf(v, VLEN, "%llu", (unsigned long long)id.u_lo);
-
 	reply = NULL;
 	reply = redisCommand(rediscontext, "SET %s %s", k, v);
 	if (!reply)
 		return -1;
 	freeReplyObject(reply);
 
-	/* Create initial attrs */
-	if (gettimeofday(&t, NULL) != 0)
-		return -errno;
-
 	snprintf(k, KLEN, "%llu.data_attr", object);
 	size = sizeof(struct stat);
-	RC_WRAP(update_stat, stat, UP_ST_CREATE, 0LL);
-
 	reply = NULL;
 	reply = redisCommand(rediscontext, "SET %s %b", k, stat, size);
 	if (!reply)
@@ -340,6 +320,7 @@ int extstore_write(kvsns_ino_t *ino,
 {
 	ssize_t written_bytes;
 	struct m0_uint128 id;
+	struct stat objstat;
 
 	RC_WRAP(build_m0store_id, *ino, &id);
 
@@ -348,9 +329,15 @@ int extstore_write(kvsns_ino_t *ino,
 	if (written_bytes < 0)
 		return -1;
 
-	RC_WRAP(get_stat, ino, stat);
-	RC_WRAP(update_stat, stat, UP_ST_WRITE, 0LL);
-	RC_WRAP(set_stat, ino, stat);
+	RC_WRAP(get_stat, ino, &objstat);
+	RC_WRAP(update_stat, &objstat, UP_ST_WRITE,
+		offset+written_bytes);
+	RC_WRAP(set_stat, ino, &objstat);
+
+	stat->st_size = objstat.st_size;
+	stat->st_blocks = objstat.st_blocks;
+	stat->st_mtim = objstat.st_mtim;
+	stat->st_ctim = objstat.st_ctim;
 
 	*fsal_stable = true;
 	return written_bytes;
@@ -361,22 +348,22 @@ int extstore_truncate(kvsns_ino_t *ino,
 		      off_t filesize,
 		      struct stat *stat)
 {
-	struct stat mystat;
+	struct stat objstat;
 
 	if (!ino || !stat)
 		return -EINVAL;
 
-	RC_WRAP(get_stat, ino, &mystat);
+	RC_WRAP(get_stat, ino, &objstat);
 
 	stat->st_size = filesize;
-	mystat.st_size = filesize;
+	objstat.st_size = filesize;
 
-	RC_WRAP(update_stat, &mystat, UP_ST_TRUNCATE, filesize);
+	RC_WRAP(update_stat, &objstat, UP_ST_TRUNCATE, filesize);
 
-	stat->st_ctim = mystat.st_ctim;
-	stat->st_mtim = mystat.st_mtim;
+	stat->st_ctim = objstat.st_ctim;
+	stat->st_mtim = objstat.st_mtim;
 
-	RC_WRAP(set_stat, ino, &mystat);
+	RC_WRAP(set_stat, ino, &objstat);
 
 	return 0;
 }

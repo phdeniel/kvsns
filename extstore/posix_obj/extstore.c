@@ -313,7 +313,7 @@ int extstore_read(kvsns_ino_t *ino,
 	int rc;
 	int fd;
 	ssize_t read_bytes;
-	
+
 	RC_WRAP(build_extstore_path, *ino, storepath, MAXPATHLEN);
 
 	fd = open(storepath, O_CREAT|O_RDONLY|O_SYNC);
