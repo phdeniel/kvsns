@@ -39,6 +39,8 @@
 #include <kvsns/kvsal.h>
 #include <kvsns/kvsns.h>
 
+#define IOLEN 4096
+
 static void exit_rc(char *msg, int rc)
 {
 	if (rc >= 0)
@@ -47,7 +49,7 @@ static void exit_rc(char *msg, int rc)
 	char format[MAXPATHLEN];
 
 	snprintf(format, MAXPATHLEN, "%s%s",
-		 msg, " |rc=%d");
+		 msg, " |rc=%d\n");
 
 	fprintf(stderr, format, rc);
 	exit(1);
@@ -56,8 +58,8 @@ static void exit_rc(char *msg, int rc)
 int main(int argc, char *argv[])
 {
 	kvsns_cred_t cred;
-	kvsns_ino_t ino;
 	kvsns_ino_t parent;
+	kvsns_ino_t ino;
 	kvsns_file_open_t kfd;
 	int fd = 0;
 	bool kvsns_src = false;
@@ -116,10 +118,27 @@ int main(int argc, char *argv[])
 	rc = kvsns_get_root(&parent);
 	exit_rc("Can't get KVSNS's root inod", rc);
 
-	if (kvsns_src) {
-		rc = kvsns_open(&cred, &ino, O_RDONLY, 0644, &kfd);
-		exit_rc("Can't open src file in KVSNS", rc);
+	if (kvsns_src)
+		rc = kvsns_openat(&cred, &parent, src, O_RDONLY, 0644, &kfd);
+
+	if (kvsns_dest) {
+		rc = kvsns_lookup(&cred, &parent, dest, &ino);
+		if (rc == -2) {
+			rc = kvsns_creat(&cred, &parent, dest, 0644, &ino);
+			exit_rc("Can't create dest file in KVSNS", rc);
+		}
+		rc = kvsns_openat(&cred, &parent, dest, O_WRONLY, 0644, &kfd);
 	}
+	exit_rc("Can't open file in KVSNS", rc);
+
+	/* Deal with the copy */
+	if (kvsns_src)
+		rc = kvsns_cp_from(&cred, &kfd, fd, IOLEN);
+
+	if (kvsns_dest)
+		rc = kvsns_cp_to(&cred, fd, &kfd, IOLEN);
+
+	exit_rc("Copy failed", rc);
 
 	/* The end */
 	rc = close(fd);
