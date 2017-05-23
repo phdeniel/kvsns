@@ -505,7 +505,7 @@ ssize_t kvsns_read(kvsns_cred_t *cred, kvsns_file_open_t *fd,
  * @param flags - overwrite behavior, see "man 2 setxattr". Overwitte is
  * prohibited if set to XATTR_CREATE
  *
- * @return read size or a negative "-errno" in case of failure
+ * @return 0 if successfull, a negative "-errno" value in case of failure
  */
 int kvsns_setxattr(kvsns_cred_t *cred, kvsns_ino_t *ino,
 		  char *name, char *value, size_t size, int flags);
@@ -522,7 +522,7 @@ int kvsns_setxattr(kvsns_cred_t *cred, kvsns_ino_t *ino,
  * @param value - [OUT] buffer with xattr's value
  * @param size - [OUT] size of previous buffer
  *
- * @return read size or a negative "-errno" in case of failure
+ * @return 0 if successfull, a negative "-errno" value in case of failure
  */
 int kvsns_getxattr(kvsns_cred_t *cred, kvsns_ino_t *ino,
 		  char *name, char *value, size_t *size);
@@ -539,7 +539,7 @@ int kvsns_getxattr(kvsns_cred_t *cred, kvsns_ino_t *ino,
  * @param list - [OUT] list of found xattrs
  * @param size - [INOUT] In: size of list, Out: size of read list.
  *
- * @return read size or a negative "-errno" in case of failure
+ * @return 0 if successfull, a negative "-errno" value in case of failure
  */
 int kvsns_listxattr(kvsns_cred_t *cred, kvsns_ino_t *ino, int offset,
 		 kvsns_xattr_t *list, int *size);
@@ -554,7 +554,7 @@ int kvsns_listxattr(kvsns_cred_t *cred, kvsns_ino_t *ino, int offset,
  * @param ino - entry's inode
  * @param name - name of xattr to be removed
  *
- * @return read size or a negative "-errno" in case of failure
+ * @return 0 if successfull, a negative "-errno" value in case of failure
  */
 int kvsns_removexattr(kvsns_cred_t *cred, kvsns_ino_t *ino, char *name);
 
@@ -564,7 +564,7 @@ int kvsns_removexattr(kvsns_cred_t *cred, kvsns_ino_t *ino, char *name);
  * @param cred - pointer to user's credentials
  * @param ino - entry's inode
  *
- * @return read size or a negative "-errno" in case of failure
+ * @return 0 if successfull, a negative "-errno" value in case of failure
  */
 int kvsns_remove_all_xattr(kvsns_cred_t *cred, kvsns_ino_t *ino);
 
@@ -575,8 +575,36 @@ int kvsns_remove_all_xattr(kvsns_cred_t *cred, kvsns_ino_t *ino);
  *
  * @param (node) - void function.
  *
- * @return read size or a negative "-errno" in case of failure
+ * @return 0 if successfull, a negative "-errno" value in case of failure
  */
 int kvsns_mr_proper(void);
+
+
+/**
+ *  High lvele API: copy a file from the KVSNS to a POSIX fd
+ *
+ * @param cred - pointer to user's credentials
+ * @param kfd  - pointer to kvsns's open fd
+ * @param fd_dest - POSIX fd to copy file into
+ * @param iolen -recommend IO size
+ *
+ * @return 0 if successfull, a negative "-errno" value in case of failure
+ */
+int kvsns_cp_from(kvsns_cred_t *cred, kvsns_file_open_t *kfd,
+		  int fd_dest, int iolen);
+
+
+/**
+ *  High lvele API: copy a file to the KVSNS from a POSIX fd
+ *
+ * @param cred - pointer to user's credentials
+ * @param fd_dest - POSIX fd to retrieve data from
+ * @param kfd  - pointer to kvsns's open fd
+ * @param iolen -recommend IO size
+ *
+ * @return 0 if successfull, a negative "-errno" value in case of failure
+ */
+int kvsns_cp_to(kvsns_cred_t *cred, int fd_source,
+		kvsns_file_open_t *kfd, int iolen);
 
 #endif
