@@ -39,7 +39,91 @@
 #include <kvsns/kvsal.h>
 #include <kvsns/kvsns.h>
 
+static void exit_rc(char *msg, int rc)
+{
+	if (rc >= 0)
+		return;
+
+	char format[MAXPATHLEN];
+
+	snprintf(format, MAXPATHLEN, "%s%s",
+		 msg, " |rc=%d");
+
+	fprintf(stderr, format, rc);
+	exit(1);
+}
+
 int main(int argc, char *argv[])
 {
+	kvsns_cred_t cred;
+	kvsns_ino_t ino;
+	kvsns_ino_t parent;
+	kvsns_file_open_t kfd;
+	int fd = 0;
+	bool kvsns_src = false;
+	bool kvsns_dest = false;
+	char *src = NULL;
+	char *dest = NULL;
+	int rc;
+
+	if (argc != 3) {
+		fprintf(stderr, "%s <src> <dest>\n", argv[0]);
+		exit(1);
+	}
+
+	cred.uid = getuid();
+	cred.gid = getgid();
+
+	if (!strncmp(argv[1], KVSNS_URL, KVSNS_URL_LEN)) {
+		kvsns_src = true;
+		src = argv[1] + KVSNS_URL_LEN;
+		dest = argv[2];
+	}
+
+	if (!strncmp(argv[2], KVSNS_URL, KVSNS_URL_LEN)) {
+		kvsns_dest = true;
+		src = argv[1];
+		dest = argv[2] + KVSNS_URL_LEN;
+	}
+
+	printf("%s => %s, %u / %u\n", src, dest, kvsns_src, kvsns_dest);
+
+	if (kvsns_src && kvsns_dest) {
+		fprintf(stderr, "src and destination can't be inside KVSNS\n");
+		exit(1);
+	}
+
+	if (!kvsns_src && !kvsns_dest) {
+		fprintf(stderr, "src or dest should be inside kvsns\n");
+		exit(1);
+	}
+
+	if (!kvsns_dest)
+		fd = open(dest, O_WRONLY|O_CREAT, 0644);
+
+	if (!kvsns_src)
+		fd = open(src, O_RDONLY);
+
+	if (fd < 0) {
+		fprintf(stderr, "Can't open POSIX fd, errno=%u\n", errno);
+		exit(1);
+	}
+
+	/* Start KVSNS Lib */
+	rc = kvsns_start();
+	exit_rc("kvsns_start faild", rc);
+
+	rc = kvsns_get_root(&parent);
+	exit_rc("Can't get KVSNS's root inod", rc);
+
+	if (kvsns_src) {
+		rc = kvsns_open(&cred, &ino, O_RDONLY, 0644, &kfd);
+		exit_rc("Can't open src file in KVSNS", rc);
+	}
+
+	/* The end */
+	rc = close(fd);
+	exit_rc("Can't close POSIX fd, errono", errno);
+
 	return 0;
 }

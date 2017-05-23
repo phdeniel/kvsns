@@ -61,6 +61,9 @@
 #define KLEN 256
 #define VLEN 256
 
+#define KVSNS_URL "kvsns:"
+#define KVSNS_URL_LEN 6
+
 #define STAT_MODE_SET	0x001
 #define STAT_UID_SET	0x002
 #define STAT_GID_SET	0x004
