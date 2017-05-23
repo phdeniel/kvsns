@@ -144,5 +144,8 @@ int main(int argc, char *argv[])
 	rc = close(fd);
 	exit_rc("Can't close POSIX fd, errono", errno);
 
+	rc = kvsns_close(&kfd);
+	exit_rc("Can't close KVSNS fd, errono", errno);
+
 	return 0;
 }
