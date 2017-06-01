@@ -62,5 +62,7 @@ int extstore_del(kvsns_ino_t *ino);
 int extstore_truncate(kvsns_ino_t *ino,
 		      off_t filesize,
 		      struct stat *stat);
-
+int extstore_attach(kvsns_ino_t *ino,
+		    char *objid, int objid_len,
+		    struct stat *stat);
 #endif

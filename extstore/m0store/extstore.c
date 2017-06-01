@@ -112,6 +112,12 @@ static int update_stat(struct stat *stat, enum update_stat_how how,
 	return 0;
 }
 
+int extstore_attach(kvsns_ino_t *ino, char *objid, int objid_len,
+		    struct stat *stat)
+{
+	return 0;
+}
+
 int extstore_create(kvsns_ino_t object, struct stat *stat)
 {
 	char k[KLEN];

@@ -144,7 +144,7 @@ int extstore_create(kvsns_ino_t object, struct stat *stat)
 	/* Create initial attrs */
 	if (gettimeofday(&t, NULL) != 0)
 		return -errno;
-	
+
 	snprintf(k, KLEN, "%llu.data_attr", object);
 	size = sizeof(struct stat);
 
@@ -167,6 +167,12 @@ int extstore_create(kvsns_ino_t object, struct stat *stat)
 		return -errno;
 
 	close(fd);
+	return 0;
+}
+
+int extstore_attach(kvsns_ino_t *ino, char *objid, int objid_len,
+		    struct stat *stat)
+{
 	return 0;
 }
 

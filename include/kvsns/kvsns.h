@@ -622,4 +622,23 @@ int kvsns_cp_to(kvsns_cred_t *cred, int fd_source,
 int kvsns_lookup_path(kvsns_cred_t *cred, kvsns_ino_t *parent, char *path,
 		      kvsns_ino_t *ino);
 
+
+/**
+ *  High level API: Attach an existing object to the KVSNS namespace
+ *
+ * @param cred - pointer to user's credentials
+ * @param parent - directory where object is to be inserted
+ * @param name - name of the entry to be created in parent directory
+ * @param objid - a buffer that contains the objectid
+ * @param objid_len - size in bytes of objid
+ * @param stat - wanted stat for the entry
+ * @param statflags - attrs to be set in new entry
+ * @param newfile - inode for the newly created file
+ *
+ * @return 0 if successful, a negative "-errno" value in case of failure
+ */
+int kvsns_attach(kvsns_cred_t *cred, kvsns_ino_t *parent, char *name,
+		 char *objid, int objid_len, struct stat *stat,
+		 int statflags, kvsns_ino_t *newfile);
+
 #endif
