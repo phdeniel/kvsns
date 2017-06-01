@@ -106,6 +106,7 @@ add_subdirectory(kvsns)
 
 add_subdirectory(tests)
 add_subdirectory(kvsns_shell)
+add_subdirectory(kvsns_attach)
 add_subdirectory(kvsal_non_reg)
 
 # CPack / rpmbuild specific stuff
