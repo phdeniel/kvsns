@@ -55,42 +55,6 @@ static void exit_rc(char *msg, int rc)
 	exit(1);
 }
 
-static int lookup_path(kvsns_cred_t *cred, kvsns_ino_t *parent, char *path,
-		       kvsns_ino_t *ino)
-{
-	char *saveptr;
-	char *str;
-	char *token;
-	kvsns_ino_t iter_ino;
-	kvsns_ino_t *iter;
-	int j = 0;
-	int rc;
-
-	memcpy(&iter_ino, parent, sizeof(kvsns_ino_t));
-	iter = &iter_ino;
-	for (j = 1, str = path; ; j++, str = NULL) {
-		memcpy(parent, ino, sizeof(kvsns_ino_t));
-		token = strtok_r(str, "/", &saveptr);
-		if (token == NULL)
-			break;
-
-		rc = kvsns_lookup(cred, iter, token, ino);
-		if (rc != 0) {
-			if (rc == -ENOENT)
-				break;
-			else
-				return rc;
-		}
-
-		iter = ino;
-	}
-
-	if (token != NULL) /* If non-existing file should be created */
-		strcpy(path, token);
-
-	return rc;
-}
-
 int main(int argc, char *argv[])
 {
 	kvsns_cred_t cred;
@@ -155,13 +119,13 @@ int main(int argc, char *argv[])
 	exit_rc("Can't get KVSNS's root inode", rc);
 
 	if (kvsns_src) {
-		rc = lookup_path(&cred, &parent, src, &ino);
+		rc = kvsns_lookup_path(&cred, &parent, src, &ino);
 		exit_rc("Can't lookup dest in KVSNS", rc);
 		rc = kvsns_open(&cred, &ino, O_RDONLY, 0644, &kfd);
 	}
 
 	if (kvsns_dest) {
-		rc = lookup_path(&cred, &parent, dest, &ino);
+		rc = kvsns_lookup_path(&cred, &parent, dest, &ino);
 		if (rc == -2) {
 			rc = kvsns_creat(&cred, &parent, dest, 0644, &ino);
 			exit_rc("Can't create dest file in KVSNS", rc);

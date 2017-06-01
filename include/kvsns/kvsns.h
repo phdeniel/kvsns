@@ -584,7 +584,7 @@ int kvsns_mr_proper(void);
 
 
 /**
- *  High lvele API: copy a file from the KVSNS to a POSIX fd
+ *  High level API: copy a file from the KVSNS to a POSIX fd
  *
  * @param cred - pointer to user's credentials
  * @param kfd  - pointer to kvsns's open fd
@@ -596,9 +596,8 @@ int kvsns_mr_proper(void);
 int kvsns_cp_from(kvsns_cred_t *cred, kvsns_file_open_t *kfd,
 		  int fd_dest, int iolen);
 
-
 /**
- *  High lvele API: copy a file to the KVSNS from a POSIX fd
+ *  High level API: copy a file to the KVSNS from a POSIX fd
  *
  * @param cred - pointer to user's credentials
  * @param fd_dest - POSIX fd to retrieve data from
@@ -609,5 +608,18 @@ int kvsns_cp_from(kvsns_cred_t *cred, kvsns_file_open_t *kfd,
  */
 int kvsns_cp_to(kvsns_cred_t *cred, int fd_source,
 		kvsns_file_open_t *kfd, int iolen);
+
+/**
+ *  High level API: do a "lookup by path" operation
+ *
+ * @param cred - pointer to user's credentials
+ * @param parent - root of the lookup operation
+ * @param path - path inside the kvsns, starting at inode parent
+ * @param ino - found inode if lookup is successful
+ *
+ * @return 0 if successfull, a negative "-errno" value in case of failure
+ */
+int kvsns_lookup_path(kvsns_cred_t *cred, kvsns_ino_t *parent, char *path,
+		      kvsns_ino_t *ino);
 
 #endif
