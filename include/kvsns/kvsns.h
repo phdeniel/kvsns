@@ -145,7 +145,7 @@ typedef struct kvsns_xattr__ {
  * later versions.
  *
  * @param: none (void param)
- * @return 0 if successfull, a negative "-errno" value in case of failure
+ * @return 0 if successful, a negative "-errno" value in case of failure
  */
 int kvsns_start(void);
 
@@ -155,7 +155,7 @@ int kvsns_start(void);
  * @note: this function frees what kvsns_start() allocates.
  *
  * @param: none (void param)
- * @return 0 if successfull, a negative "-errno" value in case of failure
+ * @return 0 if successful, a negative "-errno" value in case of failure
  */
 int kvsns_stop(void);
 
@@ -168,7 +168,7 @@ void kvsns_set_debug(bool debug);
  * @param openbar: if true, everyone can access the root directory
  * if false, only root can.
  *
- * @return 0 if successfull, a negative "-errno" value in case of failure
+ * @return 0 if successful, a negative "-errno" value in case of failure
  */
 int kvsns_init_root(int openbar);
 
@@ -194,9 +194,9 @@ int kvsns_access(kvsns_cred_t *cred, kvsns_ino_t *ino, int flags);
  * @param parent - pointer to parent directory's inode.
  * @param name - name of the file to be created
  * @param mode - Unix mode for the new entry
- * @paran newino - [OUT] if successfully, will point to newly created inode
+ * @paran newino - [OUT] if successfuly, will point to newly created inode
  *
- * @return 0 if successfull, a negative "-errno" value in case of failure
+ * @return 0 if successful, a negative "-errno" value in case of failure
  */
 int kvsns_creat(kvsns_cred_t *cred, kvsns_ino_t *parent, char *name,
 		mode_t mode, kvsns_ino_t *newino);
@@ -208,9 +208,9 @@ int kvsns_creat(kvsns_cred_t *cred, kvsns_ino_t *parent, char *name,
  * @param parent - pointer to parent directory's inode.
  * @param name - name of the directory to be created
  * @param mode - Unix mode for the new entry
- * @paran newino - [OUT] if successfully, will point to newly created inode
+ * @paran newino - [OUT] if successfuly, will point to newly created inode
  *
- * @return 0 if successfull, a negative "-errno" value in case of failure
+ * @return 0 if successful, a negative "-errno" value in case of failure
  */
 int kvsns_mkdir(kvsns_cred_t *cred, kvsns_ino_t *parent, char *name,
 		mode_t mode, kvsns_ino_t *newdir);
@@ -222,9 +222,9 @@ int kvsns_mkdir(kvsns_cred_t *cred, kvsns_ino_t *parent, char *name,
  * @param parent - pointer to parent directory's inode.
  * @param name - name of the directory to be created
  * @param content - the content of the symbolic link to be created
- * @paran newlnk - [OUT] if successfully, will point to newly created inode
+ * @paran newlnk - [OUT] if successfuly, will point to newly created inode
  *
- * @return 0 if successfull, a negative "-errno" value in case of failure
+ * @return 0 if successful, a negative "-errno" value in case of failure
  */
 int kvsns_symlink(kvsns_cred_t *cred, kvsns_ino_t *parent, char *name,
 		 char *content, kvsns_ino_t *newlnk);
@@ -237,7 +237,7 @@ int kvsns_symlink(kvsns_cred_t *cred, kvsns_ino_t *parent, char *name,
  * @param content - [OUT] buffer containing the read content.
  * @param size - [OUT] size read by this call
  *
- * @return 0 if successfull, a negative "-errno" value in case of failure
+ * @return 0 if successful, a negative "-errno" value in case of failure
  */
 int kvsns_readlink(kvsns_cred_t *cred, kvsns_ino_t *link,
 		 char *content, size_t *size);
@@ -249,7 +249,7 @@ int kvsns_readlink(kvsns_cred_t *cred, kvsns_ino_t *link,
  * @param parent - pointer to parent directory's inode.
  * @param name - name of the directory to be remove.
  *
- * @return 0 if successfull, a negative "-errno" value in case of failure
+ * @return 0 if successful, a negative "-errno" value in case of failure
  */
 int kvsns_rmdir(kvsns_cred_t *cred, kvsns_ino_t *parent, char *name);
 
@@ -261,7 +261,7 @@ int kvsns_rmdir(kvsns_cred_t *cred, kvsns_ino_t *parent, char *name);
  * @param parent - pointer to parent directory's inode.
  * @param name - name of the entry to be remove.
  *
- * @return 0 if successfull, a negative "-errno" value in case of failure
+ * @return 0 if successful, a negative "-errno" value in case of failure
  */
 int kvsns_unlink(kvsns_cred_t *cred, kvsns_ino_t *ino, char *name);
 
@@ -275,7 +275,7 @@ int kvsns_unlink(kvsns_cred_t *cred, kvsns_ino_t *ino, char *name);
  * @param dino - pointer to destination directory's inode
  * @param dname - name of the new entry in dino
  *
- * @return 0 if successfull, a negative "-errno" value in case of failure
+ * @return 0 if successful, a negative "-errno" value in case of failure
  */
 int kvsns_link(kvsns_cred_t *cred, kvsns_ino_t *ino, kvsns_ino_t *dino,
 	    char *dname);
@@ -289,7 +289,7 @@ int kvsns_link(kvsns_cred_t *cred, kvsns_ino_t *ino, kvsns_ino_t *dino,
  * @param dino - pointer to destination directory's inode
  * @param dname - name of the new entry in dino
  *
- * @return 0 if successfull, a negative "-errno" value in case of failure
+ * @return 0 if successful, a negative "-errno" value in case of failure
  */
 int kvsns_rename(kvsns_cred_t *cred, kvsns_ino_t *sino, char *sname,
 		 kvsns_ino_t *dino, char *dname);
@@ -301,9 +301,9 @@ int kvsns_rename(kvsns_cred_t *cred, kvsns_ino_t *sino, char *sname,
  * @param cred - pointer to user's credentials
  * @param parent - pointer to parent directory's inode.
  * @param name - name of the entry to be found.
- * @paran myino - [OUT] points to the found ino if successfull.
+ * @paran myino - [OUT] points to the found ino if successful.
  *
- * @return 0 if successfull, a negative "-errno" value in case of failure
+ * @return 0 if successful, a negative "-errno" value in case of failure
  */
 int kvsns_lookup(kvsns_cred_t *cred, kvsns_ino_t *parent, char *name,
 		 kvsns_ino_t *myino);
@@ -320,16 +320,16 @@ int kvsns_lookup(kvsns_cred_t *cred, kvsns_ino_t *parent, char *name,
  * @param name - name of the entry to be found.
  * @paran parent - [OUT] points to parent directory's inode
  *
- * @return 0 if successfull, a negative "-errno" value in case of failure
+ * @return 0 if successful, a negative "-errno" value in case of failure
  */
 int kvsns_lookupp(kvsns_cred_t *cred, kvsns_ino_t *where, kvsns_ino_t *parent);
 
 /** 
  * Finds the root of the namespace
  *
- * @param ino - [OUT] points to root inode if successfull
+ * @param ino - [OUT] points to root inode if successful
  *
- * @return 0 if successfull, a negative "-errno" value in case of failure
+ * @return 0 if successful, a negative "-errno" value in case of failure
  */
 int kvsns_get_root(kvsns_ino_t *ino);
 
@@ -343,7 +343,7 @@ int kvsns_get_root(kvsns_ino_t *ino);
  * @param ino - pointer to current inode
  * @param buffstat - [OUT] points to inode's stats.
  *
- * @return 0 if successfull, a negative "-errno" value in case of failure
+ * @return 0 if successful, a negative "-errno" value in case of failure
  */
 int kvsns_getattr(kvsns_cred_t *cred, kvsns_ino_t *ino, struct stat *buffstat);
 
@@ -366,7 +366,7 @@ int kvsns_getattr(kvsns_cred_t *cred, kvsns_ino_t *ino, struct stat *buffstat);
  * @param setstat - a stat structure containing the new values
  * @param statflags - a bitmap that tells which attributes are to be set 
  *
- * @return 0 if successfull, a negative "-errno" value in case of failure
+ * @return 0 if successful, a negative "-errno" value in case of failure
  */
 int kvsns_setattr(kvsns_cred_t *cred, kvsns_ino_t *ino, struct stat *setstat,
 		 int statflags);
@@ -376,7 +376,7 @@ int kvsns_setattr(kvsns_cred_t *cred, kvsns_ino_t *ino, struct stat *setstat,
  *
  * @param stat - FS stats for the namespace
  *
- * @return 0 if successfull, a negative "-errno" value in case of failure
+ * @return 0 if successful, a negative "-errno" value in case of failure
  */
 int kvsns_fsstat(kvsns_fsstat_t *stat);
 
@@ -387,7 +387,7 @@ int kvsns_fsstat(kvsns_fsstat_t *stat);
  * @param dir - pointer to directory's inode
  * @param ddir - [OUT] returned handle to opened directory
  *
- * @return 0 if successfull, a negative "-errno" value in case of failure
+ * @return 0 if successful, a negative "-errno" value in case of failure
  */
 int kvsns_opendir(kvsns_cred_t *cred, kvsns_ino_t *dir, kvsns_dir_t *ddir);
 
@@ -401,7 +401,7 @@ int kvsns_opendir(kvsns_cred_t *cred, kvsns_ino_t *dir, kvsns_dir_t *ddir);
  * @param size - [INOUT] as input, allocated size of dirent arry, as output
  * read size.
  *
- * @return 0 if successfull, a negative "-errno" value in case of failure
+ * @return 0 if successful, a negative "-errno" value in case of failure
  */
 int kvsns_readdir(kvsns_cred_t *cred, kvsns_dir_t *dir, off_t offset,
 		 kvsns_dentry_t *dirent, int *size);
@@ -411,7 +411,7 @@ int kvsns_readdir(kvsns_cred_t *cred, kvsns_dir_t *dir, off_t offset,
  *
  * @param ddir - handles to opened directory
  *
- * @return 0 if successfull, a negative "-errno" value in case of failure
+ * @return 0 if successful, a negative "-errno" value in case of failure
  */
 int kvsns_closedir(kvsns_dir_t *ddir);
 
@@ -430,7 +430,7 @@ int kvsns_closedir(kvsns_dir_t *ddir);
  * @param mode - unused 
  * @param fd - [OUT] handle to opened file.
  *
- * @return 0 if successfull, a negative "-errno" value in case of failure
+ * @return 0 if successful, a negative "-errno" value in case of failure
  */
 int kvsns_open(kvsns_cred_t *cred, kvsns_ino_t *ino,
 	    int flags, mode_t mode, kvsns_file_open_t *fd);
@@ -451,7 +451,7 @@ int kvsns_open(kvsns_cred_t *cred, kvsns_ino_t *ino,
  * @param mode - unused 
  * @param fd - [OUT] handle to opened file.
  *
- * @return 0 if successfull, a negative "-errno" value in case of failure
+ * @return 0 if successful, a negative "-errno" value in case of failure
  */
 int kvsns_openat(kvsns_cred_t *cred, kvsns_ino_t *parent, char *name,
 		 int flags, mode_t mode, kvsns_file_open_t *fd);
@@ -461,7 +461,7 @@ int kvsns_openat(kvsns_cred_t *cred, kvsns_ino_t *parent, char *name,
  *
  * @param fd - handle to opened file
  *
- * @return 0 if successfull, a negative "-errno" value in case of failure
+ * @return 0 if successful, a negative "-errno" value in case of failure
  */
 int kvsns_close(kvsns_file_open_t *fd);
 
@@ -508,7 +508,7 @@ ssize_t kvsns_read(kvsns_cred_t *cred, kvsns_file_open_t *fd,
  * @param flags - overwrite behavior, see "man 2 setxattr". Overwitte is
  * prohibited if set to XATTR_CREATE
  *
- * @return 0 if successfull, a negative "-errno" value in case of failure
+ * @return 0 if successful, a negative "-errno" value in case of failure
  */
 int kvsns_setxattr(kvsns_cred_t *cred, kvsns_ino_t *ino,
 		  char *name, char *value, size_t size, int flags);
@@ -525,7 +525,7 @@ int kvsns_setxattr(kvsns_cred_t *cred, kvsns_ino_t *ino,
  * @param value - [OUT] buffer with xattr's value
  * @param size - [OUT] size of previous buffer
  *
- * @return 0 if successfull, a negative "-errno" value in case of failure
+ * @return 0 if successful, a negative "-errno" value in case of failure
  */
 int kvsns_getxattr(kvsns_cred_t *cred, kvsns_ino_t *ino,
 		  char *name, char *value, size_t *size);
@@ -542,7 +542,7 @@ int kvsns_getxattr(kvsns_cred_t *cred, kvsns_ino_t *ino,
  * @param list - [OUT] list of found xattrs
  * @param size - [INOUT] In: size of list, Out: size of read list.
  *
- * @return 0 if successfull, a negative "-errno" value in case of failure
+ * @return 0 if successful, a negative "-errno" value in case of failure
  */
 int kvsns_listxattr(kvsns_cred_t *cred, kvsns_ino_t *ino, int offset,
 		 kvsns_xattr_t *list, int *size);
@@ -557,7 +557,7 @@ int kvsns_listxattr(kvsns_cred_t *cred, kvsns_ino_t *ino, int offset,
  * @param ino - entry's inode
  * @param name - name of xattr to be removed
  *
- * @return 0 if successfull, a negative "-errno" value in case of failure
+ * @return 0 if successful, a negative "-errno" value in case of failure
  */
 int kvsns_removexattr(kvsns_cred_t *cred, kvsns_ino_t *ino, char *name);
 
@@ -567,7 +567,7 @@ int kvsns_removexattr(kvsns_cred_t *cred, kvsns_ino_t *ino, char *name);
  * @param cred - pointer to user's credentials
  * @param ino - entry's inode
  *
- * @return 0 if successfull, a negative "-errno" value in case of failure
+ * @return 0 if successful, a negative "-errno" value in case of failure
  */
 int kvsns_remove_all_xattr(kvsns_cred_t *cred, kvsns_ino_t *ino);
 
@@ -578,7 +578,7 @@ int kvsns_remove_all_xattr(kvsns_cred_t *cred, kvsns_ino_t *ino);
  *
  * @param (node) - void function.
  *
- * @return 0 if successfull, a negative "-errno" value in case of failure
+ * @return 0 if successful, a negative "-errno" value in case of failure
  */
 int kvsns_mr_proper(void);
 
@@ -591,7 +591,7 @@ int kvsns_mr_proper(void);
  * @param fd_dest - POSIX fd to copy file into
  * @param iolen -recommend IO size
  *
- * @return 0 if successfull, a negative "-errno" value in case of failure
+ * @return 0 if successful, a negative "-errno" value in case of failure
  */
 int kvsns_cp_from(kvsns_cred_t *cred, kvsns_file_open_t *kfd,
 		  int fd_dest, int iolen);
@@ -604,7 +604,7 @@ int kvsns_cp_from(kvsns_cred_t *cred, kvsns_file_open_t *kfd,
  * @param kfd  - pointer to kvsns's open fd
  * @param iolen -recommend IO size
  *
- * @return 0 if successfull, a negative "-errno" value in case of failure
+ * @return 0 if successful, a negative "-errno" value in case of failure
  */
 int kvsns_cp_to(kvsns_cred_t *cred, int fd_source,
 		kvsns_file_open_t *kfd, int iolen);
@@ -617,7 +617,7 @@ int kvsns_cp_to(kvsns_cred_t *cred, int fd_source,
  * @param path - path inside the kvsns, starting at inode parent
  * @param ino - found inode if lookup is successful
  *
- * @return 0 if successfull, a negative "-errno" value in case of failure
+ * @return 0 if successful, a negative "-errno" value in case of failure
  */
 int kvsns_lookup_path(kvsns_cred_t *cred, kvsns_ino_t *parent, char *path,
 		      kvsns_ino_t *ino);
