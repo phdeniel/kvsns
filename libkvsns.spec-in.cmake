@@ -93,6 +93,7 @@ install -m 644 extstore/libextstore.so %{buildroot}%{_libdir}
 install -m 644 kvsns/libkvsns.so %{buildroot}%{_libdir}
 install -m 644 libkvsns.pc  %{buildroot}%{_libdir}/pkgconfig
 install -m 755 kvsns_shell/kvsns_busybox %{buildroot}%{_bindir}
+install -m 755 kvsns_attach/kvsns_attach %{buildroot}%{_bindir}
 
 %clean
 rm -rf $RPM_BUILD_ROOT
@@ -113,8 +114,12 @@ rm -rf $RPM_BUILD_ROOT
 %files utils
 %defattr(-,root,root)
 %{_bindir}/kvsns_busybox
+%{_bindir}/kvsns_attach
 
 %changelog
+* Fri Jun  2 2017 Philippe DENIEL <philippe.deniel@cea.fr> 1.1.2
+- Add kvsns_attach feature
+
 * Wed Mar  1 2017 Philippe DENIEL <philippe.deniel@cea.fr> 1.1.1
 - API refurbished after mero injection
 
