@@ -128,7 +128,6 @@ int extstore_create(kvsns_ino_t object, struct stat *stat)
 	redisReply *reply;
 	int fd;
 	size_t size;
-	struct timeval t;
 
 	snprintf(k, KLEN, "%llu.data", object);
 	snprintf(path, VLEN, "%s/inum=%llu",
@@ -140,10 +139,6 @@ int extstore_create(kvsns_ino_t object, struct stat *stat)
 	if (!reply)
 		return -1;
 	freeReplyObject(reply);
-
-	/* Create initial attrs */
-	if (gettimeofday(&t, NULL) != 0)
-		return -errno;
 
 	snprintf(k, KLEN, "%llu.data_attr", object);
 	size = sizeof(struct stat);
@@ -173,6 +168,39 @@ int extstore_create(kvsns_ino_t object, struct stat *stat)
 int extstore_attach(kvsns_ino_t *ino, char *objid, int objid_len,
 		    struct stat *stat)
 {
+	char k[KLEN];
+	char v[VLEN];
+	char path[VLEN];
+	redisReply *reply;
+	size_t size;
+
+	snprintf(k, KLEN, "%llu.data", *ino);
+	strncpy(v, objid, (objid_len > VLEN)?VLEN:objid_len);
+
+	reply = NULL;
+	reply = redisCommand(rediscontext, "SET %s %s", k, v);
+	if (!reply)
+		return -1;
+	freeReplyObject(reply);
+
+
+	snprintf(k, KLEN, "%llu.data_attr", *ino);
+	size = sizeof(struct stat);
+
+	reply = NULL;
+	reply = redisCommand(rediscontext, "SET %s %b", k, stat, size);
+	if (!reply)
+		return -1;
+	freeReplyObject(reply);
+
+	snprintf(k, KLEN, "%llu.data_ext", *ino);
+	snprintf(v, VLEN, "");
+	reply = NULL;
+	reply = redisCommand(rediscontext, "SET %s %s", k, v);
+	if (!reply)
+		return -1;
+
+	freeReplyObject(reply);
 	return 0;
 }
 

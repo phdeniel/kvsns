@@ -112,12 +112,6 @@ static int update_stat(struct stat *stat, enum update_stat_how how,
 	return 0;
 }
 
-int extstore_attach(kvsns_ino_t *ino, char *objid, int objid_len,
-		    struct stat *stat)
-{
-	return 0;
-}
-
 int extstore_create(kvsns_ino_t object, struct stat *stat)
 {
 	char k[KLEN];
@@ -156,6 +150,51 @@ int extstore_create(kvsns_ino_t object, struct stat *stat)
 	rc = m0store_create_object(id);
 	if (rc != 0)
 		return rc;
+
+	return 0;
+}
+
+int extstore_attach(kvsns_ino_t *ino, char *objid, int objid_len,
+		    struct stat *stat)
+{
+	char k[KLEN];
+	char v[VLEN];
+	redisReply *reply;
+	int rc;
+	size_t size;
+	struct m0_uint128 id;
+
+	if (objid_len != sizeof(unsigned long long))
+		return -EINVAL;
+
+
+	snprintf(k, KLEN, "%llu.data", *ino);
+	id = M0_CLOVIS_ID_APP;
+	memcpy(&id.u_lo, objid, objid_len);
+	snprintf(v, VLEN, "%llu", (unsigned long long)id.u_lo);
+	reply = NULL;
+	reply = redisCommand(rediscontext, "SET %s %s", k, v);
+	if (!reply)
+		return -1;
+	freeReplyObject(reply);
+
+	snprintf(k, KLEN, "%llu.data_attr", *ino);
+	size = sizeof(struct stat);
+	reply = NULL;
+	reply = redisCommand(rediscontext, "SET %s %b", k, stat, size);
+	if (!reply)
+		return -1;
+	freeReplyObject(reply);
+
+	snprintf(k, KLEN, "%llu.data_ext", *ino);
+	snprintf(v, VLEN, " ");
+	reply = NULL;
+	reply = redisCommand(rediscontext, "SET %s %s", k, v);
+	if (!reply)
+		return -1;
+
+	freeReplyObject(reply);
+	rc = m0store_create_object(id);
 
 	return 0;
 }
