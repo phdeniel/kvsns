@@ -164,10 +164,6 @@ int extstore_attach(kvsns_ino_t *ino, char *objid, int objid_len,
 	size_t size;
 	struct m0_uint128 id;
 
-	if (objid_len != sizeof(unsigned long long))
-		return -EINVAL;
-
-
 	snprintf(k, KLEN, "%llu.data", *ino);
 	id = M0_CLOVIS_ID_APP;
 	id.u_lo = atoi(objid);
@@ -392,6 +388,7 @@ int extstore_write(kvsns_ino_t *ino,
 
 int extstore_truncate(kvsns_ino_t *ino,
 		      off_t filesize,
+		      bool on_obj_store,
 		      struct stat *stat)
 {
 	struct stat objstat;
@@ -399,7 +396,8 @@ int extstore_truncate(kvsns_ino_t *ino,
 	if (!ino || !stat)
 		return -EINVAL;
 
-	RC_WRAP(get_stat, ino, &objstat);
+	if (on_obj_store)
+		RC_WRAP(get_stat, ino, &objstat);
 
 	stat->st_size = filesize;
 	objstat.st_size = filesize;

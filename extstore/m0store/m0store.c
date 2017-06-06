@@ -373,14 +373,14 @@ int m0store_init(void)
 {
 	(void) pthread_once(&clovis_init_once, m0store_do_init);
 
-	if (clovis_init_done) {
-		/* Not the init thread */
+	if (clovis_init_done && (pthread_self() != m0_init_thread)) {
 		printf("I am not the init thread\n");
 
 		memset(&m0thread, 0, sizeof(struct m0_thread));
 
 		m0_thread_adopt(&m0thread, clovis_instance->m0c_mero);
-	}
+	} else
+		printf("I am the init thread\n");
 	return 0;
 }
 

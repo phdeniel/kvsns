@@ -418,6 +418,7 @@ int extstore_write(kvsns_ino_t *ino,
 
 int extstore_truncate(kvsns_ino_t *ino,
 		      off_t filesize,
+		      bool on_obj_store,
 		      struct stat *stat)
 {
 	int rc;
@@ -433,9 +434,11 @@ int extstore_truncate(kvsns_ino_t *ino,
 
 	RC_WRAP(get_stat, ino, &objstat);
 
-	rc = truncate(storepath, filesize);
-	if (rc < 0)
-		return -errno;
+	if (on_obj_store) {
+		rc = truncate(storepath, filesize);
+		if (rc < 0)
+			return -errno;
+	}
 
 	stat->st_size = filesize;
 	objstat.st_size = filesize;

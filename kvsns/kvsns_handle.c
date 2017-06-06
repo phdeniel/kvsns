@@ -459,7 +459,12 @@ int kvsns_setattr(kvsns_cred_t *cred, kvsns_ino_t *ino,
 		bufstat.st_gid = setstat->st_gid;
 
 	if (statflag & STAT_SIZE_SET)
-		RC_WRAP(extstore_truncate, ino, setstat->st_size, &bufstat);
+		RC_WRAP(extstore_truncate, ino, setstat->st_size, true,
+			&bufstat);
+
+	if (statflag & STAT_SIZE_ATTACH)
+		RC_WRAP(extstore_truncate, ino, setstat->st_size, false,
+			&bufstat);
 
 	if (statflag & STAT_ATIME_SET) {
 		bufstat.st_atim.tv_sec = setstat->st_atim.tv_sec;

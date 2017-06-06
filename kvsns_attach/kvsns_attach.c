@@ -33,7 +33,7 @@
 #include <stdio.h>
 #include <errno.h>
 #include <unistd.h>
-#include <libgen.h> /* for basename() */
+#include <libgen.h> /* for basename() and dirname() */
 #include <stdlib.h>
 #include <string.h>
 #include <time.h>
@@ -55,9 +55,24 @@ static void help(char *exec)
 		"\t	[-c <ctime>] [--ctime=<ctime>]	set ctime\n"
 		"\t	-p <path> --path=<path>		path in kvsns\n"
 		"\t	-o <objid> --objid=<objid>	objectid\n"
-		"\t 	date format is 'now' or 10/06/2017 16:06:23", exec);
+		"\t 	date format is 'now' or 10/06/2017 16:06:23\n", exec);
 
 	exit(0);
+}
+
+
+static void exit_rc(char *msg, int rc)
+{
+	if (rc >= 0)
+		return;
+
+	char format[MAXPATHLEN];
+
+	snprintf(format, MAXPATHLEN, "%s%s",
+		 msg, " |rc=%d\n");
+
+	fprintf(stderr, format, rc);
+	exit(1);
 }
 
 static int str2time(char *arg, time_t *res)
@@ -97,18 +112,35 @@ static void default_stat(struct stat *stat)
 	stat->st_uid = getuid();
 	stat->st_gid = getgid();
 	stat->st_mode = S_IFREG|0644;
+	stat->st_atime = time(NULL);
+	stat->st_mtime = stat->st_atime;
+	stat->st_ctime = stat->st_atime;
 }
 
 int main(int argc, char **argv)
 {
 	int c;
 	struct stat stat;
+	kvsns_cred_t cred;
+	kvsns_ino_t ino;
+	kvsns_ino_t root_ino;
+	kvsns_ino_t parent_ino;
 	int statflags;
 	char path[MAXPATHLEN];
+	char dirpath[MAXPATHLEN];
+	char basepath[MAXNAMLEN];
 	char objid[MAXPATHLEN];
+	bool path_set = false;
+	bool objid_set = false;
+	int rc;
 
 	/* stat structure with default values */
+	memset(path, 0, MAXPATHLEN);
+	memset(objid, 0, MAXPATHLEN);
+
 	default_stat(&stat);
+	cred.uid = getuid();
+	cred.gid = getgid();
 
 	while (1) {
 		static struct option long_options[] = {
@@ -158,23 +190,27 @@ int main(int argc, char **argv)
 				   "user")) {
 				statflags |= STAT_UID_SET;
 				stat.st_uid = atoi(optarg);
+				cred.uid = stat.st_uid;
 			} else if (!strcmp(long_options[option_index].name,
 				  "group")) {
 				statflags |= STAT_GID_SET;
 				stat.st_gid = atoi(optarg);
+				cred.gid = stat.st_gid;
 			} else if (!strcmp(long_options[option_index].name,
-				  "path"))
+				  "path")) {
 				strncpy(path, optarg, MAXPATHLEN);
-			else if (!strcmp(long_options[option_index].name,
-				  "objid"))
+				path_set = true;
+			} else if (!strcmp(long_options[option_index].name,
+				  "objid")) {
 				strncpy(objid, optarg, MAXPATHLEN);
-			else if (!strcmp(long_options[option_index].name,
+				objid_set = true;
+			} else if (!strcmp(long_options[option_index].name,
 				  "mode")) {
 				statflags |= STAT_MODE_SET;
 				stat.st_mode = S_IFREG|strtoul(optarg, 0, 8);
 			} else if (!strcmp(long_options[option_index].name,
 				  "size")) {
-				statflags |= STAT_SIZE_SET;
+				statflags |= STAT_SIZE_ATTACH;
 				stat.st_size = atoi(optarg);
 			} else if (!strcmp(long_options[option_index].name,
 				  "atime")) {
@@ -211,24 +247,28 @@ int main(int argc, char **argv)
 			printf("option -u with value `%s'\n", optarg);
 			statflags |= STAT_UID_SET;
 			stat.st_uid = atoi(optarg);
+			cred.uid = stat.st_uid;
 			break;
 
 		case 'g':
 			printf("option -g with value `%s'\n", optarg);
 			statflags |= STAT_GID_SET;
 			stat.st_gid = atoi(optarg);
+			cred.gid = stat.st_gid;
 			break;
 
 		case 'p':
 			strncpy(path, optarg, MAXPATHLEN);
+			path_set = true;
 			break;
 
 		case 'o':
 			strncpy(objid, optarg, MAXPATHLEN);
+			objid_set = true;
 			break;
 
 		case 's':
-			statflags |= STAT_SIZE_SET;
+			statflags |= STAT_SIZE_ATTACH;
 			stat.st_size = atoi(optarg);
 			break;
 
@@ -278,9 +318,38 @@ int main(int argc, char **argv)
 
 	/* Print any remaining command line arguments (not options). */
 	if (optind < argc) {
-		printf("Too many arguments provided !!\n");
+		fprintf(stderr, "Too many arguments provided !!\n");
 		help(basename(argv[0]));
 	}
+
+	/* At leat, user must provide path and objid */
+	if (!(path_set && objid_set)) {
+		fprintf(stderr, "You must set at path and objid !!!\n");
+		help(basename(argv[0]));
+	}
+
+	/* Do the job */
+	rc = kvsns_start();
+	exit_rc("kvsns_start faild", rc);
+
+	rc = kvsns_get_root(&root_ino);
+	exit_rc("Can't get KVSNS's root inode", rc);
+
+	strncpy(basepath, basename(path), MAXNAMLEN);
+	strncpy(dirpath, dirname(path), MAXPATHLEN);
+
+	printf("path=%s base=%s dir=%s\n", path, basepath, dirpath);
+
+	rc = kvsns_lookup_path(&cred, &root_ino, dirpath, &parent_ino);
+	exit_rc("Can't lookup path in KVSNS", rc);
+
+	rc = kvsns_attach(&cred, &parent_ino, basepath, objid,
+			  strnlen(objid, MAXPATHLEN), &stat, statflags, &ino);
+	exit_rc("Can't attach object to path in KVSNS", rc);
+
+	if (verbose_flag)
+		printf("objid=%s was successfully attach to kvsns:%s\n",
+		       objid, path);
 
 	return 0;
 }

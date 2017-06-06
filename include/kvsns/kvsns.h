@@ -71,8 +71,9 @@
 #define STAT_ATIME_SET	0x010
 #define STAT_MTIME_SET	0x020
 #define STAT_CTIME_SET	0x040
-#define STAT_INCR_LINK 0x080
-#define STAT_DECR_LINK 0x100
+#define STAT_INCR_LINK  0x080
+#define STAT_DECR_LINK  0x100
+#define STAT_SIZE_ATTACH  0x200
 
 #define STAT_OWNER_READ		0400	/* Read by owner. */
 #define STAT_OWNER_WRITE	0200	/* Write by owner. */
