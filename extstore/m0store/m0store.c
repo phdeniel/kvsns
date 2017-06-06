@@ -11,14 +11,21 @@
 #include <errno.h>
 #include <string.h>
 #include <assert.h>
+#include <pthread.h>
 
 #include "clovis/clovis.h"
 #include "clovis/clovis_internal.h"
 #include "clovis/clovis_idx.h"
+#include "lib/thread.h"
 #include "m0store.h"
 
 /* To be passed as argument */
 extern struct m0_clovis_realm     clovis_uber_realm; 
+
+static pthread_once_t clovis_init_once = PTHREAD_ONCE_INIT;
+bool clovis_init_done = false;
+__thread struct m0_thread m0thread;
+static pthread_t m0_init_thread;
 
 struct clovis_io_ctx {
         struct m0_indexvec ext;
@@ -350,21 +357,40 @@ err_exit:
         return rc;
 }
 
-int m0store_init()
+static void m0store_do_init(void)
 {
 	int rc;
 	get_clovis_env();
 
 	rc = init_clovis();
 	assert(rc == 0);
-	
+
+	clovis_init_done = true;
+	m0_init_thread = pthread_self();
+}
+
+int m0store_init(void)
+{
+	(void) pthread_once(&clovis_init_once, m0store_do_init);
+
+	if (clovis_init_done) {
+		/* Not the init thread */
+		printf("I am not the init thread\n");
+
+		memset(&m0thread, 0, sizeof(struct m0_thread));
+
+		m0_thread_adopt(&m0thread, clovis_instance->m0c_mero);
+	}
 	return 0;
 }
 
 void m0store_fini(void)
 {
-	/* Finalize Clovis instance */
-	m0_clovis_fini(&clovis_instance, true);
+	if (pthread_self() == m0_init_thread) {
+		/* Finalize Clovis instance */
+		m0_clovis_fini(&clovis_instance, true);
+	} else
+		m0_thread_shun();
 }
 
 /*
