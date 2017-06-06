@@ -170,7 +170,8 @@ int extstore_attach(kvsns_ino_t *ino, char *objid, int objid_len,
 
 	snprintf(k, KLEN, "%llu.data", *ino);
 	id = M0_CLOVIS_ID_APP;
-	memcpy(&id.u_lo, objid, objid_len);
+	id.u_lo = atoi(objid);
+
 	snprintf(v, VLEN, "%llu", (unsigned long long)id.u_lo);
 	reply = NULL;
 	reply = redisCommand(rediscontext, "SET %s %s", k, v);
