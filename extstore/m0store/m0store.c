@@ -51,7 +51,7 @@ static struct m0_clovis_config    clovis_conf;
 
 struct m0_clovis_realm     clovis_uber_realm;
 
-static void get_clovis_env(void)
+static void get_clovis_env(m0store_config_t *m0store_config)
 {
         clovis_local_addr = getenv("CLOVIS_LOCAL_ADDR");
         assert(clovis_local_addr != NULL);
@@ -70,6 +70,13 @@ static void get_clovis_env(void)
 
 	clovis_proc_fid = getenv("CLOVIS_PROC_FID");
 	assert(clovis_proc_fid != NULL);
+
+	strcpy(m0store_config->clovis_local_addr, clovis_local_addr);
+	strcpy(m0store_config->clovis_ha_addr, clovis_ha_addr);
+	strcpy(m0store_config->clovis_confd_addr, clovis_confd_addr);
+	strcpy(m0store_config->clovis_prof, clovis_prof);
+	strcpy(m0store_config->clovis_proc_fid, clovis_proc_fid);
+	strcpy(m0store_config->clovis_index_dir, "/tmp");
 }
 
 static int init_ctx(struct clovis_io_ctx *ioctx, off_t off,
@@ -307,11 +314,11 @@ static int read_data_aligned(struct m0_uint128 id,
 	return (block_count*block_size);
 }
 
-static int init_clovis(void)
+static int init_clovis(m0store_config_t *m0store_config)
 {
         int rc;
 
-        get_clovis_env();
+	get_clovis_env(m0store_config);
 
         /* Initialize Clovis configuration */
         clovis_conf.cc_is_oostore               = false;
@@ -329,7 +336,7 @@ static int init_clovis(void)
 	clovis_conf.cc_process_fid       = clovis_proc_fid;
 
         /* Create Clovis instance */
-        rc = m0_clovis_init(&clovis_instance, &clovis_conf, true);
+	rc = m0_clovis_init(&clovis_instance, &clovis_conf, true);
         if (rc != 0) {
                 printf("Failed to initilise Clovis\n");
                 goto err_exit;
@@ -360,9 +367,11 @@ err_exit:
 static void m0store_do_init(void)
 {
 	int rc;
-	get_clovis_env();
+	m0store_config_t m0store_config;
 
-	rc = init_clovis();
+	get_clovis_env(&m0store_config);
+
+	rc = init_clovis(&m0store_config);
 	assert(rc == 0);
 
 	clovis_init_done = true;

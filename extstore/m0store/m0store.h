@@ -29,6 +29,16 @@ enum io_type {
 	IO_WRITE = 2
 };
 
+#define CONF_STR_LEN 100
+typedef struct m0store_config {
+	char clovis_local_addr[CONF_STR_LEN];
+	char clovis_ha_addr[CONF_STR_LEN];
+	char clovis_confd_addr[CONF_STR_LEN];
+	char clovis_prof[CONF_STR_LEN];
+	char clovis_proc_fid[CONF_STR_LEN];
+	char clovis_index_dir[CONF_STR_LEN];
+} m0store_config_t;
+
 ssize_t m0store_do_io(struct m0_uint128 id, enum io_type iotype, off_t x,
 		      size_t len, size_t bs, char *buff);
 
