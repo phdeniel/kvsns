@@ -35,7 +35,6 @@ struct clovis_io_ctx {
 
 static char *clovis_local_addr;
 static char *clovis_ha_addr;
-static char *clovis_confd_addr;
 static char *clovis_prof;
 static char *clovis_proc_fid;
 static char *clovis_index_dir = "/tmp/";
@@ -59,12 +58,6 @@ static void get_clovis_env(m0store_config_t *m0store_config)
         clovis_ha_addr = getenv("CLOVIS_HA_ADDR");
         assert(clovis_ha_addr != NULL);
 
-        clovis_confd_addr = getenv("CLOVIS_CONFD_ADDR");
-        assert(clovis_confd_addr != NULL);
-
-        clovis_confd_addr = getenv("CLOVIS_CONFD_ADDR");
-        assert(clovis_confd_addr != NULL);
-
         clovis_prof = getenv("CLOVIS_PROFILE");
         assert(clovis_prof != NULL);
 
@@ -73,7 +66,6 @@ static void get_clovis_env(m0store_config_t *m0store_config)
 
 	strcpy(m0store_config->clovis_local_addr, clovis_local_addr);
 	strcpy(m0store_config->clovis_ha_addr, clovis_ha_addr);
-	strcpy(m0store_config->clovis_confd_addr, clovis_confd_addr);
 	strcpy(m0store_config->clovis_prof, clovis_prof);
 	strcpy(m0store_config->clovis_proc_fid, clovis_proc_fid);
 	strcpy(m0store_config->clovis_index_dir, "/tmp");
@@ -121,7 +113,8 @@ int m0store_create_object(struct m0_uint128 id)
 
 	memset(&obj, 0, sizeof(struct m0_clovis_obj));
 
-	m0_clovis_obj_init(&obj, &clovis_uber_realm, &id);
+	m0_clovis_obj_init(&obj, &clovis_uber_realm, &id,
+			   m0_clovis_default_layout_id(clovis_instance));
 
 	m0_clovis_entity_create(&obj.ob_entity, &ops[0]);
 
@@ -146,7 +139,8 @@ int m0store_delete_object(struct m0_uint128 id)
 
 	memset(&obj, 0, sizeof(struct m0_clovis_obj));
 
-	m0_clovis_obj_init(&obj, &clovis_uber_realm, &id);
+	m0_clovis_obj_init(&obj, &clovis_uber_realm, &id,
+			   m0_clovis_default_layout_id(clovis_instance));
 
 	m0_clovis_entity_delete(&obj.ob_entity, &ops[0]);
 
@@ -191,7 +185,8 @@ again:
 		       block_size);
 
 	/* Set the  bject entity we want to write */
-	m0_clovis_obj_init(&obj, &clovis_uber_realm, &id);
+	m0_clovis_obj_init(&obj, &clovis_uber_realm, &id,
+			   m0_clovis_default_layout_id(clovis_instance));
 
 	/* Create the write request */
 	m0_clovis_obj_op(&obj, M0_CLOVIS_OC_WRITE,
@@ -270,7 +265,8 @@ static int read_data_aligned(struct m0_uint128 id,
 	}
 
 	/* Read the requisite number of blocks from the entity */
-	m0_clovis_obj_init(&obj, &clovis_uber_realm, &id);
+	m0_clovis_obj_init(&obj, &clovis_uber_realm, &id,
+			   m0_clovis_default_layout_id(clovis_instance));
 
 	/* Create the read request */
 	m0_clovis_obj_op(&obj, M0_CLOVIS_OC_READ,
@@ -325,7 +321,6 @@ static int init_clovis(m0store_config_t *m0store_config)
         clovis_conf.cc_is_read_verify           = false;
         clovis_conf.cc_local_addr               = clovis_local_addr;
         clovis_conf.cc_ha_addr                  = clovis_ha_addr;
-        clovis_conf.cc_confd                    = clovis_confd_addr;
         clovis_conf.cc_profile                  = clovis_prof;
         clovis_conf.cc_tm_recv_queue_min_len    = M0_NET_TM_RECV_QUEUE_DEF_LEN;
         clovis_conf.cc_max_rpc_msg_size         = M0_RPC_DEF_MAX_RPC_MSG_SIZE;
@@ -397,7 +392,7 @@ void m0store_fini(void)
 {
 	if (pthread_self() == m0_init_thread) {
 		/* Finalize Clovis instance */
-		m0_clovis_fini(&clovis_instance, true);
+		m0_clovis_fini(clovis_instance, true);
 	} else
 		m0_thread_shun();
 }

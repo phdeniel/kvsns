@@ -33,7 +33,6 @@ enum io_type {
 typedef struct m0store_config {
 	char clovis_local_addr[CONF_STR_LEN];
 	char clovis_ha_addr[CONF_STR_LEN];
-	char clovis_confd_addr[CONF_STR_LEN];
 	char clovis_prof[CONF_STR_LEN];
 	char clovis_proc_fid[CONF_STR_LEN];
 	char clovis_index_dir[CONF_STR_LEN];
