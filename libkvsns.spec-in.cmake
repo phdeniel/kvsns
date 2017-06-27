@@ -60,7 +60,7 @@ This package contains tools for libkvsns.
 Summary: Development file for the library libkvsns
 Group: Development/Libraries
 Requires: %{name} = %{version}-%{release} pkgconfig
-Requires: redis hiredis
+Requires: redis hiredis libkvsns
 
 %description utils
 The libkvsns is a library that allows of a POSIX namespace built on top of
