@@ -6,6 +6,7 @@
 #include <sys/param.h>
 #include <sys/types.h>
 #include <sys/stat.h>
+#include <syscall.h> /* for gettid */
 #include <fcntl.h>
 #include <stdbool.h>
 #include <errno.h>
@@ -25,6 +26,8 @@ extern struct m0_clovis_realm     clovis_uber_realm;
 static pthread_once_t clovis_init_once = PTHREAD_ONCE_INIT;
 bool clovis_init_done = false;
 __thread struct m0_thread m0thread;
+__thread bool my_init_done = false;
+
 static pthread_t m0_init_thread;
 
 struct clovis_io_ctx {
@@ -111,6 +114,9 @@ int m0store_create_object(struct m0_uint128 id)
 	struct m0_clovis_obj obj;
 	struct m0_clovis_op *ops[1] = {NULL};
 
+	if (!my_init_done)
+		m0store_init();
+
 	memset(&obj, 0, sizeof(struct m0_clovis_obj));
 
 	m0_clovis_obj_init(&obj, &clovis_uber_realm, &id,
@@ -136,6 +142,9 @@ int m0store_delete_object(struct m0_uint128 id)
 	int                  rc;
 	struct m0_clovis_obj obj;
 	struct m0_clovis_op *ops[1] = {NULL};
+
+	if (!my_init_done)
+		m0store_init();
 
 	memset(&obj, 0, sizeof(struct m0_clovis_obj));
 
@@ -172,7 +181,8 @@ static int write_data_aligned(struct m0_uint128 id, char *buff, off_t off,
 	printf("write_data_aligned: offset=%lld, bcount=%u bs=%u\n",
 		(long long)off, block_count, block_size);
 
-	sleep(1);
+	if (!my_init_done)
+		m0store_init();
 
 again:
 	memset(&obj, 0, sizeof(struct m0_clovis_obj));
@@ -242,7 +252,8 @@ static int read_data_aligned(struct m0_uint128 id,
 	printf("read_data_aligned: offset=%lld, bcount=%u bs=%u\n",
 		(long long)off, block_count, block_size);
 
-	sleep(1);
+	if (!my_init_done)
+		m0store_init();
 
 	rc = m0_indexvec_alloc(&ioctx.ext, block_count);
 	if (rc != 0)
@@ -261,7 +272,7 @@ static int read_data_aligned(struct m0_uint128 id,
 		ioctx.ext.iv_vec.v_count[i] = block_size;
 		last_index += block_size;
 
-	ioctx.attr.ov_vec.v_count[i] = 0;
+		ioctx.attr.ov_vec.v_count[i] = 0;
 	}
 
 	/* Read the requisite number of blocks from the entity */
@@ -284,6 +295,8 @@ static int read_data_aligned(struct m0_uint128 id,
 			       M0_CLOVIS_OS_STABLE),
 			       M0_TIME_NEVER);
 	assert(rc == 0);
+	printf("=======> op_sm.sm_state=%d M0_CLOVIS_OS_STABLE=%d\n",
+		ops[0]->op_sm.sm_state, M0_CLOVIS_OS_STABLE);
 	assert(ops[0]->op_sm.sm_state == M0_CLOVIS_OS_STABLE);
 	assert(ops[0]->op_sm.sm_rc == 0);
 
@@ -378,13 +391,18 @@ int m0store_init(void)
 	(void) pthread_once(&clovis_init_once, m0store_do_init);
 
 	if (clovis_init_done && (pthread_self() != m0_init_thread)) {
-		printf("I am not the init thread\n");
+		printf("==========> tid=%d I am not the init thread\n",
+		       (int)syscall(SYS_gettid));
 
 		memset(&m0thread, 0, sizeof(struct m0_thread));
 
 		m0_thread_adopt(&m0thread, clovis_instance->m0c_mero);
 	} else
-		printf("I am the init thread\n");
+		printf("----------> tid=%d I am the init thread\n",
+		       (int)syscall(SYS_gettid));
+
+	my_init_done = true;
+
 	return 0;
 }
 
