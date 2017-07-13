@@ -29,6 +29,7 @@
  * KVSNS: implement a dummy object store inside a POSIX directory
  */
 
+#include <ini_config.h>
 #include <kvsns/extstore.h>
 
 static char kvsns_store_default[] = KVSNS_STORE_DEFAULT;
@@ -86,9 +87,20 @@ int extstore_create(kvsns_ino_t object, struct stat *stat)
 	return 0;
 }
 
-int extstore_init(char *rootpath)
+int extstore_init(struct collection_item *cfg_items)
 {
-	strncpy(store_root, rootpath, MAXPATHLEN);
+	struct collection_item *item;
+	int rc;
+
+	item = NULL;
+	rc = get_config_item("posix_store", "root_path",
+			     cfg_items, &item);
+	if (item == NULL)
+		return -EINVAL;
+
+	strncpy(store_root, get_string_config_value(item, NULL),
+		MAXPATHLEN);
+
 	return 0;
 }
 

@@ -1,4 +1,5 @@
 SET(kvsns_LIB_SRCS
+    kvsns_init.c
     kvsns_handle.c
     kvsns_file.c
     kvsns_internal.c
@@ -7,5 +8,5 @@ SET(kvsns_LIB_SRCS
 )
 
 add_library(kvsns SHARED ${kvsns_LIB_SRCS})
-target_link_libraries(kvsns ${STORE_LIBRARY} ${KVSAL_LIBRARY})
+target_link_libraries(kvsns ini_config ${STORE_LIBRARY} ${KVSAL_LIBRARY})
 

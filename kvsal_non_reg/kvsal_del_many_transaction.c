@@ -19,7 +19,7 @@ int main(int argc, char *argv[])
 
 	howmany = atoi(argv[2]);
 
-	rc = kvsal_init();
+	rc = kvsal_init(NULL);
 	if (rc != 0) {
 		fprintf(stderr, "kvsal_init: err=%d\n", rc);
 		exit(-rc);

@@ -9,9 +9,9 @@ License: LGPLv3
 Group: Development/Libraries
 Url: http://github.com/phdeniel/libkvsns
 Source: %{sourcename}.tar.gz
-BuildRequires: cmake hiredis-devel
+BuildRequires: cmake hiredis-devel libini_config-devel
 BuildRequires: gcc
-Requires: redis hiredis
+Requires: redis hiredis libini_config
 Provides: %{name} = %{version}-%{release}
 
 # Conditionally enable KVS and object stores
@@ -89,6 +89,7 @@ mkdir -p %{buildroot}%{_bindir}
 mkdir -p %{buildroot}%{_libdir}
 mkdir -p %{buildroot}%{_libdir}/pkgconfig
 mkdir -p %{buildroot}%{_includedir}/kvsns
+mkdir -p %{buildroot}%{_sysconfdir}/kvsns.d
 install -m 644 include/kvsns/kvsns.h  %{buildroot}%{_includedir}/kvsns
 install -m 644 include/kvsns/kvsal.h  %{buildroot}%{_includedir}/kvsns
 install -m 644 include/kvsns/extstore.h  %{buildroot}%{_includedir}/kvsns
@@ -99,6 +100,7 @@ install -m 644 libkvsns.pc  %{buildroot}%{_libdir}/pkgconfig
 install -m 755 kvsns_shell/kvsns_busybox %{buildroot}%{_bindir}
 install -m 755 kvsns_shell/kvsns_cp %{buildroot}%{_bindir}
 install -m 755 kvsns_attach/kvsns_attach %{buildroot}%{_bindir}
+install -m 644 kvsns.ini %{buildroot}%{_sysconfdir}/kvsns.d
 
 %clean
 rm -rf $RPM_BUILD_ROOT
@@ -108,6 +110,7 @@ rm -rf $RPM_BUILD_ROOT
 %{_libdir}/libkvsal.so*
 %{_libdir}/libextstore.so*
 %{_libdir}/libkvsns.so*
+%config(noreplace) %{_sysconfdir}/kvsns.d/kvsns.ini
 
 %files devel
 %defattr(-,root,root)
@@ -123,6 +126,9 @@ rm -rf $RPM_BUILD_ROOT
 %{_bindir}/kvsns_attach
 
 %changelog
+* Thu Jun 13 2017 Philippe DENIEL <philippe.deniel@cea.fr> 1.2.0
+- Add support for config file via libini_config
+
 * Fri Jun  2 2017 Philippe DENIEL <philippe.deniel@cea.fr> 1.1.3
 - Add kvsns_cp
 

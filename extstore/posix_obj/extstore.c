@@ -35,7 +35,7 @@
 
 #define RC_WRAP(__function, ...) ({\
 	int __rc = __function(__VA_ARGS__);\
-	if (__rc != 0)        \
+	if (__rc != 0)	\
 		return __rc; })
 
 /* The REDIS context exists in the TLS, for MT-Safety */
@@ -206,83 +206,103 @@ int extstore_attach(kvsns_ino_t *ino, char *objid, int objid_len,
 
 static int set_stat(kvsns_ino_t *ino, struct stat *buf)
 {
-        redisReply *reply;
+	redisReply *reply;
 	char k[KLEN];
 
-        size_t size = sizeof(struct stat);
+	size_t size = sizeof(struct stat);
 
-        if (!ino || !buf)
-                return -EINVAL;
+	if (!ino || !buf)
+		return -EINVAL;
 
 	snprintf(k, KLEN, "%llu.data_attr", *ino);
-        reply = redisCommand(rediscontext, "SET %s %b", k, buf, size);
-        if (!reply)
-                return -1;
+	reply = redisCommand(rediscontext, "SET %s %b", k, buf, size);
+	if (!reply)
+		return -1;
 
 	freeReplyObject(reply);
-        return 0;
+	return 0;
 }
 
 static int get_stat(kvsns_ino_t *ino, struct stat *buf)
 {
-        redisReply *reply;
-        char k[KLEN];
-        int rc;
+	redisReply *reply;
+	char k[KLEN];
+	int rc;
 
-        if (!ino || !buf)
-                return -EINVAL;
+	if (!ino || !buf)
+		return -EINVAL;
 
 	snprintf(k, KLEN, "%llu.data_attr", *ino);
-        reply = redisCommand(rediscontext, "GET %s", k);
-        if (!reply)
-                return -1;
+	reply = redisCommand(rediscontext, "GET %s", k);
+	if (!reply)
+		return -1;
 
-        if (reply->type != REDIS_REPLY_STRING)
-                return -1;
+	if (reply->type != REDIS_REPLY_STRING)
+		return -1;
 
-        if (reply->len != sizeof(struct stat))
-                return -1;
+	if (reply->len != sizeof(struct stat))
+		return -1;
 
-        memcpy((char *)buf, reply->str, reply->len);
+	memcpy((char *)buf, reply->str, reply->len);
 
-        freeReplyObject(reply);
+	freeReplyObject(reply);
 
-        return 0;
+	return 0;
 }
 
-int extstore_init(char *rootpath)
+int extstore_init(struct collection_item *cfg_items)
 {
-        redisReply *reply;
-        char *hostname = NULL;
-        char hostname_default[] = "127.0.0.1";
-        struct timeval timeout = { 1, 500000 }; /* 1.5 seconds */
-        int port = 6379; /* REDIS default */
+	redisReply *reply;
+	char *hostname = NULL;
+	char hostname_default[] = "127.0.0.1";
+	struct timeval timeout = { 1, 500000 }; /* 1.5 seconds */
+	int port = 6379; /* REDIS default */
+	struct collection_item *item;
+	int rc;
 
-        hostname = getenv(KVSNS_SERVER);
-        if (hostname == NULL)
-                hostname = hostname_default;
+	/* Get config from ini file */
+	item = NULL;
+	RC_WRAP(get_config_item, "posix_obj", "server", cfg_items, &item);
+	if (item == NULL)
+		hostname = hostname_default;
+	else
+		hostname = get_string_config_value(item, NULL);
 
-        rediscontext = redisConnectWithTimeout(hostname, port, timeout);
-        if (rediscontext == NULL || rediscontext->err) {
-                if (rediscontext) {
-                        fprintf(stderr,
-                                "Connection error: %s\n", rediscontext->errstr);
-                        redisFree(rediscontext);
-                } else {
-                        fprintf(stderr,
-                                "Connection error: can't get redis context\n");
-                }
-                exit(1);
-        }
+	item = NULL;
+	RC_WRAP(get_config_item, "posix_obj", "port", cfg_items, &item);
+	if (item != NULL)
+		port = (int)get_int_config_value(item, 0, 0, NULL);
 
-        /* PING server */
-        reply = redisCommand(rediscontext, "PING");
-        if (!reply)
-                return -1;
+	rediscontext = redisConnectWithTimeout(hostname, port, timeout);
+	if (rediscontext == NULL || rediscontext->err) {
+		if (rediscontext) {
+			fprintf(stderr,
+				"Connection error: %s\n", rediscontext->errstr);
+			redisFree(rediscontext);
+		} else {
+			fprintf(stderr,
+				"Connection error: can't get redis context\n");
+		}
+		exit(1);
+	}
 
-        freeReplyObject(reply);
+	/* PING server */
+	reply = redisCommand(rediscontext, "PING");
+	if (!reply)
+		return -1;
 
-	strncpy(store_root, rootpath, MAXPATHLEN);
+	freeReplyObject(reply);
+
+	/* Deal with store_root */
+	item = NULL;
+	rc = get_config_item("posix_obj", "root_path",
+			      cfg_items, &item);
+	if (item == NULL)
+		return -EINVAL;
+
+	strncpy(store_root, get_string_config_value(item, NULL),
+		MAXPATHLEN);
+
 	return 0;
 }
 
@@ -291,7 +311,7 @@ int extstore_del(kvsns_ino_t *ino)
 	char k[KLEN];
 	char storepath[MAXPATHLEN];
 	int rc;
-        redisReply *reply;
+	redisReply *reply;
 
 	rc = build_extstore_path(*ino, storepath, MAXPATHLEN);
 	if (rc) {

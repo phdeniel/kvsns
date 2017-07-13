@@ -43,7 +43,7 @@
 extern struct m0_clovis_realm     clovis_uber_realm; 
 struct m0_clovis_idx idx;
 
-int kvsal_init(void)
+int kvsal_init(struct collection_item *cfg_items)
 {
 	init_clovis();
 

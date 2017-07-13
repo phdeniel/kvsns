@@ -53,6 +53,7 @@ static void help(char *exec)
 		"\t	[-a <atime>] [--atime=<atime>]	set atime\n"
 		"\t	[-m <mtime>] [--mtime=<mtime>]	set mtime\n"
 		"\t	[-c <ctime>] [--ctime=<ctime>]	set ctime\n"
+		"\t	[-f <config>] [--conf=<config>]	config_file\n"
 		"\t	-p <path> --path=<path>		path in kvsns\n"
 		"\t	-o <objid> --objid=<objid>	objectid\n"
 		"\t 	date format is 'now' or 10/06/2017 16:06:23\n", exec);
@@ -130,6 +131,7 @@ int main(int argc, char **argv)
 	char dirpath[MAXPATHLEN];
 	char basepath[MAXNAMLEN];
 	char objid[MAXPATHLEN];
+	char kvsns_conf[MAXPATHLEN];
 	bool path_set = false;
 	bool objid_set = false;
 	int rc;
@@ -137,6 +139,7 @@ int main(int argc, char **argv)
 	/* stat structure with default values */
 	memset(path, 0, MAXPATHLEN);
 	memset(objid, 0, MAXPATHLEN);
+	strncpy(kvsns_conf, KVSNS_DEFAULT_CONFIG, MAXPATHLEN);
 
 	default_stat(&stat);
 	cred.uid = getuid();
@@ -153,6 +156,7 @@ int main(int argc, char **argv)
 			{"user",  required_argument, 0, 0},
 			{"group",  required_argument, 0, 0},
 			{"path",  required_argument, 0, 0},
+			{"conf",  required_argument, 0, 0},
 			{"objid",  required_argument, 0, 0},
 			{"mode",  required_argument, 0, 0},
 			{"size",  required_argument, 0, 0},
@@ -164,7 +168,7 @@ int main(int argc, char **argv)
 		/* getopt_long stores the option index here. */
 		int option_index = 0;
 
-		c = getopt_long (argc, argv, "vhu:g:p:o:M:s:m:a:c",
+		c = getopt_long (argc, argv, "vhu:g:p:o:M:s:m:a:c:f:",
 		long_options, &option_index);
 
 		/* Detect the end of the options. */
@@ -200,6 +204,9 @@ int main(int argc, char **argv)
 				  "path")) {
 				strncpy(path, optarg, MAXPATHLEN);
 				path_set = true;
+			} else if (!strcmp(long_options[option_index].name,
+				  "conf")) {
+				strncpy(kvsns_conf, optarg, MAXPATHLEN);
 			} else if (!strcmp(long_options[option_index].name,
 				  "objid")) {
 				strncpy(objid, optarg, MAXPATHLEN);
@@ -260,6 +267,10 @@ int main(int argc, char **argv)
 		case 'p':
 			strncpy(path, optarg, MAXPATHLEN);
 			path_set = true;
+			break;
+
+		case 'f':
+			strncpy(kvsns_conf, optarg, MAXPATHLEN);
 			break;
 
 		case 'o':
@@ -329,7 +340,7 @@ int main(int argc, char **argv)
 	}
 
 	/* Do the job */
-	rc = kvsns_start();
+	rc = kvsns_start(kvsns_conf);
 	exit_rc("kvsns_start faild", rc);
 
 	rc = kvsns_get_root(&root_ino);

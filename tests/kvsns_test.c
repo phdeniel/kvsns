@@ -58,7 +58,7 @@ int main(int argc, char *argv[])
 
 	kvsns_set_debug(false);
 
-	rc = kvsns_start();
+	rc = kvsns_start(KVSNS_DEFAULT_CONFIG);
 	if (rc != 0) {
 		fprintf(stderr, "kvsns_init: err=%d\n", rc);
 		exit(1);

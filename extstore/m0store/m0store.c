@@ -29,6 +29,7 @@ __thread struct m0_thread m0thread;
 __thread bool my_init_done = false;
 
 static pthread_t m0_init_thread;
+static struct collection_item *conf = NULL;
 
 struct clovis_io_ctx {
         struct m0_indexvec ext;
@@ -53,25 +54,57 @@ static struct m0_clovis_config    clovis_conf;
 
 struct m0_clovis_realm     clovis_uber_realm;
 
-static void get_clovis_env(m0store_config_t *m0store_config)
+#define WRAP_CONFIG(__name, __cfg, __item) ({\
+        int __rc = get_config_item("m0store", __name, __cfg, &__item);\
+        if (__rc != 0)\
+                return -__rc;\
+        if (__item == NULL)\
+                return -EINVAL;})
+
+static int get_clovis_conf(struct collection_item *cfg)
 {
-        clovis_local_addr = getenv("CLOVIS_LOCAL_ADDR");
-        assert(clovis_local_addr != NULL);
+	struct collection_item *item;
 
-        clovis_ha_addr = getenv("CLOVIS_HA_ADDR");
-        assert(clovis_ha_addr != NULL);
+	if (cfg == NULL)
+		return -EINVAL;
 
-        clovis_prof = getenv("CLOVIS_PROFILE");
-        assert(clovis_prof != NULL);
+	item = NULL;
+	WRAP_CONFIG("local_addr", cfg, item);
+	clovis_local_addr = get_string_config_value(item, NULL);
 
-	clovis_proc_fid = getenv("CLOVIS_PROC_FID");
-	assert(clovis_proc_fid != NULL);
+	item = NULL;
+	WRAP_CONFIG("ha_addr", cfg, item);
+	clovis_ha_addr = get_string_config_value(item, NULL);
 
-	strcpy(m0store_config->clovis_local_addr, clovis_local_addr);
-	strcpy(m0store_config->clovis_ha_addr, clovis_ha_addr);
-	strcpy(m0store_config->clovis_prof, clovis_prof);
-	strcpy(m0store_config->clovis_proc_fid, clovis_proc_fid);
-	strcpy(m0store_config->clovis_index_dir, "/tmp");
+	item = NULL;
+	WRAP_CONFIG("profile", cfg, item);
+	clovis_prof = get_string_config_value(item, NULL);
+
+	item = NULL;
+	WRAP_CONFIG("proc_fid", cfg, item);
+	clovis_proc_fid = get_string_config_value(item, NULL);
+
+	item = NULL;
+	WRAP_CONFIG("index_dir", cfg, item);
+	clovis_index_dir = get_string_config_value(item, NULL);
+
+	return 0;
+}
+
+static void print_config(void)
+{
+	printf("local_addr = %s\n", clovis_local_addr);
+	printf("ha_addr    = %s\n", clovis_ha_addr);
+	printf("profile    = %s\n", clovis_prof);
+	printf("proc_fid   = %s\n", clovis_proc_fid);
+	printf("index_dir  = %s\n", clovis_index_dir);
+	printf("---------------------------\n");
+}
+
+
+static int m0store_reinit(void)
+{
+	return m0store_init(conf);
 }
 
 static int init_ctx(struct clovis_io_ctx *ioctx, off_t off,
@@ -115,7 +148,7 @@ int m0store_create_object(struct m0_uint128 id)
 	struct m0_clovis_op *ops[1] = {NULL};
 
 	if (!my_init_done)
-		m0store_init();
+		m0store_reinit();
 
 	memset(&obj, 0, sizeof(struct m0_clovis_obj));
 
@@ -144,7 +177,7 @@ int m0store_delete_object(struct m0_uint128 id)
 	struct m0_clovis_op *ops[1] = {NULL};
 
 	if (!my_init_done)
-		m0store_init();
+		m0store_reinit();
 
 	memset(&obj, 0, sizeof(struct m0_clovis_obj));
 
@@ -182,7 +215,7 @@ static int write_data_aligned(struct m0_uint128 id, char *buff, off_t off,
 		(long long)off, block_count, block_size);
 
 	if (!my_init_done)
-		m0store_init();
+		m0store_reinit();
 
 again:
 	memset(&obj, 0, sizeof(struct m0_clovis_obj));
@@ -253,7 +286,7 @@ static int read_data_aligned(struct m0_uint128 id,
 		(long long)off, block_count, block_size);
 
 	if (!my_init_done)
-		m0store_init();
+		m0store_reinit();
 
 	rc = m0_indexvec_alloc(&ioctx.ext, block_count);
 	if (rc != 0)
@@ -323,11 +356,13 @@ static int read_data_aligned(struct m0_uint128 id,
 	return (block_count*block_size);
 }
 
-static int init_clovis(m0store_config_t *m0store_config)
+static int init_clovis(void)
 {
         int rc;
 
-	get_clovis_env(m0store_config);
+	rc = get_clovis_conf(conf);
+	if (rc != 0)
+		return rc;
 
         /* Initialize Clovis configuration */
         clovis_conf.cc_is_oostore               = false;
@@ -375,19 +410,31 @@ err_exit:
 static void m0store_do_init(void)
 {
 	int rc;
-	m0store_config_t m0store_config;
 
-	get_clovis_env(&m0store_config);
+	rc = get_clovis_conf(conf);
 
-	rc = init_clovis(&m0store_config);
+	if (rc != 0) {
+		fprintf(stderr, "Invalid config file\n");
+		exit(1);
+	}
+
+	print_config();
+
+	rc = init_clovis();
 	assert(rc == 0);
 
 	clovis_init_done = true;
 	m0_init_thread = pthread_self();
 }
 
-int m0store_init(void)
+int m0store_init(struct collection_item *cfg_items)
 {
+	if (cfg_items == NULL)
+		return -EINVAL;
+
+	if (conf == NULL)
+		conf = cfg_items;
+
 	(void) pthread_once(&clovis_init_once, m0store_do_init);
 
 	if (clovis_init_done && (pthread_self() != m0_init_thread)) {

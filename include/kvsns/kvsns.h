@@ -55,6 +55,7 @@
 #define KVSNS_ARRAY_SIZE 100
 #define KVSNS_ROOT_UID 0
 
+#define KVSNS_DEFAULT_CONFIG "/etc/kvsns.d/kvsns.ini"
 #define KVSNS_STORE "KVSNS_STORE"
 #define KVSNS_STORE_DEFAULT "/btrfs"
 #define KVSNS_SERVER "KVSNS_SERVER"
@@ -148,7 +149,7 @@ typedef struct kvsns_xattr__ {
  * @param: none (void param)
  * @return 0 if successful, a negative "-errno" value in case of failure
  */
-int kvsns_start(void);
+int kvsns_start(const char *config);
 
 /**
  * Stops the kvsns library. This should be done by every thread using the library

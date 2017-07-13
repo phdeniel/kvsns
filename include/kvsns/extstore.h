@@ -40,10 +40,11 @@
 #include <fcntl.h>
 #include <unistd.h>
 #include <stdbool.h>
+#include <ini_config.h>
 #include <kvsns/kvsal.h>
 #include <kvsns/kvsns.h>
 
-int extstore_init(char *rootpath);
+int extstore_init(struct collection_item *cfg_items);
 int extstore_create(kvsns_ino_t object,
 		    struct stat *stat);
 int extstore_read(kvsns_ino_t *ino,

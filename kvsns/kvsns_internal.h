@@ -36,6 +36,7 @@
 #include <unistd.h>
 #include <stdlib.h>
 #include <errno.h>
+#include <ini_config.h>
 #include <kvsns/kvsns.h>
 #include <string.h>
 

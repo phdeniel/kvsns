@@ -62,7 +62,7 @@ int main(int argc, char *argv[])
 		exit(1);
 	}
 
-	rc = m0store_init();
+	rc = m0store_init(NULL);
 	if (rc != 0) {
 		fprintf(stderr, "Can't start m0store lib, rc=%d\n", rc);
 		exit(1);

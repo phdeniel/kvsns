@@ -29,20 +29,20 @@
  * KVSNS: implement a dummy object store inside a POSIX directory
  */
 
-
+#include <ini_config.h>
 #include <hiredis/hiredis.h>
 #include <kvsns/extstore.h>
 #include "m0store.h"
 
 #define RC_WRAP(__function, ...) ({\
 	int __rc = __function(__VA_ARGS__);\
-	if (__rc != 0)        \
+	if (__rc != 0)	\
 		return __rc; })
 
 /* The REDIS context exists in the TLS, for MT-Safety */
 __thread redisContext *rediscontext = NULL;
 
-static int build_m0store_id(kvsns_ino_t         object,
+static int build_m0store_id(kvsns_ino_t	 object,
 			    struct m0_uint128  *id)
 {
 	char k[KLEN];
@@ -241,17 +241,27 @@ static int get_stat(kvsns_ino_t *ino, struct stat *buf)
 	return 0;
 }
 
-int extstore_init(char *rootpath)
+int extstore_init(struct collection_item *cfg_items)
 {
 	redisReply *reply;
 	char *hostname = NULL;
 	char hostname_default[] = "127.0.0.1";
 	struct timeval timeout = { 1, 500000 }; /* 1.5 seconds */
 	int port = 6379; /* REDIS default */
+	struct collection_item *item;
 
-	hostname = getenv(KVSNS_SERVER);
-	if (hostname == NULL)
+       /* Get config from ini file */
+	item = NULL;
+	RC_WRAP(get_config_item, "m0store", "server", cfg_items, &item);
+	if (item == NULL)
 		hostname = hostname_default;
+	else
+		hostname = get_string_config_value(item, NULL);
+
+	item = NULL;
+	RC_WRAP(get_config_item, "m0store", "port", cfg_items, &item);
+	if (item != NULL)
+		port = (int)get_int_config_value(item, 0, 0, NULL);
 
 	rediscontext = redisConnectWithTimeout(hostname, port, timeout);
 	if (rediscontext == NULL || rediscontext->err) {
@@ -275,7 +285,7 @@ int extstore_init(char *rootpath)
 	freeReplyObject(reply);
 
 	/* Init m0store */
-	return m0store_init();
+	return m0store_init(cfg_items);
 }
 
 int extstore_del(kvsns_ino_t *ino)

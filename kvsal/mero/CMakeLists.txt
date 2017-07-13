@@ -26,6 +26,7 @@ target_link_libraries(kvsal
   uuid
   yaml
   gf_complete
+  ini_config
 )
 
 add_custom_command(TARGET kvsal

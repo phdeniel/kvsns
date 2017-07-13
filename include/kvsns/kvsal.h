@@ -48,6 +48,7 @@
 #include <sys/types.h>
 #include <sys/param.h>
 #include <sys/xattr.h>
+#include <ini_config.h>
 
 #define KVSNS_ROOT_INODE 2LL
 #define KVSNS_ARRAY_SIZE 100
@@ -69,7 +70,7 @@ typedef struct kvsal_list {
 	size_t size;
 } kvsal_list_t;
 
-int kvsal_init(void);
+int kvsal_init(struct collection_item *cfg_items);
 int kvsal_fini(void);
 int kvsal_begin_transaction(void);
 int kvsal_end_transaction(void);

@@ -12,13 +12,14 @@
 #include <fcntl.h>
 #include <stdbool.h>
 #include <errno.h>
+#include <ini_config.h>
 
 #include "clovis/clovis.h"
 #include "clovis/clovis_idx.h"
 
 int m0store_create_object(struct m0_uint128 id);
 int m0store_delete_object(struct m0_uint128 id);
-int m0store_init(void);
+int m0store_init(struct collection_item *cfg_items);
 void m0store_fini(void);
 
 #define M0STORE_BLK_SIZE 4096
@@ -30,13 +31,6 @@ enum io_type {
 };
 
 #define CONF_STR_LEN 100
-typedef struct m0store_config {
-	char clovis_local_addr[CONF_STR_LEN];
-	char clovis_ha_addr[CONF_STR_LEN];
-	char clovis_prof[CONF_STR_LEN];
-	char clovis_proc_fid[CONF_STR_LEN];
-	char clovis_index_dir[CONF_STR_LEN];
-} m0store_config_t;
 
 ssize_t m0store_do_io(struct m0_uint128 id, enum io_type iotype, off_t x,
 		      size_t len, size_t bs, char *buff);
