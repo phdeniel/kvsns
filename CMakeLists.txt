@@ -76,13 +76,31 @@ message(STATUS "USE_POSIX_STORE=${USE_POSIX_STORE}")
 message(STATUS "USE_MERO_STORE=${USE_MERO_STORE}")
 message(STATUS "USE_POSIX_OBJ=${USE_POSIX_OBJ}")
 
-## Start building stuff ##
-if(USE_KVS_REDIS)
+
 include(CheckIncludeFiles)
 include(CheckLibraryExists)
 
+## Check ini_config
+check_include_files("ini_config.h" HAVE_INI_CONFIG_H)
+find_library(HAVE_INI_CONFIG ini_config)
+check_library_exists(
+	ini_config
+	config_from_file
+	""
+	HAVE_INI_CONFIG
+	)
+
+
+if((NOT HAVE_INI_CONFIG) OR (NOT HAVE_INI_CONFIG_H))
+      message(FATAL_ERROR "Cannot find ini_config")
+endif((NOT HAVE_INI_CONFIG) OR (NOT HAVE_INI_CONFIG_H))
+
+## Start building stuff ##
+if(USE_KVS_REDIS)
+
+
 find_library(HAVE_HIREDIS hiredis)
-  check_library_exists(
+check_library_exists(
     hiredis
     redisCommand
     ""
