@@ -91,5 +91,6 @@ int kvsal_get_list_pattern(char *pattern, int start, int *end,
 int kvsal_get_list(kvsal_list_t *list, int start, int *end, kvsal_item_t *items);
 int kvsal_fetch_list(char *pattern, kvsal_list_t *list);
 int kvsal_dispose_list(kvsal_list_t *list);
+int kvsal_init_list(kvsal_list_t *list);
 
 #endif
