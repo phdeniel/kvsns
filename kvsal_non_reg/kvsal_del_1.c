@@ -7,7 +7,6 @@
 int main(int argc, char *argv[])
 {
 	int rc;
-	int i;
 	char key[KLEN];
 
 	if (argc != 2) {

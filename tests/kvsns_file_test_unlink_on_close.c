@@ -45,14 +45,8 @@
 int main(int argc, char *argv[])
 {
 	int rc;
-	int i;
-	int end;
 	kvsns_ino_t ino;
 	kvsns_ino_t parent;
-	struct stat bufstat;
-	char key[KLEN];
-	char val[VLEN];
-	char tmp[VLEN];
 	kvsns_file_open_t fd;
 	kvsns_cred_t cred;
 	ssize_t written;
@@ -104,7 +98,8 @@ int main(int argc, char *argv[])
 
 	written = kvsns_write(&cred, &fd, buff, count, offset);
 	if (written < 0) {
-		fprintf(stderr, "kvsns_write: err=%lld\n", written);
+		fprintf(stderr, "kvsns_write: err=%lld\n",
+			(long long)written);
 		exit(1);
 	}
 
@@ -113,12 +108,13 @@ int main(int argc, char *argv[])
 	offset = 2;
 	read = kvsns_read(&cred, &fd, buff2, SIZE, offset);
 	if (read < 0) {
-		fprintf(stderr, "kvsns_read: err=%lld\n", read);
+		fprintf(stderr, "kvsns_read: err=%lld\n",
+			(long long)read);
 		exit(1);
 	}
 
 	printf("Buff= #%s#\n", buff);
-	printf("Buff2= #%s# at offset %lld\n", buff2, offset);
+	printf("Buff2= #%s# at offset %lld\n", buff2, (long long)offset);
 
 	rc = kvsns_unlink(&cred, &parent, "fichier");
 	if (rc != 0) {

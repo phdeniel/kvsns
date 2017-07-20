@@ -36,12 +36,12 @@
 #include <stdlib.h>
 #include <string.h>
 #include <time.h>
+#include <syscall.h>
 #include <kvsns/kvsal.h>
 #include <kvsns/kvsns.h>
 #include <kvsns/extstore.h>
 #include "kvsns_internal.h"
 
-extern int kvsns_debug;
 
 static int kvsns_str2ownerlist(kvsns_open_owner_t *ownerlist, int *size,
 			        char *str)
@@ -56,9 +56,9 @@ static int kvsns_str2ownerlist(kvsns_open_owner_t *ownerlist, int *size,
 
 	pos = 0;
 	while((token = strtok_r(rest, "|", &rest))) {
-		sscanf(token, "%llu.%llu",
+		sscanf(token, "%u.%u",
 		       &ownerlist[pos].pid,
-		       &ownerlist[pos].thrid);
+		       &ownerlist[pos].tid);
 		pos += 1;
 		if (pos == maxsize)
 			break;
@@ -82,8 +82,8 @@ static int kvsns_ownerlist2str(kvsns_open_owner_t *ownerlist, int size,
 
 	for (i = 0; i < size ; i++)
 		if (ownerlist[i].pid != 0LL) {
-			snprintf(tmp, VLEN, "%llu.%llu|",
-				 ownerlist[i].pid, ownerlist[i].thrid);
+			snprintf(tmp, VLEN, "%u.%u|",
+				 ownerlist[i].pid, ownerlist[i].tid);
 			strcat(str, tmp);
 		}
 	
@@ -115,15 +115,12 @@ int kvsns_open(kvsns_cred_t *cred, kvsns_ino_t *ino,
 	char v[VLEN];
 	int rc;
 
-	if (kvsns_debug)
-		fprintf(stderr, "kvsns_open\n");
-
 	if (!cred || !ino || !fd)
 		return -EINVAL;
 
 	/** @todo Put here the access control base on flags and mode values */
 	me.pid = getpid();
-	me.thrid = pthread_self();
+	me.tid = syscall(SYS_gettid);
 
 	/* Manage the list of open owners */
 	snprintf(k, KLEN, "%llu.openowner", *ino);
@@ -133,12 +130,12 @@ int kvsns_open(kvsns_cred_t *cred, kvsns_ino_t *ino,
 		if (size == KVSNS_ARRAY_SIZE)
 			return -EMLINK; /* Too many open files */
 		owners[size].pid = me.pid;
-		owners[size].thrid = me.thrid;
+		owners[size].tid = me.tid;
 		size += 1;
 		RC_WRAP(kvsns_ownerlist2str, owners, size, v);
 	} else if (rc == -ENOENT) {
 		/* Create the key => 1st fd created */
-		snprintf(v, VLEN, "%llu.%llu|", me.pid, me.thrid);
+		snprintf(v, VLEN, "%u.%u|", me.pid, me.tid);
 	} else
 		return rc;
 
@@ -147,7 +144,7 @@ int kvsns_open(kvsns_cred_t *cred, kvsns_ino_t *ino,
 	/** @todo Do not forget store stuffs */
 	fd->ino = *ino;
 	fd->owner.pid = me.pid;
-	fd->owner.thrid = me.thrid;
+	fd->owner.tid = me.tid;
 	fd->flags = flags;
 
 	/* In particular create a key per opened fd */
@@ -159,9 +156,6 @@ int kvsns_openat(kvsns_cred_t *cred, kvsns_ino_t *parent, char *name,
 		 int flags, mode_t mode, kvsns_file_open_t *fd)
 {
 	kvsns_ino_t ino;
-
-	if (kvsns_debug)
-		fprintf(stderr, "kvsns_openat\n");
 
 	if (!cred || !parent || !name || !fd)
 		return -EINVAL;
@@ -182,9 +176,6 @@ int kvsns_close(kvsns_file_open_t *fd)
 	bool found = false;
 	bool opened_and_deleted;
 	bool delete_object = false;
-
-	if (kvsns_debug)
-		fprintf(stderr, "kvsns_close\n");
 
 	if (!fd)
 		return -EINVAL;
@@ -212,7 +203,7 @@ int kvsns_close(kvsns_file_open_t *fd)
 
 	if (size == 1) {
 		if (fd->owner.pid == owners[0].pid &&
-		    fd->owner.thrid == owners[0].thrid) {
+		    fd->owner.tid == owners[0].tid) {
 			snprintf(k, KLEN, "%llu.openowner", fd->ino);
 			RC_WRAP_LABEL(rc, aborted, kvsal_del, k);
 
@@ -238,7 +229,7 @@ int kvsns_close(kvsns_file_open_t *fd)
 		found = false;
 		for (i = 0; i < size ; i++)
 			if (owners[i].pid == fd->owner.pid &&
-			    owners[i].thrid == fd->owner.thrid) {
+			    owners[i].tid == fd->owner.tid) {
 				owners[i].pid = 0; /* remove it from list */
 				found = true;
 				break;
@@ -275,11 +266,6 @@ ssize_t kvsns_write(kvsns_cred_t *cred, kvsns_file_open_t *fd,
 	bool stable;
 	char k[KLEN];
 	struct stat stat;
-	int statflags = STAT_SIZE_SET|STAT_ATIME_SET|STAT_MTIME_SET|
-			STAT_CTIME_SET;
-
-	if (kvsns_debug)
-		fprintf(stderr, "kvsns_write\n");
 
 	RC_WRAP(kvsns_getattr, cred, &fd->ino, &stat);
 
@@ -306,11 +292,6 @@ ssize_t kvsns_read(kvsns_cred_t *cred, kvsns_file_open_t *fd,
 	bool eof;
 	struct stat stat;
 	char k[KLEN];
-	int statflags = STAT_SIZE_SET|STAT_ATIME_SET|STAT_MTIME_SET|
-			STAT_CTIME_SET;
-
-	if (kvsns_debug)
-		fprintf(stderr, "kvsns_read\n");
 
 	RC_WRAP(kvsns_getattr, cred, &fd->ino, &stat);
 

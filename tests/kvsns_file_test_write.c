@@ -45,18 +45,11 @@
 int main(int argc, char *argv[])
 {
 	int rc;
-	int i;
-	int end;
 	kvsns_ino_t ino;
 	kvsns_ino_t parent;
-	struct stat bufstat;
-	char key[KLEN];
-	char val[VLEN];
-	char tmp[VLEN];
 	kvsns_file_open_t fd;
 	kvsns_cred_t cred;
 	ssize_t written;
-	ssize_t read;
 	char buff[SIZE];
 	size_t count;
 	off_t offset;
@@ -103,7 +96,8 @@ int main(int argc, char *argv[])
 
 	written = kvsns_write(&cred, &fd, buff, count, offset);
 	if (written < 0) {
-		fprintf(stderr, "kvsns_write: err=%lld\n", written);
+		fprintf(stderr, "kvsns_write: err=%lld\n",
+			(long long)written);
 		exit(1);
 	}
 

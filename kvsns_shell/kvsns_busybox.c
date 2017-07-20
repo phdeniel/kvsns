@@ -197,7 +197,7 @@ int main(int argc, char *argv[])
 		}
 		if (!strcmp(argv[1], ".")) {
 			if (rc != 0) {
-				printf("%llu unaccessible %llu rc=%d\n",
+				printf("%llu unaccessible rc=%d\n",
 					current_inode, rc);
 				return 0;
 			}
@@ -260,7 +260,7 @@ int main(int argc, char *argv[])
 			kvsal_set_char(k, v);
 
 			strcpy(k, "KVSNS_PATH");
-			snprintf(current_path, MAXPATHLEN, "%/%s",
+			snprintf(current_path, MAXPATHLEN, "%s/%s",
 				v, argv[1]);
 			strcpy(v, current_path);
 			kvsal_set_char(k, v);
@@ -295,8 +295,9 @@ int main(int argc, char *argv[])
 			}
 			printf("===> size = %d\n", size);
 			for (i = 0; i < size; i++)
-				printf("%d %s/%s = %llu\n",
-					offset+i, current_path, dirent[i].name,
+				printf("%lld %s/%s = %llu\n",
+					(long long)(offset+i), current_path,
+					dirent[i].name,
 					dirent[i].inode);
 
 			offset += size;
@@ -329,7 +330,7 @@ int main(int argc, char *argv[])
 			printf(" inode: %ld\n", buffstat.st_ino);
 			printf(" mode: %o\n", buffstat.st_mode);
 			printf(" number of hard links: %d\n",
-			       buffstat.st_nlink);
+			       (int)buffstat.st_nlink);
 			printf(" user ID of owner: %d\n", buffstat.st_uid);
 			printf(" group ID of owner: %d\n", buffstat.st_gid);
 			printf(" total size, in bytes: %ld\n",
@@ -601,7 +602,8 @@ int main(int argc, char *argv[])
 		kvsns_fsstat_t statfs;
 
 		rc = kvsns_fsstat(&statfs);
-		printf("FSSTAT: nb_inodes = %llu\n", statfs.nb_inodes);
+		printf("FSSTAT: nb_inodes = %u\n",
+			(unsigned int)statfs.nb_inodes);
 	} else if (!strcmp(exec_name, "ns_mr_proper")) {
 		rc = kvsns_mr_proper();
 		printf("Mr Proper: rc=%d\n", rc);

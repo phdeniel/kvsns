@@ -29,17 +29,20 @@
  * KVSNS: attach existing objects to KVSNS
  */
 
+#define _XOPEN_SOURCE       /* See feature_test_macros(7) */
 
 #include <stdio.h>
 #include <errno.h>
 #include <unistd.h>
 #include <libgen.h> /* for basename() and dirname() */
 #include <stdlib.h>
-#include <string.h>
 #include <time.h>
 #include <getopt.h> /* For long options */
+#include <string.h>
 #include <kvsns/kvsal.h>
 #include <kvsns/kvsns.h>
+
+size_t strnlen(const char *s, size_t maxlen);
 
 /* Flag set by ?--verbose?. */
 static int verbose_flag;
@@ -80,7 +83,6 @@ static int str2time(char *arg, time_t *res)
 {
 	struct tm timeval;
 	int tnum;
-	int rc;
 
 	tnum = atoi(arg);
 	if (tnum != 0) {
@@ -129,7 +131,7 @@ int main(int argc, char **argv)
 	int statflags;
 	char path[MAXPATHLEN];
 	char dirpath[MAXPATHLEN];
-	char basepath[MAXNAMLEN];
+	char basepath[NAME_MAX];
 	char objid[MAXPATHLEN];
 	char kvsns_conf[MAXPATHLEN];
 	bool path_set = false;
@@ -346,7 +348,7 @@ int main(int argc, char **argv)
 	rc = kvsns_get_root(&root_ino);
 	exit_rc("Can't get KVSNS's root inode", rc);
 
-	strncpy(basepath, basename(path), MAXNAMLEN);
+	strncpy(basepath, basename(path), NAME_MAX);
 	strncpy(dirpath, dirname(path), MAXPATHLEN);
 
 	printf("path=%s base=%s dir=%s\n", path, basepath, dirpath);

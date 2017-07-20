@@ -10,7 +10,6 @@ int main(int argc, char *argv[])
 	int i;
 	int howmany;
 	char key[KLEN];
-	char val[VLEN];
 
 	if (argc != 3) {
 		fprintf(stderr, "pattern how_many args\n");

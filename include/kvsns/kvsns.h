@@ -106,14 +106,14 @@ typedef struct kvsns_fsstat_ {
 } kvsns_fsstat_t;
 
 typedef struct kvsns_dentry_ {
-	char name[MAXNAMLEN];
+	char name[NAME_MAX];
 	kvsns_ino_t inode;
 	struct stat stats;
 } kvsns_dentry_t;
 
 typedef struct kvsns_open_owner_ {
 	int pid;
-	pthread_t thrid;
+	int tid;
 } kvsns_open_owner_t;
 
 typedef struct kvsns_file_open_ {
@@ -134,7 +134,7 @@ enum kvsns_type {
 };
 
 typedef struct kvsns_xattr__ {
-	char name[MAXNAMLEN];
+	char name[NAME_MAX];
 } kvsns_xattr_t;
 
 /**
@@ -160,8 +160,6 @@ int kvsns_start(const char *config);
  * @return 0 if successful, a negative "-errno" value in case of failure
  */
 int kvsns_stop(void);
-
-void kvsns_set_debug(bool debug);
 
 
 /**

@@ -41,10 +41,6 @@
 /* The REDIS context exists in the TLS, for MT-Safety */
 __thread redisContext *rediscontext = NULL;
 
-static char kvsns_store_default[] = KVSNS_STORE_DEFAULT;
-static char kvsns_store_base[MAXPATHLEN];
-static int kvsns_debug = false;
-
 static char store_root[MAXPATHLEN];
 
 static int build_extstore_path(kvsns_ino_t object,
@@ -150,7 +146,7 @@ int extstore_create(kvsns_ino_t object, struct stat *stat)
 	freeReplyObject(reply);
 
 	snprintf(k, KLEN, "%llu.data_ext", object);
-	snprintf(v, VLEN, "");
+	v[0] = '\0'; /* snprintf(v, VLEN, ""); */
 	reply = NULL;
 	reply = redisCommand(rediscontext, "SET %s %s", k, v);
 	if (!reply)
@@ -170,7 +166,6 @@ int extstore_attach(kvsns_ino_t *ino, char *objid, int objid_len,
 {
 	char k[KLEN];
 	char v[VLEN];
-	char path[VLEN];
 	redisReply *reply;
 	size_t size;
 
@@ -194,7 +189,7 @@ int extstore_attach(kvsns_ino_t *ino, char *objid, int objid_len,
 	freeReplyObject(reply);
 
 	snprintf(k, KLEN, "%llu.data_ext", *ino);
-	snprintf(v, VLEN, "");
+	v[0] = '\0'; /* snprintf(v, VLEN, ""); */
 	reply = NULL;
 	reply = redisCommand(rediscontext, "SET %s %s", k, v);
 	if (!reply)
@@ -227,7 +222,6 @@ static int get_stat(kvsns_ino_t *ino, struct stat *buf)
 {
 	redisReply *reply;
 	char k[KLEN];
-	int rc;
 
 	if (!ino || !buf)
 		return -EINVAL;
@@ -297,6 +291,8 @@ int extstore_init(struct collection_item *cfg_items)
 	item = NULL;
 	rc = get_config_item("posix_obj", "root_path",
 			      cfg_items, &item);
+	if (rc != 0)
+		return -rc;
 	if (item == NULL)
 		return -EINVAL;
 

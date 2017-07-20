@@ -52,7 +52,6 @@ int kvsns_cp_from(kvsns_cred_t *cred, kvsns_file_open_t *kfd,
 	int remains;
 	size_t len;
 	char buff[BUFFSIZE];
-	bool eof;
 	struct stat stat;
 	size_t filesize;
 
@@ -102,7 +101,6 @@ int kvsns_cp_to(kvsns_cred_t *cred, int fd_source,
 	int remains;
 	size_t len;
 	char buff[BUFFSIZE];
-	bool stable;
 	int rc;
 	struct stat srcstat;
 	size_t filesize;

@@ -51,7 +51,6 @@ static struct collection_item *conf = NULL;
 
 int kvsal_init(struct collection_item *cfg_items)
 {
-	unsigned int j;
 	redisReply *reply;
 	char *hostname = NULL;
 	char hostname_default[] = "127.0.0.1";
@@ -196,7 +195,6 @@ int kvsal_discard_transaction(void)
 int kvsal_exists(char *k)
 {
 	redisReply *reply;
-	int rc;
 
 	if (!k)
 		return -EINVAL;
@@ -294,8 +292,6 @@ int kvsal_set_stat(char *k, struct stat *buf)
 int kvsal_get_stat(char *k, struct stat *buf)
 {
 	redisReply *reply;
-	char v[VLEN];
-	int rc;
 
 	if (!k || !buf)
 		return -EINVAL;
@@ -343,8 +339,6 @@ int kvsal_set_binary(char *k, char *buf, size_t size)
 int kvsal_get_binary(char *k, char *buf, size_t *size)
 {
 	redisReply *reply;
-	char v[VLEN];
-	int rc;
 
 	if (!k || !buf || !size)
 		return -EINVAL;
@@ -414,7 +408,6 @@ int kvsal_get_list_pattern(char *pattern, int start, int *size,
 			   kvsal_item_t *items)
 {
 	redisReply *reply;
-	int rc;
 	int i;
 
 	if (!pattern || !size || !items)

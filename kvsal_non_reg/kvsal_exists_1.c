@@ -7,9 +7,7 @@
 int main(int argc, char *argv[])
 {
 	int rc;
-	int i;
 	char key[KLEN];
-	char val[VLEN];
 
 	if (argc != 2) {
 		fprintf(stderr, "2 args\n");

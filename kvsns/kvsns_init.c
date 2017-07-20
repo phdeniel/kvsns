@@ -45,7 +45,6 @@
 
 static char kvsns_store_default[] = KVSNS_STORE_DEFAULT;
 static char kvsns_store_base[MAXPATHLEN];
-extern kvsns_debug;
 static struct collection_item *cfg_items;
 
 static int kvsns_set_store_url(struct collection_item *cfg_items)
@@ -82,11 +81,6 @@ static int kvsns_set_store_url(struct collection_item *cfg_items)
 	return 0;
 }
 
-void kvsns_set_debug(bool debug)
-{
-	kvsns_debug = debug;
-}
-
 int kvsns_start(const char *configpath)
 {
 	char k[KLEN];
@@ -95,14 +89,10 @@ int kvsns_start(const char *configpath)
 	struct collection_item *errors = NULL;
 	int rc;
 
-	if (kvsns_debug)
-		fprintf(stderr, "kvsns_start()\n");
-
 	rc = config_from_file("libkvsns", configpath, &cfg_items,
 			      INI_STOP_ON_ERROR, &errors);
 	if (rc) {
-		if (kvsns_debug)
-			fprintf(stderr, "Can't load config rc=%d\n", rc);
+		fprintf(stderr, "Can't load config rc=%d\n", rc);
 
 		free_ini_config_errors(errors);
 		return -rc;
@@ -133,15 +123,8 @@ int kvsns_init_root(int openbar)
 	char k[KLEN];
 	char v[KLEN];
 	struct stat bufstat;
-	kvsns_cred_t cred;
 	kvsns_ino_t ino;
 
-	if (kvsns_debug)
-		fprintf(stderr, "kvsns_init_root(%d)\n",
-			openbar);
-
-	cred.uid = 0;
-	cred.gid = 0;
 	ino = KVSNS_ROOT_INODE;
 
 	kvsns_set_store_url(cfg_items);

@@ -29,12 +29,9 @@
  * KVSNS: implement a dummy object store inside a POSIX directory
  */
 
+#include <sys/time.h> /* for gettimeofday */
 #include <ini_config.h>
 #include <kvsns/extstore.h>
-
-static char kvsns_store_default[] = KVSNS_STORE_DEFAULT;
-static char kvsns_store_base[MAXPATHLEN];
-static int kvsns_debug = false;
 
 static char store_root[MAXPATHLEN];
 
@@ -95,6 +92,9 @@ int extstore_init(struct collection_item *cfg_items)
 	item = NULL;
 	rc = get_config_item("posix_store", "root_path",
 			     cfg_items, &item);
+	if (rc != 0)
+		return -rc;
+
 	if (item == NULL)
 		return -EINVAL;
 

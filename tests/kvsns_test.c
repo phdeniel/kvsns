@@ -37,6 +37,9 @@
 #include <kvsns/kvsal.h>
 #include <kvsns/kvsns.h>
 
+/* Required Protoype */
+int kvsns_next_inode(kvsns_ino_t *ino);
+
 int main(int argc, char *argv[])
 {
 	int rc;
@@ -45,9 +48,6 @@ int main(int argc, char *argv[])
 	kvsns_ino_t ino;
 	kvsns_ino_t ino2;
 	kvsns_ino_t parent;
-	struct stat bufstat;
-	struct stat bufstat2;
-	char key[KLEN];
 	char val[VLEN];
 	char tmp[VLEN];
 	kvsns_cred_t cred;
@@ -55,8 +55,6 @@ int main(int argc, char *argv[])
 
 	cred.uid = getuid();
 	cred.gid = getgid();
-
-	kvsns_set_debug(false);
 
 	rc = kvsns_start(KVSNS_DEFAULT_CONFIG);
 	if (rc != 0) {
