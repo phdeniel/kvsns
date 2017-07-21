@@ -29,20 +29,18 @@
  * KVSNS: attach existing objects to KVSNS
  */
 
-#define _XOPEN_SOURCE       /* See feature_test_macros(7) */
+#define _GNU_SOURCE
 
 #include <stdio.h>
 #include <errno.h>
 #include <unistd.h>
 #include <libgen.h> /* for basename() and dirname() */
 #include <stdlib.h>
-#include <time.h>
 #include <getopt.h> /* For long options */
 #include <string.h>
+#include <time.h>
 #include <kvsns/kvsal.h>
 #include <kvsns/kvsns.h>
-
-size_t strnlen(const char *s, size_t maxlen);
 
 /* Flag set by ?--verbose?. */
 static int verbose_flag;
