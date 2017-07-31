@@ -37,26 +37,19 @@
 #include <sys/types.h>
 #include <sys/stat.h>
 #include <fcntl.h>
-#include "../kvsal/kvsal.h"
-#include "../kvsns.h"
+#include <kvsns/kvsal.h>
+#include <kvsns/kvsns.h>
 
 #define SIZE 1024
 
 int main(int argc, char *argv[])
 {
 	int rc;
-	int i;
-	int end;
 	kvsns_ino_t ino;
 	kvsns_ino_t parent;
-	struct stat bufstat;
-	char key[KLEN];
-	char val[VLEN];
-	char tmp[VLEN];
 	kvsns_file_open_t fd;
 	kvsns_cred_t cred;
 	ssize_t written;
-	ssize_t read;
 	char buff[SIZE];
 	size_t count;
 	off_t offset;
@@ -67,7 +60,7 @@ int main(int argc, char *argv[])
 	printf("uid=%u gid=%u, pid=%d\n",
 		getuid(), getgid(), getpid());
 
-	rc = kvsns_start();
+	rc = kvsns_start(KVSNS_DEFAULT_CONFIG);
 	if (rc != 0) {
 		fprintf(stderr, "kvsns_init: err=%d\n", rc);
 		exit(1);
@@ -103,7 +96,8 @@ int main(int argc, char *argv[])
 
 	written = kvsns_write(&cred, &fd, buff, count, offset);
 	if (written < 0) {
-		fprintf(stderr, "kvsns_write: err=%lld\n", written);
+		fprintf(stderr, "kvsns_write: err=%lld\n",
+			(long long)written);
 		exit(1);
 	}
 

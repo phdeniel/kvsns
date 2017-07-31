@@ -36,9 +36,9 @@
 #include <errno.h>
 #include <time.h>
 #include <sys/time.h>
-#include "kvsns.h"
 #include <string.h>
-#include "kvsns.h"
+#include <kvsns/kvsal.h>
+#include <kvsns/kvsns.h>
 #include "kvsns_internal.h"
 
 int kvsns_next_inode(kvsns_ino_t *ino)
@@ -326,3 +326,40 @@ int kvsns_set_stat(kvsns_ino_t *ino, struct stat *bufstat)
 	snprintf(k, KLEN, "%llu.stat", *ino);
 	return kvsal_set_stat(k, bufstat);
 }
+
+int kvsns_lookup_path(kvsns_cred_t *cred, kvsns_ino_t *parent, char *path,
+		       kvsns_ino_t *ino)
+{
+	char *saveptr;
+	char *str;
+	char *token;
+	kvsns_ino_t iter_ino;
+	kvsns_ino_t *iter;
+	int j = 0;
+	int rc;
+
+	memcpy(&iter_ino, parent, sizeof(kvsns_ino_t));
+	iter = &iter_ino;
+	for (j = 1, str = path; ; j++, str = NULL) {
+		memcpy(parent, ino, sizeof(kvsns_ino_t));
+		token = strtok_r(str, "/", &saveptr);
+		if (token == NULL)
+			break;
+
+		rc = kvsns_lookup(cred, iter, token, ino);
+		if (rc != 0) {
+			if (rc == -ENOENT)
+				break;
+			else
+				return rc;
+		}
+
+		iter = ino;
+	}
+
+	if (token != NULL) /* If non-existing file should be created */
+		strcpy(path, token);
+
+	return rc;
+}
+

@@ -34,9 +34,11 @@
 #include <unistd.h>
 #include <stdlib.h>
 #include <errno.h>
-#include "../kvsal/kvsal.h"
-#include "../kvsns.h"
-#include "../kvsns_internal.h"
+#include <kvsns/kvsal.h>
+#include <kvsns/kvsns.h>
+
+/* Required Protoype */
+int kvsns_next_inode(kvsns_ino_t *ino);
 
 int main(int argc, char *argv[])
 {
@@ -46,9 +48,6 @@ int main(int argc, char *argv[])
 	kvsns_ino_t ino;
 	kvsns_ino_t ino2;
 	kvsns_ino_t parent;
-	struct stat bufstat;
-	struct stat bufstat2;
-	char key[KLEN];
 	char val[VLEN];
 	char tmp[VLEN];
 	kvsns_cred_t cred;
@@ -57,9 +56,7 @@ int main(int argc, char *argv[])
 	cred.uid = getuid();
 	cred.gid = getgid();
 
-	kvsns_set_debug(false);
-
-	rc = kvsns_start();
+	rc = kvsns_start(KVSNS_DEFAULT_CONFIG);
 	if (rc != 0) {
 		fprintf(stderr, "kvsns_init: err=%d\n", rc);
 		exit(1);
@@ -113,9 +110,9 @@ int main(int argc, char *argv[])
 	printf("kvsal_get_list_size * : rc=%d\n", rc);
 
 	end = 10;
-	rc = kvsal_get_list("*", 0, &end, items);
+	rc = kvsal_get_list_pattern("*", 0, &end, items);
 	if (rc != 0) {
-		fprintf(stderr, "kvsns_get_list: err=%d\n", rc);
+		fprintf(stderr, "kvsns_get_list_pattern: err=%d\n", rc);
 		exit(1);
 	}
 	for (i = 0 ; i < end ; i++)
@@ -123,9 +120,9 @@ int main(int argc, char *argv[])
 
 	printf("+++++++++++++++\n");
 	end = 10;
-	rc = kvsal_get_list("2.dentries.*", 0, &end, items);
+	rc = kvsal_get_list_pattern("2.dentries.*", 0, &end, items);
 	if (rc != 0) {
-		fprintf(stderr, "kvsns_get_list: err=%d\n", rc);
+		fprintf(stderr, "kvsns_get_list_pattern: err=%d\n", rc);
 		exit(1);
 	}
 	for (i = 0 ; i < end ; i++) {

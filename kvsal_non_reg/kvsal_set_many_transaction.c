@@ -2,7 +2,7 @@
 #include <unistd.h>
 #include <stdlib.h>
 #include <errno.h>
-#include "../kvsal/kvsal.h"
+#include <kvsns/kvsal.h>
 
 int main(int argc, char *argv[])
 {
@@ -19,9 +19,9 @@ int main(int argc, char *argv[])
 
 	howmany = atoi(argv[3]);
 
-	rc = kvsns_start();
+	rc = kvsal_init(NULL);
 	if (rc != 0) {
-		fprintf(stderr, "kvsns_init: err=%d\n", rc);
+		fprintf(stderr, "kvsal_init: err=%d\n", rc);
 		exit(-rc);
 	}
 
@@ -44,6 +44,12 @@ int main(int argc, char *argv[])
 	rc = kvsal_end_transaction();
 	if (rc != 0) {
 		fprintf(stderr, "kvsal_end_transaction: err=%d\n", rc);
+		exit(-rc);
+	}
+
+	rc = kvsal_fini();
+	if (rc != 0) {
+		fprintf(stderr, "kvsal_init: err=%d\n", rc);
 		exit(-rc);
 	}
 

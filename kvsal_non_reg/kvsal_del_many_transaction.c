@@ -2,7 +2,7 @@
 #include <unistd.h>
 #include <stdlib.h>
 #include <errno.h>
-#include "../kvsal/kvsal.h"
+#include <kvsns/kvsal.h>
 
 int main(int argc, char *argv[])
 {
@@ -10,7 +10,6 @@ int main(int argc, char *argv[])
 	int i;
 	int howmany;
 	char key[KLEN];
-	char val[VLEN];
 
 	if (argc != 3) {
 		fprintf(stderr, "pattern how_many args\n");
@@ -19,9 +18,9 @@ int main(int argc, char *argv[])
 
 	howmany = atoi(argv[2]);
 
-	rc = kvsns_start();
+	rc = kvsal_init(NULL);
 	if (rc != 0) {
-		fprintf(stderr, "kvsns_init: err=%d\n", rc);
+		fprintf(stderr, "kvsal_init: err=%d\n", rc);
 		exit(-rc);
 	}
 
@@ -46,6 +45,11 @@ int main(int argc, char *argv[])
 		exit(-rc);
 	}
 
+	rc = kvsal_fini();
+	if (rc != 0) {
+		fprintf(stderr, "kvsal_init: err=%d\n", rc);
+		exit(-rc);
+	}
 	printf("+++++++++++++++\n");
 
 	exit(0);

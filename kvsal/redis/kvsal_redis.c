@@ -36,24 +36,48 @@
 #include <hiredis/hiredis.h>
 #include <pthread.h>
 #include <time.h>
-#include "kvsal.h"
+#include <ini_config.h>
+#include <kvsns/kvsal.h>
+
+#define RC_WRAP(__function, ...) ({\
+        int __rc = __function(__VA_ARGS__);\
+        if (__rc != 0)        \
+                return __rc; })
 
 /* The REDIS context exists in the TLS, for MT-Safety */
 __thread redisContext *rediscontext = NULL;
 
-int kvsal_init(void)
+static struct collection_item *conf = NULL;
+
+int kvsal_init(struct collection_item *cfg_items)
 {
-	unsigned int j;
 	redisReply *reply;
 	char *hostname = NULL;
 	char hostname_default[] = "127.0.0.1";
 	struct timeval timeout = { 1, 500000 }; /* 1.5 seconds */
 	int port = 6379; /* REDIS default */
+	struct collection_item *item = NULL;
 
-	hostname = getenv(KVSNS_SERVER);
-	if (hostname == NULL)
+	if (cfg_items == NULL)
+		return -EINVAL;
+
+	if (conf == NULL)
+		conf = cfg_items;
+
+	/* Get config from ini file */
+	item = NULL;
+	RC_WRAP(get_config_item, "kvsal_redis", "server", cfg_items, &item);
+	if (item == NULL)
 		hostname = hostname_default;
+	else
+		hostname = get_string_config_value(item, NULL);
 
+	item = NULL;
+	RC_WRAP(get_config_item, "kvsal_redis", "port", cfg_items, &item);
+	if (item != NULL)
+		port = (int)get_int_config_value(item, 0, 0, NULL);
+
+	/* Start REDIS */
 	rediscontext = redisConnectWithTimeout(hostname, port, timeout);
 	if (rediscontext == NULL || rediscontext->err) {
 		if (rediscontext) {
@@ -77,12 +101,22 @@ int kvsal_init(void)
 	return 0;
 }
 
+static int kvsal_reinit()
+{
+	return kvsal_init(conf);
+}
+
+int kvsal_fini(void)
+{
+	return 0;
+}
+
 int kvsal_begin_transaction(void)
 {
 	redisReply *reply;
 
 	if (!rediscontext)
-		if (kvsal_init() != 0)
+		if (kvsal_reinit() != 0)
 			return -1;
 
 	reply = redisCommand(rediscontext, "MULTI");
@@ -109,7 +143,7 @@ int kvsal_end_transaction(void)
 	int i;
 
 	if (!rediscontext)
-		if (kvsal_init() != 0)
+		if (kvsal_reinit() != 0)
 			return -1;
 
 	reply = redisCommand(rediscontext, "EXEC");
@@ -137,7 +171,7 @@ int kvsal_discard_transaction(void)
 	redisReply *reply;
 
 	if (!rediscontext)
-		if (kvsal_init() != 0)
+		if (kvsal_reinit() != 0)
 			return -1;
 
 	reply = redisCommand(rediscontext, "DISCARD");
@@ -161,13 +195,12 @@ int kvsal_discard_transaction(void)
 int kvsal_exists(char *k)
 {
 	redisReply *reply;
-	int rc;
 
 	if (!k)
 		return -EINVAL;
 
 	if (!rediscontext)
-		if (kvsal_init() != 0)
+		if (kvsal_reinit() != 0)
 			return -1;
 
 	/* Set a key */
@@ -194,7 +227,7 @@ int kvsal_set_char(char *k, char *v)
 		return -EINVAL;
 
 	if (!rediscontext)
-		if (kvsal_init() != 0)
+		if (kvsal_reinit() != 0)
 			return -1;
 
 	/* Set a key */
@@ -215,7 +248,7 @@ int kvsal_get_char(char *k, char *v)
 		return -EINVAL;
 
 	if (!rediscontext)
-		if (kvsal_init() != 0)
+		if (kvsal_reinit() != 0)
 			return -1;
 
 	/* Try a GET and two INCR */
@@ -243,7 +276,7 @@ int kvsal_set_stat(char *k, struct stat *buf)
 		return -EINVAL;
 
 	if (!rediscontext)
-		if (kvsal_init() != 0)
+		if (kvsal_reinit() != 0)
 			return -1;
 
 	/* Set a key */
@@ -251,20 +284,20 @@ int kvsal_set_stat(char *k, struct stat *buf)
 	if (!reply)
 		return -1;
 
+	freeReplyObject(reply);
+
 	return 0;
 }
 
 int kvsal_get_stat(char *k, struct stat *buf)
 {
 	redisReply *reply;
-	char v[VLEN];
-	int rc;
 
 	if (!k || !buf)
 		return -EINVAL;
 
 	if (!rediscontext)
-		if (kvsal_init() != 0)
+		if (kvsal_reinit() != 0)
 			return -1;
 
 	reply = redisCommand(rediscontext, "GET %s", k);
@@ -292,7 +325,7 @@ int kvsal_set_binary(char *k, char *buf, size_t size)
 		return -EINVAL;
 
 	if (!rediscontext)
-		if (kvsal_init() != 0)
+		if (kvsal_reinit() != 0)
 			return -1;
 
 	/* Set a key */
@@ -306,14 +339,12 @@ int kvsal_set_binary(char *k, char *buf, size_t size)
 int kvsal_get_binary(char *k, char *buf, size_t *size)
 {
 	redisReply *reply;
-	char v[VLEN];
-	int rc;
 
 	if (!k || !buf || !size)
 		return -EINVAL;
 
 	if (!rediscontext)
-		if (kvsal_init() != 0)
+		if (kvsal_reinit() != 0)
 			return -1;
 
 	reply = redisCommand(rediscontext, "GET %s", k);
@@ -342,7 +373,7 @@ int kvsal_incr_counter(char *k, unsigned long long *v)
 		return -EINVAL;
 
 	if (!rediscontext)
-		if (kvsal_init() != 0)
+		if (kvsal_reinit() != 0)
 			return -1;
 
 	reply = redisCommand(rediscontext, "INCR %s", k);
@@ -362,7 +393,7 @@ int kvsal_del(char *k)
 		return -EINVAL;
 
 	if (!rediscontext)
-		if (kvsal_init() != 0)
+		if (kvsal_reinit() != 0)
 			return -1;
 
 	/* Try a GET and two INCR */
@@ -373,17 +404,17 @@ int kvsal_del(char *k)
 	return 0;
 }
 
-int kvsal_get_list(char *pattern, int start, int *size, kvsal_item_t *items)
+int kvsal_get_list_pattern(char *pattern, int start, int *size,
+			   kvsal_item_t *items)
 {
 	redisReply *reply;
-	int rc;
 	int i;
 
 	if (!pattern || !size || !items)
 		return -EINVAL;
 
 	if (!rediscontext)
-		if (kvsal_init() != 0)
+		if (kvsal_reinit() != 0)
 			return -1;
 
 	reply = redisCommand(rediscontext, "KEYS %s", pattern);
@@ -413,7 +444,7 @@ int kvsal_get_list_size(char *pattern)
 		return -EINVAL;
 
 	if (!rediscontext)
-		if (kvsal_init() != 0)
+		if (kvsal_reinit() != 0)
 			return -1;
 
 	reply = redisCommand(rediscontext, "KEYS %s", pattern);
@@ -425,4 +456,47 @@ int kvsal_get_list_size(char *pattern)
 
 	freeReplyObject(reply);
 	return rc;
+}
+
+int kvsal_init_list(kvsal_list_t *list)
+{
+	if (!list)
+		return -EINVAL;
+
+	list->size = 0;
+	list->content = NULL;
+
+	return 0;
+}
+
+int kvsal_fetch_list(char *pattern, kvsal_list_t *list)
+{
+	if (!pattern || !list)
+		return -EINVAL;
+
+	/* REDIS manages KVS in RAM. Nothing to do */
+	strncpy(list->pattern , pattern, KLEN);
+
+	return 0;
+}
+
+int kvsal_dispose_list(kvsal_list_t *list)
+{
+	if (!list)
+		return -EINVAL;
+
+	/* REDIS manages KVS in RAM. Nothing to do */
+	return 0;
+}
+
+int kvsal_get_list(kvsal_list_t *list, int start, int *end,
+		    kvsal_item_t *items)
+{
+	if (!list)
+		return -EINVAL;
+	
+	return kvsal_get_list_pattern(list->pattern, 
+				      start, 
+				      end,
+				      items);
 }

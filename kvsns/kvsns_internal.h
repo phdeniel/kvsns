@@ -36,7 +36,8 @@
 #include <unistd.h>
 #include <stdlib.h>
 #include <errno.h>
-#include "kvsns.h"
+#include <ini_config.h>
+#include <kvsns/kvsns.h>
 #include <string.h>
 
 #define RC_WRAP(__function, ...) ({\

@@ -2,7 +2,10 @@ cmake_minimum_required(VERSION 2.6.3)
 set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -fPIC -g")
 
 add_executable(kvsns_busybox kvsns_busybox.c)
-target_link_libraries(kvsns_busybox kvsns hiredis ${STORE_LIBRARY})
+target_link_libraries(kvsns_busybox kvsns ${KVSAL_LIBRARY} ${STORE_LIBRARY})
+
+add_executable(kvsns_cp kvsns_cp.c)
+target_link_libraries(kvsns_cp kvsns)
 
 add_custom_target(links DEPENDS kvsns_busybox)
 add_custom_command(TARGET links
@@ -27,6 +30,7 @@ add_custom_command(TARGET links
 		   COMMAND /usr/bin/ln -sf kvsns_busybox ns_fsstat
 		   COMMAND /usr/bin/ln -sf kvsns_busybox ns_truncate
 		   COMMAND /usr/bin/ln -sf kvsns_busybox ns_mr_proper
+		   COMMAND /usr/bin/ln -sf kvsns_busybox ns_cp
 		   WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}
 		   VERBATIM)
 

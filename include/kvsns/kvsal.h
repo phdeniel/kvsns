@@ -48,6 +48,7 @@
 #include <sys/types.h>
 #include <sys/param.h>
 #include <sys/xattr.h>
+#include <ini_config.h>
 
 #define KVSNS_ROOT_INODE 2LL
 #define KVSNS_ARRAY_SIZE 100
@@ -63,7 +64,14 @@ typedef struct kvsal_item {
 	char str[KLEN];
 } kvsal_item_t;
 
-int kvsal_init(void);
+typedef struct kvsal_list {
+	char pattern[KLEN];
+	kvsal_item_t *content;
+	size_t size;
+} kvsal_list_t;
+
+int kvsal_init(struct collection_item *cfg_items);
+int kvsal_fini(void);
 int kvsal_begin_transaction(void);
 int kvsal_end_transaction(void);
 int kvsal_discard_transaction(void);
@@ -75,8 +83,14 @@ int kvsal_get_binary(char *k, char *buf, size_t *size);
 int kvsal_set_stat(char *k, struct stat *buf);
 int kvsal_get_stat(char *k, struct stat *buf);
 int kvsal_get_list_size(char *pattern);
-int kvsal_get_list(char *pattern, int start, int *end, kvsal_item_t *items);
 int kvsal_del(char *k);
 int kvsal_incr_counter(char *k, unsigned long long *v);
+
+int kvsal_get_list_pattern(char *pattern, int start, int *end,
+			   kvsal_item_t *items);
+int kvsal_get_list(kvsal_list_t *list, int start, int *end, kvsal_item_t *items);
+int kvsal_fetch_list(char *pattern, kvsal_list_t *list);
+int kvsal_dispose_list(kvsal_list_t *list);
+int kvsal_init_list(kvsal_list_t *list);
 
 #endif
