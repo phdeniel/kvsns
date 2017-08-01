@@ -43,49 +43,10 @@
 #include <kvsns/extstore.h>
 #include "kvsns_internal.h"
 
-static char kvsns_store_default[] = KVSNS_STORE_DEFAULT;
-static char kvsns_store_base[MAXPATHLEN];
 static struct collection_item *cfg_items;
-
-static int kvsns_set_store_url(struct collection_item *cfg_items)
-{
-	int rc;
-	char k[KLEN];
-	char v[VLEN];
-	char *store = NULL;
-	struct collection_item *item;
-
-	if (cfg_items == NULL)
-		return -EINVAL;
-
-	rc = get_config_item("basic", "store_url", cfg_items, &item);
-	if (rc)
-		return -rc;
-	if (item == NULL)
-		return -EINVAL;
-
-	store = get_string_config_value(item, NULL);
-
-	snprintf(k, KLEN, "store_url");
-	if (store == NULL) {
-		rc = kvsal_get_char(k, v);
-		if (rc == 0)
-			store = v;
-		else
-			store = kvsns_store_default;
-	}
-	RC_WRAP(kvsal_set_char, k, store);
-
-	snprintf(kvsns_store_base, MAXPATHLEN, "%s", store);
-
-	return 0;
-}
 
 int kvsns_start(const char *configpath)
 {
-	char k[KLEN];
-	char v[VLEN];
-
 	struct collection_item *errors = NULL;
 	int rc;
 
@@ -99,11 +60,6 @@ int kvsns_start(const char *configpath)
 	}
 
 	RC_WRAP(kvsal_init, cfg_items);
-
-	RC_WRAP(kvsns_set_store_url, cfg_items);
-
-	snprintf(k, KLEN, "store_url");
-	RC_WRAP(kvsal_get_char, k, v);
 
 	RC_WRAP(extstore_init, cfg_items);
 
@@ -126,8 +82,6 @@ int kvsns_init_root(int openbar)
 	kvsns_ino_t ino;
 
 	ino = KVSNS_ROOT_INODE;
-
-	kvsns_set_store_url(cfg_items);
 
 	snprintf(k, KLEN, "%llu.parentdir", ino);
 	snprintf(v, VLEN, "%llu|", ino);
