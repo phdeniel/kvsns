@@ -57,7 +57,6 @@
 
 #define KVSNS_DEFAULT_CONFIG "/etc/kvsns.d/kvsns.ini"
 #define KVSNS_STORE "KVSNS_STORE"
-#define KVSNS_STORE_DEFAULT "/btrfs"
 #define KVSNS_SERVER "KVSNS_SERVER"
 #define KLEN 256
 #define VLEN 256
