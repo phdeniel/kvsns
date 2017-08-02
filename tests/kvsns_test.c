@@ -45,9 +45,9 @@ int main(int argc, char *argv[])
 	int rc;
 	int i;
 	int end;
-	kvsns_ino_t ino;
-	kvsns_ino_t ino2;
-	kvsns_ino_t parent;
+	kvsns_ino_t ino = 0LL;
+	kvsns_ino_t ino2 = 0LL;
+	kvsns_ino_t parent = 0LL;
 	char val[VLEN];
 	char tmp[VLEN];
 	kvsns_cred_t cred;

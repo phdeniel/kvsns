@@ -48,13 +48,15 @@ static int kvsns_str2ownerlist(kvsns_open_owner_t *ownerlist, int *size,
 {
 	char *token;
 	char *rest = str;
-	int maxsize = *size;
-	int pos = 0;
+	int maxsize;
+	int pos;
 
 	if (!ownerlist || !str || !size)
 		return -EINVAL;
 
+	maxsize = *size;
 	pos = 0;
+
 	while((token = strtok_r(rest, "|", &rest))) {
 		sscanf(token, "%u.%u",
 		       &ownerlist[pos].pid,
@@ -109,8 +111,8 @@ int kvsns_open(kvsns_cred_t *cred, kvsns_ino_t *ino,
 	       int flags, mode_t mode, kvsns_file_open_t *fd)
 {
 	kvsns_open_owner_t me;
-	kvsns_open_owner_t owners[KVSNS_ARRAY_SIZE];
-	int size = KVSNS_ARRAY_SIZE;
+	kvsns_open_owner_t owners[KVSAL_ARRAY_SIZE];
+	int size = KVSAL_ARRAY_SIZE;
 	char k[KLEN];
 	char v[VLEN];
 	int rc;
@@ -127,7 +129,7 @@ int kvsns_open(kvsns_cred_t *cred, kvsns_ino_t *ino,
 	rc = kvsal_get_char(k, v);
 	if (rc == 0) {
 		RC_WRAP(kvsns_str2ownerlist, owners, &size, v);
-		if (size == KVSNS_ARRAY_SIZE)
+		if (size == KVSAL_ARRAY_SIZE)
 			return -EMLINK; /* Too many open files */
 		owners[size].pid = me.pid;
 		owners[size].tid = me.tid;
@@ -155,7 +157,7 @@ int kvsns_open(kvsns_cred_t *cred, kvsns_ino_t *ino,
 int kvsns_openat(kvsns_cred_t *cred, kvsns_ino_t *parent, char *name,
 		 int flags, mode_t mode, kvsns_file_open_t *fd)
 {
-	kvsns_ino_t ino;
+	kvsns_ino_t ino = 0LL;
 
 	if (!cred || !parent || !name || !fd)
 		return -EINVAL;
@@ -167,8 +169,8 @@ int kvsns_openat(kvsns_cred_t *cred, kvsns_ino_t *parent, char *name,
 
 int kvsns_close(kvsns_file_open_t *fd)
 {
-	kvsns_open_owner_t owners[KVSNS_ARRAY_SIZE];
-	int size = KVSNS_ARRAY_SIZE;
+	kvsns_open_owner_t owners[KVSAL_ARRAY_SIZE];
+	int size = KVSAL_ARRAY_SIZE;
 	char k[KLEN];
 	char v[VLEN];
 	int i;
@@ -262,7 +264,7 @@ aborted:
 ssize_t kvsns_write(kvsns_cred_t *cred, kvsns_file_open_t *fd,
 		    void *buf, size_t count, off_t offset)
 {
-	size_t write_amount;
+	ssize_t write_amount;
 	bool stable;
 	char k[KLEN];
 	struct stat stat;
@@ -288,7 +290,7 @@ ssize_t kvsns_write(kvsns_cred_t *cred, kvsns_file_open_t *fd,
 ssize_t kvsns_read(kvsns_cred_t *cred, kvsns_file_open_t *fd,
 		   void *buf, size_t count, off_t offset)
 {
-	size_t read_amount;
+	ssize_t read_amount;
 	bool eof;
 	struct stat stat;
 	char k[KLEN];

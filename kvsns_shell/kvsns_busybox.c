@@ -1,3 +1,7 @@
+/*
+ * vim:noexpandtab:shiftwidth=8:tabstop=8
+ */
+
 #include <stdio.h>
 #include <unistd.h>
 #include <stdlib.h>
@@ -22,9 +26,9 @@ int main(int argc, char *argv[])
 	char k[KLEN];
 	char v[VLEN];
 
-	kvsns_ino_t current_inode;
-	kvsns_ino_t parent_inode;
-	kvsns_ino_t ino;
+	kvsns_ino_t current_inode = 0LL;
+	kvsns_ino_t parent_inode = 0LL;
+	kvsns_ino_t ino = 0LL;
 
 	cred.uid = getuid();
 	cred.gid = getgid();
@@ -37,21 +41,21 @@ int main(int argc, char *argv[])
 		exit(1);
 	}
 
-	strcpy(k, "KVSNS_INODE");
+	strncpy(k, "KVSNS_INODE", KLEN);
 	if (kvsal_get_char(k, v) == 0)
 		sscanf(v, "%llu", &current_inode);
 
-	strcpy(k, "KVSNS_PARENT_INODE");
+	strncpy(k, "KVSNS_PARENT_INODE", KLEN);
 	if (kvsal_get_char(k, v) == 0)
 		sscanf(v, "%llu", &parent_inode);
 
-	strcpy(k, "KVSNS_PATH");
+	strncpy(k, "KVSNS_PATH", KLEN);
 	if (kvsal_get_char(k, v) == 0)
-		strcpy(current_path, v);
+		strncpy(current_path, v, MAXPATHLEN);
 
-	strcpy(k, "KVSNS_PREV_PATH");
+	strncpy(k, "KVSNS_PREV_PATH", KLEN);
 	if (kvsal_get_char(k, v) == 0)
-		strcpy(prev_path, v);
+		strncpy(prev_path, v, MAXPATHLEN);
 
 	printf("exec=%s -- ino=%llu, parent=%llu, path=%s prev=%s\n",
 		exec_name, current_inode, parent_inode,
@@ -59,22 +63,22 @@ int main(int argc, char *argv[])
 
 	/* Look at exec name and see what is to be done */
 	if (!strcmp(exec_name, "ns_reset")) {
-		strcpy(k, "KVSNS_INODE");
+		strncpy(k, "KVSNS_INODE", KLEN);
 		snprintf(v, VLEN, "%llu", KVSNS_ROOT_INODE);
 		current_inode = KVSNS_ROOT_INODE;
 		kvsal_set_char(k, v);
 
-		strcpy(k, "KVSNS_PARENT_INODE");
+		strncpy(k, "KVSNS_PARENT_INODE", KLEN);
 		snprintf(v, VLEN, "%llu", KVSNS_ROOT_INODE);
 		parent_inode = KVSNS_ROOT_INODE;
 		kvsal_set_char(k, v);
 
-		strcpy(k, "KVSNS_PATH");
-		strcpy(v, "/");
+		strncpy(k, "KVSNS_PATH", KLEN);
+		strncpy(v, "/", VLEN);
 		kvsal_set_char(k, v);
 
-		strcpy(k, "KVSNS_PREV_PATH");
-		strcpy(v, "/");
+		strncpy(k, "KVSNS_PREV_PATH", KLEN);
+		strncpy(v, "/", VLEN);
 		kvsal_set_char(k, v);
 	} else if (!strcmp(exec_name, "ns_init")) {
 		rc = kvsns_init_root(1); /* Open Bar */
@@ -83,7 +87,7 @@ int main(int argc, char *argv[])
 			exit(1);
 		}
 
-		strcpy(k, "KVSNS_INODE");
+		strncpy(k, "KVSNS_INODE", KLEN);
 		snprintf(v, VLEN, "%llu", KVSNS_ROOT_INODE);
 		current_inode = KVSNS_ROOT_INODE;
 		rc = kvsal_set_char(k, v);
@@ -92,7 +96,7 @@ int main(int argc, char *argv[])
 			exit(1);
 		}
 
-		strcpy(k, "KVSNS_PARENT_INODE");
+		strncpy(k, "KVSNS_PARENT_INODE", KLEN);
 		snprintf(v, VLEN, "%llu", KVSNS_ROOT_INODE);
 		parent_inode = KVSNS_ROOT_INODE;
 		rc = kvsal_set_char(k, v);
@@ -101,16 +105,16 @@ int main(int argc, char *argv[])
 			exit(1);
 		}
 
-		strcpy(k, "KVSNS_PATH");
-		strcpy(v, "/");
+		strncpy(k, "KVSNS_PATH", KLEN);
+		strncpy(v, "/", VLEN);
 		rc = kvsal_set_char(k, v);
 		if (rc != 0) {
 			fprintf(stderr, "kvsns_init_root: err=%d\n", rc);
 			exit(1);
 		}
 
-		strcpy(k, "KVSNS_PREV_PATH");
-		strcpy(v, "/");
+		strncpy(k, "KVSNS_PREV_PATH", KLEN);
+		strncpy(v, "/", VLEN);
 		rc = kvsal_set_char(k, v);
 		if (rc != 0) {
 			fprintf(stderr, "kvsns_init_root: err=%d\n", rc);
@@ -214,23 +218,23 @@ int main(int argc, char *argv[])
 				return 0;
 			}
 
-			strcpy(k, "KVSNS_PARENT_INODE");
+			strncpy(k, "KVSNS_PARENT_INODE", KLEN);
 			snprintf(v, VLEN, "%llu", current_inode);
 			parent_inode = current_inode;
 			kvsal_set_char(k, v);
 
-			strcpy(k, "KVSNS_INODE");
+			strncpy(k, "KVSNS_INODE", KLEN);
 			snprintf(v, VLEN, "%llu", ino);
 			current_inode = ino;
 			kvsal_set_char(k, v);
 
-			strcpy(k, "KVSNS_PREV_PATH");
-			strcpy(current_path, prev_path);
-			strcpy(v, prev_path);
+			strncpy(k, "KVSNS_PREV_PATH", KLEN);
+			strncpy(current_path, prev_path, MAXPATHLEN);
+			strncpy(v, prev_path, VLEN);
 			kvsal_set_char(k, v);
 
-			strcpy(k, "KVSNS_PATH");
-			strcpy(v, current_path);
+			strncpy(k, "KVSNS_PATH", KLEN);
+			strncpy(v, current_path, VLEN);
 			kvsal_set_char(k, v);
 
 			printf("exec=%s ino=%llu parent=%llu path=%s prev=%s\n",
@@ -244,25 +248,25 @@ int main(int argc, char *argv[])
 					current_inode, argv[1], ino, rc);
 				return 0;
 			}
-			strcpy(k, "KVSNS_PARENT_INODE");
+			strncpy(k, "KVSNS_PARENT_INODE", KLEN);
 			snprintf(v, VLEN, "%llu", current_inode);
 			parent_inode = current_inode;
 			kvsal_set_char(k, v);
 
-			strcpy(k, "KVSNS_INODE");
+			strncpy(k, "KVSNS_INODE", KLEN);
 			snprintf(v, VLEN, "%llu", ino);
 			current_inode = ino;
 			kvsal_set_char(k, v);
 
-			strcpy(k, "KVSNS_PREV_PATH");
-			strcpy(prev_path, current_path);
-			strcpy(v, prev_path);
+			strncpy(k, "KVSNS_PREV_PATH", KLEN);
+			strncpy(prev_path, current_path, MAXPATHLEN);
+			strncpy(v, prev_path, VLEN);
 			kvsal_set_char(k, v);
 
-			strcpy(k, "KVSNS_PATH");
+			strncpy(k, "KVSNS_PATH", KLEN);
 			snprintf(current_path, MAXPATHLEN, "%s/%s",
 				v, argv[1]);
-			strcpy(v, current_path);
+			strncpy(v, current_path, VLEN);
 			kvsal_set_char(k, v);
 
 			printf("exec=%s ino=%llu parent=%llu path=%s prev=%s\n",
@@ -277,6 +281,7 @@ int main(int argc, char *argv[])
 		kvsns_dentry_t dirent[10];
 		kvsns_dir_t dirfd;
 		int i;
+	memset(dirent, 0, 10*sizeof(kvsns_dentry_t));
 
 		rc = kvsns_opendir(&cred, &current_inode, &dirfd);
 		if (rc != 0) {
@@ -354,8 +359,9 @@ int main(int argc, char *argv[])
 			printf("Failed rc=%d !\n", rc);
 		return 0;
 	} else if (!strcmp(exec_name, "ns_truncate")) {
-		kvsns_ino_t fino;
+		kvsns_ino_t fino = 0LL;
 		struct stat stat;
+		memset(&stat, 0, sizeof(stat));
 
 		if (argc != 3) {
 			fprintf(stderr, "truncate <file> <offset>\n");
@@ -504,8 +510,8 @@ int main(int argc, char *argv[])
 			fprintf(stderr, "Failed !!!\n");
 
 	} else if (!strcmp(exec_name, "ns_link")) {
-		kvsns_ino_t dino;
-		kvsns_ino_t sino;
+		kvsns_ino_t dino = 0LL;
+		kvsns_ino_t sino = 0LL;
 		char dname[MAXNAMLEN];
 
 		if (argc != 3 && argc != 4) {
@@ -523,7 +529,7 @@ int main(int argc, char *argv[])
 
 		if (argc == 3) {
 			dino = current_inode;
-			strcpy(dname, argv[2]);
+			strncpy(dname, argv[2], MAXNAMLEN);
 		} else if (argc == 4) {
 			rc = kvsns_lookup(&cred, &current_inode,
 				  argv[2], &dino);
@@ -532,7 +538,7 @@ int main(int argc, char *argv[])
 					current_path, argv[1]);
 				exit(1);
 			}
-			strcpy(dname, argv[3]);
+			strncpy(dname, argv[3], MAXNAMLEN);
 		}
 		printf("%s: sino=%llu dino=%llu dname=%s\n",
 			exec_name, sino, dino, dname);
@@ -557,8 +563,8 @@ int main(int argc, char *argv[])
 			fprintf(stderr, "Can't unlink %llu/%s rc=%d\n",
 				current_inode, argv[1], rc);
 	} else if (!strcmp(exec_name, "ns_rename")) {
-		kvsns_ino_t sino;
-		kvsns_ino_t dino;
+		kvsns_ino_t sino = 0LL;
+		kvsns_ino_t dino = 0LL;
 
 		if (argc != 5) {
 			fprintf(stderr, "rename sdir sname ddir dname\n");
@@ -602,6 +608,10 @@ int main(int argc, char *argv[])
 		kvsns_fsstat_t statfs;
 
 		rc = kvsns_fsstat(&statfs);
+		if (rc != 0) {
+			fprintf(stderr, "kvsns_statfs failed rc=%d\n", rc);
+			exit(1);
+		}
 		printf("FSSTAT: nb_inodes = %u\n",
 			(unsigned int)statfs.nb_inodes);
 	} else if (!strcmp(exec_name, "ns_mr_proper")) {

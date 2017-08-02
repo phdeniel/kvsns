@@ -123,10 +123,10 @@ int main(int argc, char **argv)
 	int c;
 	struct stat stat;
 	kvsns_cred_t cred;
-	kvsns_ino_t ino;
-	kvsns_ino_t root_ino;
-	kvsns_ino_t parent_ino;
-	int statflags;
+	kvsns_ino_t ino = 0LL;
+	kvsns_ino_t root_ino = 0LL;
+	kvsns_ino_t parent_ino = 0LL;
+	int statflags = 0;
 	char path[MAXPATHLEN];
 	char dirpath[MAXPATHLEN];
 	char basepath[NAME_MAX];

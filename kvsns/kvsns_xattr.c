@@ -90,23 +90,24 @@ int kvsns_listxattr(kvsns_cred_t *cred, kvsns_ino_t *ino, int offset,
 		return -ENOMEM;
 
 	rc = kvsal_fetch_list(pattern, &l);
-	if (rc < 0)
-		return rc;
+	RC_WRAP_LABEL(rc, errout, kvsal_fetch_list, pattern, &l);
 
+	RC_WRAP_LABEL(rc, errout,  kvsal_get_list, &l, offset, size, items);
 
-	rc = kvsal_get_list(&l, offset, size, items);
-	if (rc < 0)
-		return rc;
-
-	rc = kvsal_dispose_list(&l);
-	if (rc < 0)
-		return rc;
+	RC_WRAP_LABEL(rc, errout, kvsal_dispose_list, &l);
 
 	for (i = 0; i < *size ; i++)
 		strncpy(list[i].name, items[i].str, MAXNAMLEN);
 
+	free(items);
 
 	return 0;
+
+errout:
+	if (items)
+		free(items);
+
+	return rc;
 }
 
 int kvsns_removexattr(kvsns_cred_t *cred, kvsns_ino_t *ino, char *name)
@@ -123,7 +124,7 @@ int kvsns_remove_all_xattr(kvsns_cred_t *cred, kvsns_ino_t *ino)
 {
 	int rc;
 	char pattern[KLEN];
-	kvsal_item_t items[KVSNS_ARRAY_SIZE];
+	kvsal_item_t items[KVSAL_ARRAY_SIZE];
 	int i;
 	int size;
 	kvsal_list_t list;
@@ -138,7 +139,7 @@ int kvsns_remove_all_xattr(kvsns_cred_t *cred, kvsns_ino_t *ino)
 		return rc;
 
 	do {
-		size = KVSNS_ARRAY_SIZE;
+		size = KVSAL_ARRAY_SIZE;
 		rc = kvsal_get_list(&list, 0, &size, items);
 		if (rc < 0)
 			return rc;

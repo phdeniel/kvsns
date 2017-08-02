@@ -126,12 +126,6 @@ int kvsns_cp_to(kvsns_cred_t *cred, int fd_source,
 		if (wsize != rsize)
 			return -1;
 
-		if (wsize < 0)
-			return -1;
-
-		if (wsize != rsize)
-			return -1;
-
 		off += rsize;
 		remains -= rsize;
 	}
