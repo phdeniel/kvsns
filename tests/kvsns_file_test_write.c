@@ -45,8 +45,8 @@
 int main(int argc, char *argv[])
 {
 	int rc;
-	kvsns_ino_t ino;
-	kvsns_ino_t parent;
+	kvsns_ino_t ino = 0LL;
+	kvsns_ino_t parent = 0LL;
 	kvsns_file_open_t fd;
 	kvsns_cred_t cred;
 	ssize_t written;

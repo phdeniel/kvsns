@@ -58,11 +58,13 @@ int kvsns_str2parentlist(kvsns_ino_t *inolist, int *size, char *str)
 {
 	char *token;
 	char *rest = str;
-	int maxsize = *size;
+	int maxsize = 0;
 	int pos = 0;
 
 	if (!inolist || !str || !size)
 		return -EINVAL;
+
+	maxsize = *size;
 
 	while ((token = strtok_r(rest, "|", &rest))) {
 		sscanf(token, "%llu", &inolist[pos++]);
@@ -333,10 +335,10 @@ int kvsns_lookup_path(kvsns_cred_t *cred, kvsns_ino_t *parent, char *path,
 	char *saveptr;
 	char *str;
 	char *token;
-	kvsns_ino_t iter_ino;
-	kvsns_ino_t *iter;
+	kvsns_ino_t iter_ino = 0LL;
+	kvsns_ino_t *iter = NULL;
 	int j = 0;
-	int rc;
+	int rc = 0;
 
 	memcpy(&iter_ino, parent, sizeof(kvsns_ino_t));
 	iter = &iter_ino;

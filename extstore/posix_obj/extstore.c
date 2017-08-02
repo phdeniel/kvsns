@@ -38,6 +38,12 @@
 	if (__rc != 0)	\
 		return __rc; })
 
+#define RC_WRAP_LABEL(__rc, __label, __function, ...) ({\
+	__rc = __function(__VA_ARGS__);\
+	if (__rc != 0)        \
+		goto __label; })
+
+
 /* The REDIS context exists in the TLS, for MT-Safety */
 __thread redisContext *rediscontext = NULL;
 
@@ -360,13 +366,13 @@ int extstore_read(kvsns_ino_t *ino,
 		  struct stat *stat)
 {
 	char storepath[MAXPATHLEN];
-	int rc;
-	int fd;
+	int rc = 0;
+	int fd = 0;
 	ssize_t read_bytes;
 
 	RC_WRAP(build_extstore_path, *ino, storepath, MAXPATHLEN);
 
-	fd = open(storepath, O_CREAT|O_RDONLY|O_SYNC);
+	fd = open(storepath, O_CREAT|O_RDONLY|O_SYNC, 0755);
 	if (fd < 0) {
 		return -errno;
 	}
@@ -377,15 +383,19 @@ int extstore_read(kvsns_ino_t *ino,
 		return -errno;
 	}
 
-	RC_WRAP(update_stat, stat, UP_ST_READ, 0);
-	RC_WRAP(set_stat, ino, stat);
+	RC_WRAP_LABEL(rc, errout, update_stat, stat, UP_ST_READ, 0);
+	RC_WRAP_LABEL(rc, errout, set_stat, ino, stat);
 
 	rc = close(fd);
 	if (rc < 0)
 		return -errno;
 
-
 	return read_bytes;
+
+errout:
+	close(fd);
+
+	return rc;
 }
 
 int extstore_write(kvsns_ino_t *ino,

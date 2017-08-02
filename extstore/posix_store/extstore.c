@@ -141,7 +141,7 @@ int extstore_read(kvsns_ino_t *ino,
 	if (rc < 0)
 		return rc;
 
-	fd = open(storepath, O_CREAT|O_RDONLY|O_SYNC);
+	fd = open(storepath, O_CREAT|O_RDONLY|O_SYNC, 0755);
 	if (fd < 0) {
 		return -errno;
 	}
@@ -197,8 +197,10 @@ int extstore_write(kvsns_ino_t *ino,
 	}
 
 	rc = fstat(fd, &storestat);
-	if (rc < 0)
+	if (rc < 0) {
+		close(fd);
 		return -errno;
+	}
 
 	stat->st_mtime = storestat.st_mtime;
 	stat->st_size = storestat.st_size;

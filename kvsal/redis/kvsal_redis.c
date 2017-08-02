@@ -428,7 +428,7 @@ int kvsal_get_list_pattern(char *pattern, int start, int *size,
 
 	for (i = start; i < start + *size ; i++) {
 		items[i-start].offset = i;
-		strcpy(items[i-start].str, reply->element[i]->str);
+		strncpy(items[i-start].str, reply->element[i]->str, KLEN);
 	}
 
 	freeReplyObject(reply);

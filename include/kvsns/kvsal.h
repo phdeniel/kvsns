@@ -50,9 +50,7 @@
 #include <sys/xattr.h>
 #include <ini_config.h>
 
-#define KVSNS_ROOT_INODE 2LL
-#define KVSNS_ARRAY_SIZE 100
-#define KVSNS_ROOT_UID 0
+#define KVSAL_ARRAY_SIZE 100
 
 #define KVSNS_STORE "KVSNS_STORE"
 #define KVSNS_SERVER "KVSNS_SERVER"

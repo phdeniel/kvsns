@@ -121,11 +121,13 @@ int kvsns_rmdir(kvsns_cred_t *cred, kvsns_ino_t *parent, char *name)
 {
 	int rc;
 	char k[KLEN];
-	kvsns_ino_t ino;
+	kvsns_ino_t ino = 0LL;
 	struct stat parent_stat;
 
 	if (!cred || !parent || !name)
 		return -EINVAL;
+
+	memset(&parent_stat, 0, sizeof(parent_stat));
 
 	RC_WRAP(kvsns_access, cred, parent, KVSNS_ACCESS_WRITE);
 
@@ -193,7 +195,7 @@ int kvsns_readdir(kvsns_cred_t *cred, kvsns_dir_t *dir, off_t offset,
 	char v[VLEN];
 	kvsal_item_t *items;
 	int i;
-	kvsns_ino_t ino;
+	kvsns_ino_t ino = 0LL;
 	int rc;
 	unsigned long long lino;
 
@@ -205,28 +207,36 @@ int kvsns_readdir(kvsns_cred_t *cred, kvsns_dir_t *dir, off_t offset,
 	items = (kvsal_item_t *)malloc(*size*sizeof(kvsal_item_t));
 	if (items == NULL)
 		return -ENOMEM;
+	memset(items, 0, *size*sizeof(kvsal_item_t));
 
 	memcpy(&lino, dir, sizeof(lino)); /* violent cast */
 	snprintf(pattern, KLEN, "%llu.dentries.*", lino);
 	rc = kvsal_get_list(&dir->list, (int)offset, size, items);
-	if (rc < 0)
-		return rc;
+	RC_WRAP_LABEL(rc, errout,
+		      kvsal_get_list, &dir->list, (int)offset, size, items);
 
 	for (i = 0; i < *size ; i++) {
 		sscanf(items[i].str, "%llu.dentries.%s\n",
 		       &ino, dirent[i].name);
 
-		RC_WRAP(kvsal_get_char, items[i].str, v);
+		RC_WRAP_LABEL(rc, errout, kvsal_get_char, items[i].str, v);
 
 		sscanf(v, "%llu", &dirent[i].inode);
 
-		RC_WRAP(kvsns_getattr, cred, &dirent[i].inode,
+		RC_WRAP_LABEL(rc, errout, kvsns_getattr, cred, &dirent[i].inode,
 			 &dirent[i].stats);
 	}
 
-	RC_WRAP(kvsns_update_stat, &dir->ino, STAT_ATIME_SET);
+	RC_WRAP_LABEL(rc, errout, kvsns_update_stat, &dir->ino, STAT_ATIME_SET);
 
+	free(items);
 	return 0;
+
+errout:
+	if (items)
+		free(items);
+
+	return rc;
 }
 
 int kvsns_lookup(kvsns_cred_t *cred, kvsns_ino_t *parent, char *name,
@@ -350,7 +360,7 @@ int kvsns_link(kvsns_cred_t *cred, kvsns_ino_t *ino,
 	int rc;
 	char k[KLEN];
 	char v[VLEN];
-	kvsns_ino_t tmpino;
+	kvsns_ino_t tmpino = 0LL;
 	struct stat dino_stat;
 	struct stat ino_stat;
 
@@ -405,8 +415,8 @@ int kvsns_unlink(kvsns_cred_t *cred, kvsns_ino_t *dir, char *name)
 	int rc;
 	char k[KLEN];
 	char v[VLEN];
-	kvsns_ino_t ino;
-	kvsns_ino_t parent[KVSNS_ARRAY_SIZE];
+	kvsns_ino_t ino = 0LL;
+	kvsns_ino_t parent[KVSAL_ARRAY_SIZE];
 	struct stat ino_stat;
 	struct stat dir_stat;
 	int size;
@@ -420,6 +430,10 @@ int kvsns_unlink(kvsns_cred_t *cred, kvsns_ino_t *dir, char *name)
 	if (!cred || !dir || !name)
 		return -EINVAL;
 
+	memset(parent, 0, KVSAL_ARRAY_SIZE*sizeof(kvsns_ino_t));
+	memset(&ino_stat, 0, sizeof(ino_stat));
+	memset(&dir_stat, 0, sizeof(dir_stat));
+
 	RC_WRAP(kvsns_access, cred, dir, KVSNS_ACCESS_WRITE);
 
 	RC_WRAP(kvsns_lookup, cred, dir, name, &ino);
@@ -430,7 +444,7 @@ int kvsns_unlink(kvsns_cred_t *cred, kvsns_ino_t *dir, char *name)
 	snprintf(k, KLEN, "%llu.parentdir", ino);
 	RC_WRAP(kvsal_get_char, k, v);
 
-	size = KVSNS_ARRAY_SIZE;
+	size = KVSAL_ARRAY_SIZE;
 	RC_WRAP(kvsns_str2parentlist, parent, &size, v);
 
 	/* Check if file is opened */
@@ -510,18 +524,22 @@ aborted:
 int kvsns_rename(kvsns_cred_t *cred,  kvsns_ino_t *sino,
 		 char *sname, kvsns_ino_t *dino, char *dname)
 {
-	int rc;
+	int rc = 0;
 	char k[KLEN];
 	char v[VLEN];
-	kvsns_ino_t ino;
-	kvsns_ino_t parent[KVSNS_ARRAY_SIZE];
+	kvsns_ino_t ino = 0LL;
+	kvsns_ino_t parent[KVSAL_ARRAY_SIZE];
 	struct stat sino_stat;
 	struct stat dino_stat;
-	int size;
-	int i;
+	int size = 0;
+	int i = 0;
 
 	if (!cred || !sino || !sname || !dino || !dname)
 		return -EINVAL;
+
+	memset(parent, 0, KVSAL_ARRAY_SIZE*sizeof(kvsns_ino_t));
+	memset(&sino_stat, 0, sizeof(sino_stat));
+	memset(&dino_stat, 0, sizeof(dino_stat));
 
 	RC_WRAP(kvsns_access, cred, sino, KVSNS_ACCESS_WRITE);
 
@@ -540,7 +558,7 @@ int kvsns_rename(kvsns_cred_t *cred,  kvsns_ino_t *sino,
 	snprintf(k, KLEN, "%llu.parentdir", ino);
 	RC_WRAP(kvsal_get_char, k, v);
 
-	size = KVSNS_ARRAY_SIZE;
+	size = KVSAL_ARRAY_SIZE;
 	RC_WRAP(kvsns_str2parentlist, parent, &size, v);
 	for (i = 0; i < size ; i++)
 		if (parent[i] == *sino) {
@@ -583,7 +601,7 @@ int kvsns_mr_proper(void)
 {
 	int rc;
 	char pattern[KLEN];
-	kvsal_item_t items[KVSNS_ARRAY_SIZE];
+	kvsal_item_t items[KVSAL_ARRAY_SIZE];
 	int i;
 	int size;
 	kvsal_list_t list;
@@ -595,7 +613,7 @@ int kvsns_mr_proper(void)
 		return rc;
 
 	do {
-		size = KVSNS_ARRAY_SIZE;
+		size = KVSAL_ARRAY_SIZE;
 		rc = kvsal_get_list(&list, 0, &size, items);
 		if (rc < 0)
 			return rc;
