@@ -45,8 +45,7 @@
 #include <kvsns/kvsns.h>
 
 int extstore_init(struct collection_item *cfg_items);
-int extstore_create(kvsns_ino_t object,
-		    struct stat *stat);
+int extstore_create(kvsns_ino_t object);
 int extstore_read(kvsns_ino_t *ino,
 		  off_t offset,
 		  size_t buffer_size,
@@ -65,6 +64,5 @@ int extstore_truncate(kvsns_ino_t *ino,
 		      bool on_obj_store,
 		      struct stat *stat);
 int extstore_attach(kvsns_ino_t *ino,
-		    char *objid, int objid_len,
-		    struct stat *stat);
+		    char *objid, int objid_len);
 #endif

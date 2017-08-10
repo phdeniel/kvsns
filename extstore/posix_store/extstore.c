@@ -73,13 +73,12 @@ static int extstore_consolidate_attrs(kvsns_ino_t *ino, struct stat *filestat)
 	return 0;
 }
 
-int extstore_attach(kvsns_ino_t *ino, char *objid, int objid_len,
-		    struct stat *stat)
+int extstore_attach(kvsns_ino_t *ino, char *objid, int objid_len)
 {
 	return -ENOTSUP;
 }
 
-int extstore_create(kvsns_ino_t object, struct stat *stat)
+int extstore_create(kvsns_ino_t object)
 {
 	return 0;
 }
