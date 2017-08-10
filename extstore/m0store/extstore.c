@@ -42,11 +42,21 @@
 /* The REDIS context exists in the TLS, for MT-Safety */
 __thread redisContext *rediscontext = NULL;
 
+static struct collection_item *conf = NULL;
+
+static void extstore_reinit(void)
+{
+	extstore_init(conf);
+}
+
 static int build_m0store_id(kvsns_ino_t	 object,
 			    struct m0_uint128  *id)
 {
 	char k[KLEN];
 	redisReply *reply;
+
+	if (!rediscontext)
+		extstore_reinit();
 
 	snprintf(k, KLEN, "%llu.data", object);
 	reply = NULL;
@@ -121,6 +131,9 @@ int extstore_create(kvsns_ino_t object)
 	size_t size;
 	struct m0_uint128 id;
 
+	if (!rediscontext)
+		extstore_reinit();
+
 	snprintf(k, KLEN, "%llu.data", object);
 	id = M0_CLOVIS_ID_APP;
 	id.u_lo += (unsigned long long)object;
@@ -155,6 +168,9 @@ int extstore_attach(kvsns_ino_t *ino, char *objid, int objid_len)
 	size_t size;
 	struct m0_uint128 id;
 
+	if (!rediscontext)
+		extstore_reinit();
+
 	snprintf(k, KLEN, "%llu.data", *ino);
 	id = M0_CLOVIS_ID_APP;
 	id.u_lo = atoi(objid);
@@ -187,6 +203,9 @@ int extstore_init(struct collection_item *cfg_items)
 	struct timeval timeout = { 1, 500000 }; /* 1.5 seconds */
 	int port = 6379; /* REDIS default */
 	struct collection_item *item;
+
+	if (cfg_items != NULL)
+		conf = cfg_items;
 
        /* Get config from ini file */
 	item = NULL;
