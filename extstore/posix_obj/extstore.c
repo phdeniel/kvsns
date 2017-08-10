@@ -129,7 +129,6 @@ int extstore_create(kvsns_ino_t object, struct stat *stat)
 	char path[VLEN];
 	redisReply *reply;
 	int fd;
-	size_t size;
 
 	snprintf(k, KLEN, "%llu.data", object);
 	snprintf(path, VLEN, "%s/inum=%llu",
@@ -138,15 +137,6 @@ int extstore_create(kvsns_ino_t object, struct stat *stat)
 
 	reply = NULL;
 	reply = redisCommand(rediscontext, "SET %s %s", k, v);
-	if (!reply)
-		return -1;
-	freeReplyObject(reply);
-
-	snprintf(k, KLEN, "%llu.data_attr", object);
-	size = sizeof(struct stat);
-
-	reply = NULL;
-	reply = redisCommand(rediscontext, "SET %s %b", k, stat, size);
 	if (!reply)
 		return -1;
 	freeReplyObject(reply);
@@ -173,23 +163,12 @@ int extstore_attach(kvsns_ino_t *ino, char *objid, int objid_len,
 	char k[KLEN];
 	char v[VLEN];
 	redisReply *reply;
-	size_t size;
 
 	snprintf(k, KLEN, "%llu.data", *ino);
 	strncpy(v, objid, (objid_len > VLEN)?VLEN:objid_len);
 
 	reply = NULL;
 	reply = redisCommand(rediscontext, "SET %s %s", k, v);
-	if (!reply)
-		return -1;
-	freeReplyObject(reply);
-
-
-	snprintf(k, KLEN, "%llu.data_attr", *ino);
-	size = sizeof(struct stat);
-
-	reply = NULL;
-	reply = redisCommand(rediscontext, "SET %s %b", k, stat, size);
 	if (!reply)
 		return -1;
 	freeReplyObject(reply);
@@ -202,51 +181,6 @@ int extstore_attach(kvsns_ino_t *ino, char *objid, int objid_len,
 		return -1;
 
 	freeReplyObject(reply);
-	return 0;
-}
-
-static int set_stat(kvsns_ino_t *ino, struct stat *buf)
-{
-	redisReply *reply;
-	char k[KLEN];
-
-	size_t size = sizeof(struct stat);
-
-	if (!ino || !buf)
-		return -EINVAL;
-
-	snprintf(k, KLEN, "%llu.data_attr", *ino);
-	reply = redisCommand(rediscontext, "SET %s %b", k, buf, size);
-	if (!reply)
-		return -1;
-
-	freeReplyObject(reply);
-	return 0;
-}
-
-static int get_stat(kvsns_ino_t *ino, struct stat *buf)
-{
-	redisReply *reply;
-	char k[KLEN];
-
-	if (!ino || !buf)
-		return -EINVAL;
-
-	snprintf(k, KLEN, "%llu.data_attr", *ino);
-	reply = redisCommand(rediscontext, "GET %s", k);
-	if (!reply)
-		return -1;
-
-	if (reply->type != REDIS_REPLY_STRING)
-		return -1;
-
-	if (reply->len != sizeof(struct stat))
-		return -1;
-
-	memcpy((char *)buf, reply->str, reply->len);
-
-	freeReplyObject(reply);
-
 	return 0;
 }
 
@@ -339,14 +273,6 @@ int extstore_del(kvsns_ino_t *ino)
 		return -1;
 	freeReplyObject(reply);
 
-	/* delete <inode>.data_attr */	
-	snprintf(k, KLEN, "%llu.data_attr", *ino);	
-	reply = NULL;
-	reply = redisCommand(rediscontext, "DEL %s", k);
-	if (!reply)
-		return -1;
-	freeReplyObject(reply);
-
 	/* delete <inode>.data_ext */	
 	snprintf(k, KLEN, "%llu.data_ext", *ino);	
 	reply = NULL;
@@ -384,7 +310,6 @@ int extstore_read(kvsns_ino_t *ino,
 	}
 
 	RC_WRAP_LABEL(rc, errout, update_stat, stat, UP_ST_READ, 0);
-	RC_WRAP_LABEL(rc, errout, set_stat, ino, stat);
 
 	rc = close(fd);
 	if (rc < 0)
@@ -409,7 +334,6 @@ int extstore_write(kvsns_ino_t *ino,
 	int rc;
 	int fd;
 	ssize_t written_bytes;
-	struct stat objstat;
 
 	RC_WRAP(build_extstore_path, *ino, storepath, MAXPATHLEN);
 
@@ -427,15 +351,8 @@ int extstore_write(kvsns_ino_t *ino,
 	if (rc < 0)
 		return -errno;
 
-	RC_WRAP(get_stat, ino, &objstat);
-	RC_WRAP(update_stat, &objstat, UP_ST_WRITE,
+	RC_WRAP(update_stat, stat, UP_ST_WRITE,
 		offset+written_bytes);
-	RC_WRAP(set_stat, ino, &objstat);
-
-	stat->st_size = objstat.st_size;
-	stat->st_blocks = objstat.st_blocks;
-	stat->st_mtim = objstat.st_mtim;
-	stat->st_ctim = objstat.st_ctim;
 
 	*fsal_stable = true;
 	return written_bytes;
@@ -449,7 +366,6 @@ int extstore_truncate(kvsns_ino_t *ino,
 {
 	int rc;
 	char storepath[MAXPATHLEN];
-	struct stat objstat;
 
 	if (!ino || !stat)
 		return -EINVAL;
@@ -458,8 +374,6 @@ int extstore_truncate(kvsns_ino_t *ino,
 	if (rc < 0)
 		return rc;
 
-	RC_WRAP(get_stat, ino, &objstat);
-
 	if (on_obj_store) {
 		rc = truncate(storepath, filesize);
 		if (rc < 0)
@@ -467,14 +381,8 @@ int extstore_truncate(kvsns_ino_t *ino,
 	}
 
 	stat->st_size = filesize;
-	objstat.st_size = filesize;
 
-	RC_WRAP(update_stat, &objstat, UP_ST_TRUNCATE, filesize);
-
-	stat->st_ctim = objstat.st_ctim;
-	stat->st_mtim = objstat.st_mtim;
-
-	RC_WRAP(set_stat, ino, &objstat);
+	RC_WRAP(update_stat, stat, UP_ST_TRUNCATE, filesize);
 
 	return 0;
 }
