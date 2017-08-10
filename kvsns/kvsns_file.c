@@ -42,7 +42,6 @@
 #include <kvsns/extstore.h>
 #include "kvsns_internal.h"
 
-
 static int kvsns_str2ownerlist(kvsns_open_owner_t *ownerlist, int *size,
 			        char *str)
 {
@@ -270,6 +269,7 @@ ssize_t kvsns_write(kvsns_cred_t *cred, kvsns_file_open_t *fd,
 	struct stat stat;
 	struct stat wstat;
 
+	memset(&wstat, 0, sizeof(wstat));
 
 	/** @todo use flags to check correct access */
 	write_amount = extstore_write(&fd->ino,
