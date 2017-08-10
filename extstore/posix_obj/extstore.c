@@ -144,6 +144,9 @@ int extstore_create(kvsns_ino_t object)
 	if (!rediscontext)
 		extstore_reinit();
 
+	if (!rediscontext)
+		extstore_reinit();
+
 	snprintf(k, KLEN, "%llu.data", object);
 	snprintf(path, VLEN, "%s/inum=%llu",
 		store_root, (unsigned long long)object);
@@ -186,6 +189,9 @@ int extstore_attach(kvsns_ino_t *ino, char *objid, int objid_len)
 	char v[VLEN];
 	redisReply *reply;
 	size_t size;
+
+	if (!rediscontext)
+		extstore_reinit();
 
 	if (!rediscontext)
 		extstore_reinit();
