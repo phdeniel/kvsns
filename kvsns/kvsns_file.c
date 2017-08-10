@@ -102,7 +102,7 @@ int kvsns_creat(kvsns_cred_t *cred, kvsns_ino_t *parent, char *name,
 	RC_WRAP(kvsns_create_entry, cred, parent, name, NULL,
 				  mode, newfile, KVSNS_FILE);
 	RC_WRAP(kvsns_get_stat, newfile, &stat);
-	RC_WRAP(extstore_create, *newfile, &stat);
+	RC_WRAP(extstore_create, *newfile);
 
 	return 0;
 }
@@ -268,8 +268,8 @@ ssize_t kvsns_write(kvsns_cred_t *cred, kvsns_file_open_t *fd,
 	bool stable;
 	char k[KLEN];
 	struct stat stat;
+	struct stat wstat;
 
-	RC_WRAP(kvsns_getattr, cred, &fd->ino, &stat);
 
 	/** @todo use flags to check correct access */
 	write_amount = extstore_write(&fd->ino,
@@ -277,9 +277,17 @@ ssize_t kvsns_write(kvsns_cred_t *cred, kvsns_file_open_t *fd,
 				      count,
 				      buf,
 				      &stable,
-				      &stat);
+				      &wstat);
 	if (write_amount < 0)
 		return write_amount;
+
+	RC_WRAP(kvsns_getattr, cred, &fd->ino, &stat);
+	if (wstat.st_size > stat.st_size) {
+		stat.st_size = wstat.st_size;
+		stat.st_blocks = wstat.st_blocks;
+	}
+	stat.st_mtim = wstat.st_mtim;
+	stat.st_ctim = wstat.st_ctim;
 
 	snprintf(k, KLEN, "%llu.stat", fd->ino);
 	RC_WRAP(kvsal_set_stat, k, &stat);
@@ -323,7 +331,7 @@ int kvsns_attach(kvsns_cred_t *cred, kvsns_ino_t *parent, char *name,
 				    stat->st_mode, newfile, KVSNS_FILE);
 	RC_WRAP(kvsns_setattr, cred, newfile, stat, statflags);
 	RC_WRAP(kvsns_getattr, cred, newfile, stat);
-	RC_WRAP(extstore_attach, newfile, objid, objid_len, stat);
+	RC_WRAP(extstore_attach, newfile, objid, objid_len);
 
 	return 0;
 }
