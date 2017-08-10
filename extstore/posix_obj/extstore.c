@@ -49,6 +49,13 @@ __thread redisContext *rediscontext = NULL;
 
 static char store_root[MAXPATHLEN];
 
+static struct collection_item *conf = NULL;
+
+static void extstore_reinit(void)
+{
+	extstore_init(conf);
+}
+
 static int build_extstore_path(kvsns_ino_t object,
 			       char *extstore_path,
 			       size_t pathlen)
@@ -58,6 +65,9 @@ static int build_extstore_path(kvsns_ino_t object,
 
 	if (!extstore_path)
 		return -1;
+
+	if (!rediscontext)
+		extstore_reinit();
 
 	snprintf(k, KLEN, "%llu.data", object);	
 	reply = NULL;
@@ -130,6 +140,9 @@ int extstore_create(kvsns_ino_t object)
 	redisReply *reply;
 	int fd;
 
+	if (!rediscontext)
+		extstore_reinit();
+
 	snprintf(k, KLEN, "%llu.data", object);
 	snprintf(path, VLEN, "%s/inum=%llu",
 		store_root, (unsigned long long)object);
@@ -163,6 +176,9 @@ int extstore_attach(kvsns_ino_t *ino, char *objid, int objid_len)
 	char v[VLEN];
 	redisReply *reply;
 
+	if (!rediscontext)
+		extstore_reinit();
+
 	snprintf(k, KLEN, "%llu.data", *ino);
 	strncpy(v, objid, (objid_len > VLEN)?VLEN:objid_len);
 
@@ -192,6 +208,9 @@ int extstore_init(struct collection_item *cfg_items)
 	int port = 6379; /* REDIS default */
 	struct collection_item *item;
 	int rc;
+
+	if (cfg_items != NULL)
+		conf = cfg_items;
 
 	/* Get config from ini file */
 	item = NULL;
