@@ -65,4 +65,6 @@ int extstore_truncate(kvsns_ino_t *ino,
 		      struct stat *stat);
 int extstore_attach(kvsns_ino_t *ino,
 		    char *objid, int objid_len);
+int extstore_getattr(kvsns_ino_t *ino,
+		     struct stat *stat);
 #endif

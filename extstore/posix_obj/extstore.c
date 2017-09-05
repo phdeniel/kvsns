@@ -405,3 +405,19 @@ int extstore_truncate(kvsns_ino_t *ino,
 	return 0;
 }
 
+int extstore_getattr(kvsns_ino_t *ino,
+		     struct stat *stat)
+{
+	int rc;
+	char storepath[MAXPATHLEN];
+
+	if (!ino || !stat)
+		return -EINVAL;
+
+	rc = build_extstore_path(*ino, storepath, MAXPATHLEN);
+	if (rc < 0)
+		return rc;
+
+	RC_WRAP(lstat, storepath, stat);
+	return 0;
+}
