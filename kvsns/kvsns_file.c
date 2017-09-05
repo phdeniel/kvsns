@@ -265,8 +265,6 @@ ssize_t kvsns_write(kvsns_cred_t *cred, kvsns_file_open_t *fd,
 {
 	ssize_t write_amount;
 	bool stable;
-	char k[KLEN];
-	struct stat stat;
 	struct stat wstat;
 
 	memset(&wstat, 0, sizeof(wstat));
@@ -278,19 +276,6 @@ ssize_t kvsns_write(kvsns_cred_t *cred, kvsns_file_open_t *fd,
 				      buf,
 				      &stable,
 				      &wstat);
-	if (write_amount < 0)
-		return write_amount;
-
-	RC_WRAP(kvsns_getattr, cred, &fd->ino, &stat);
-	if (wstat.st_size > stat.st_size) {
-		stat.st_size = wstat.st_size;
-		stat.st_blocks = wstat.st_blocks;
-	}
-	stat.st_mtim = wstat.st_mtim;
-	stat.st_ctim = wstat.st_ctim;
-
-	snprintf(k, KLEN, "%llu.stat", fd->ino);
-	RC_WRAP(kvsal_set_stat, k, &stat);
 
 	return write_amount;
 }
@@ -301,9 +286,6 @@ ssize_t kvsns_read(kvsns_cred_t *cred, kvsns_file_open_t *fd,
 	ssize_t read_amount;
 	bool eof;
 	struct stat stat;
-	char k[KLEN];
-
-	RC_WRAP(kvsns_getattr, cred, &fd->ino, &stat);
 
 	/** @todo use flags to check correct access */
 	read_amount = extstore_read(&fd->ino,
@@ -312,11 +294,6 @@ ssize_t kvsns_read(kvsns_cred_t *cred, kvsns_file_open_t *fd,
 				    buf,
 				    &eof,
 				    &stat);
-	if (read_amount < 0)
-		return read_amount;
-
-	snprintf(k, KLEN, "%llu.stat", fd->ino);
-	RC_WRAP(kvsal_set_stat, k, &stat);
 
 	return read_amount;
 }
