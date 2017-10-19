@@ -42,6 +42,9 @@ Provides: %{name} = %{version}-%{release}
 @BCOND_MERO_STORE@ mero_store
 %global use_mero_store %{on_off_switch mero_store}
 
+@BCOND_RADOS@ rados
+%global use_rados %{on_off_switch rados}
+
 %description
 The libkvsns is a library that allows of a POSIX namespace built on top of
 a Key-Value Store.
@@ -79,6 +82,7 @@ cmake . -DUSE_KVS_REDIS=%{use_kvs_redis}     \
 	-DUSE_KVS_MERO=%{use_kvs_mero}       \
 	-DUSE_POSIX_STORE=%{use_posix_store} \
 	-DUSE_POSIX_OBJ=%{use_posix_obj}     \
+	-DUSE_RADOS=%{use_rados}	     \
 	-DUSE_MERO_STORE=%{use_mero_store}
 
 make %{?_smp_mflags} || make %{?_smp_mflags} || make
