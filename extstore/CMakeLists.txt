@@ -6,3 +6,7 @@ if(USE_POSIX_OBJ)
 	add_subdirectory(posix_obj)
 endif(USE_POSIX_OBJ)
 
+if(USE_RADOS)
+	add_subdirectory(rados)
+endif(USE_RADOS)
+
