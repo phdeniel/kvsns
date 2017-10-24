@@ -235,7 +235,6 @@ int extstore_write(kvsns_ino_t *ino,
 	char objid[MAXNAMLEN];
 	uint64_t size;
 	time_t mtime;
-	int written;
 
 	if (!ino)
 		return -EINVAL;
@@ -246,9 +245,11 @@ int extstore_write(kvsns_ino_t *ino,
 	if (rc < 0)
 		return rc;
 
-	written = rados_write(io, objid, buffer, buffer_size, offset);
-	if (written < 0)
-		return written;
+	rc = rados_write(io, objid, buffer, buffer_size, offset);
+	if (rc < 0)
+		return rc;
+
+	/* If write succeeded, then all data are written */
 
 	rc = rados_stat(io, objid, &size, &mtime);
 	if (rc < 0)
@@ -260,7 +261,7 @@ int extstore_write(kvsns_ino_t *ino,
 	stat->st_mtime = mtime;
 	stat->st_atime = mtime; /* @todo bug ?*/
 
-	return written;
+	return buffer_size;
 }
 
 
