@@ -130,7 +130,16 @@ rm -rf $RPM_BUILD_ROOT
 %{_bindir}/kvsns_attach
 
 %changelog
-* Thu Jun 13 2017 Philippe DENIEL <philippe.deniel@cea.fr> 1.2.0
+* Tue Oct 24 2017 Philippe DENIEL <philippe.deniel@cea.fr> 1.2.3
+- Support RADOS as an object store
+
+* Tue Jun 27 2017 Philippe DENIEL <philippe.deniel@cea.fr> 1.2.2
+- Modification of internal API
+
+* Tue Jun 20 2017 Philippe DENIEL <philippe.deniel@cea.fr> 1.2.1
+- Some bug fixed
+
+* Tue Jun 13 2017 Philippe DENIEL <philippe.deniel@cea.fr> 1.2.0
 - Add support for config file via libini_config
 
 * Fri Jun  2 2017 Philippe DENIEL <philippe.deniel@cea.fr> 1.1.3
