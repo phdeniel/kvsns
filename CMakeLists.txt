@@ -83,6 +83,7 @@ message(STATUS "USE_KVS_MERO=${USE_KVS_MERO}")
 message(STATUS "USE_POSIX_STORE=${USE_POSIX_STORE}")
 message(STATUS "USE_MERO_STORE=${USE_MERO_STORE}")
 message(STATUS "USE_POSIX_OBJ=${USE_POSIX_OBJ}")
+message(STATUS "USE_RADOS=${USE_RADOS}")
 
 
 include(CheckIncludeFiles)

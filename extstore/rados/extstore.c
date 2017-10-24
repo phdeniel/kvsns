@@ -46,13 +46,14 @@
 #define CEPH_CONFIG_DEFAULT "/etc/ceph/ceph.conf"
 
 static char pool[MAXNAMLEN];
-__thread rados_t cluster;
+static rados_t cluster;
 
 static void build_objid(kvsns_ino_t ino, char *objid, int objidlen)
 {
 	if (!ino)
 		return;
 
+	memset(objid, 0, objidlen);
 	snprintf(objid, objidlen, "kvsns.%llu", ino);
 }
 
@@ -170,8 +171,13 @@ int extstore_del(kvsns_ino_t *ino)
 		return rc;
 
 	rc = rados_remove(io, objid);
+
+	/* ENOENT case :The inode exist for kvsns saw it
+	 * but the file is empty and has no
+	 * data associated to it */
 	if (rc < 0)
-		return rc;
+		if (rc != -ENOENT)
+			return rc;
 
 	rados_ioctx_destroy(io);
 	return 0;
@@ -279,18 +285,29 @@ int extstore_truncate(kvsns_ino_t *ino,
 		return rc;
 
 	rc = rados_trunc(io, objid, (uint64_t)filesize);
-	if (rc < 0)
-		return rc;
+	if (rc < 0) {
+		if (rc == -ENOENT) {
+			/* The file is empty, it has
+			 * no object attached to it
+			 */
+			stat->st_size = 0;
+			stat->st_mtime = time(NULL);
+			stat->st_atime = time(NULL); /* @todo bug ?*/
+			goto exit;
+		} else
+			return rc;
+	}
 
 	rc = rados_stat(io, objid, &size, &mtime);
 	if (rc < 0)
 		return rc;
 
-	rados_ioctx_destroy(io);
-
 	stat->st_size = size;
 	stat->st_mtime = mtime;
 	stat->st_atime = mtime; /* @todo bug ?*/
+
+exit:
+	rados_ioctx_destroy(io);
 
 	return 0;
 }
@@ -314,14 +331,22 @@ int extstore_getattr(kvsns_ino_t *ino,
 		return rc;
 
 	rc = rados_stat(io, objid, &size, &mtime);
-	if (rc < 0)
-		return rc;
-
-	rados_ioctx_destroy(io);
+	if (rc < 0) {
+		if (rc == -ENOENT) {
+			stat->st_size = 0;
+			stat->st_mtime = time(NULL);
+			stat->st_atime = time(NULL);
+			goto exitok;
+		} else
+			return rc;
+	}
 
 	stat->st_size = size;
 	stat->st_mtime = mtime;
 	stat->st_atime = mtime; /* @todo bug ?*/
+
+exitok:
+	rados_ioctx_destroy(io);
 
 	return 0;
 }
