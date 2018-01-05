@@ -7,4 +7,4 @@ add_library(extstore SHARED ${extstore_LIB_SRCS})
 target_link_libraries(extstore hiredis ini_config)
 
 add_custom_command(TARGET extstore
-                   COMMAND /usr/bin/cp libextstore.so ..)
+                   COMMAND ${CMAKE_COMMAND} -E copy libextstore.so ..)
