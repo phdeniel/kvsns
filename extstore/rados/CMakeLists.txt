@@ -8,3 +8,5 @@ target_link_libraries(extstore rados ini_config)
 
 add_custom_command(TARGET extstore
                    COMMAND ${CMAKE_COMMAND} -E copy libextstore.so ..)
+
+install(TARGETS extstore DESTINATION lib)

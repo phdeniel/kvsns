@@ -185,3 +185,9 @@ add_custom_command(TARGET srpm
                   VERBATIM
                   DEPENDS dist)
 
+# INSTALL
+install(FILES ${PROJECT_SOURCE_DIR}/libkvsns.pc DESTINATION lib)
+install(DIRECTORY ${PROJECT_SOURCE_DIR}/include/kvsns DESTINATION include)
+#install(FILES ${PROJECT_SOURCE_DIR}/include/kvsns/kvsns.h DESTINATION include/kvsns)
+#install(FILES ${PROJECT_SOURCE_DIR}/include/kvsns/kvsal.h DESTINATION include/kvsns)
+##install(FILES ${PROJECT_SOURCE_DIR}/include/kvsns/extstore.h DESTINATION include/kvsns)
