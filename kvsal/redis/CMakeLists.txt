@@ -8,3 +8,5 @@ target_link_libraries(kvsal hiredis ini_config)
 
 add_custom_command(TARGET kvsal
                    COMMAND ${CMAKE_COMMAND} -E copy libkvsal.so ..)
+
+install(TARGETS kvsal DESTINATION lib)
