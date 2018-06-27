@@ -216,7 +216,7 @@ int kvsns_readdir(kvsns_cred_t *cred, kvsns_dir_t *dir, off_t offset,
 		      kvsal_get_list, &dir->list, (int)offset, size, items);
 
 	for (i = 0; i < *size ; i++) {
-		sscanf(items[i].str, "%llu.dentries.%s\n",
+		sscanf(items[i].str, "%llu.dentries.%[^\n]",
 		       &ino, dirent[i].name);
 
 		RC_WRAP_LABEL(rc, errout, kvsal_get_char, items[i].str, v);
