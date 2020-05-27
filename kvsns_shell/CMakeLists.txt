@@ -31,6 +31,9 @@ add_custom_command(TARGET links
 		   COMMAND /usr/bin/ln -sf kvsns_busybox ns_truncate
 		   COMMAND /usr/bin/ln -sf kvsns_busybox ns_mr_proper
 		   COMMAND /usr/bin/ln -sf kvsns_busybox ns_cp
+		   COMMAND /usr/bin/ln -sf kvsns_busybox ns_archive
+		   COMMAND /usr/bin/ln -sf kvsns_busybox ns_release
+		   COMMAND /usr/bin/ln -sf kvsns_busybox ns_state
 		   WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}
 		   VERBATIM)
 

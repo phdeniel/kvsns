@@ -358,6 +358,74 @@ int main(int argc, char *argv[])
 		} else
 			printf("Failed rc=%d !\n", rc);
 		return 0;
+	} else if (!strcmp(exec_name, "ns_archive")) {
+		if (argc != 2) {
+			fprintf(stderr, "archive <name>\n");
+			exit(1);
+		}
+
+		if (!strcmp(argv[1], "."))
+			ino = current_inode;
+		else {
+			rc = kvsns_lookup(&cred, &current_inode, argv[1], &ino);
+			if (rc != 0)
+				return rc;
+		}
+
+		rc = kvsns_archive(&cred, &ino);
+		if (rc == 0)
+			printf("Success !!\n");
+		else
+			printf("Archive failed, rc=%d\n", rc);
+
+		return 0;
+
+	} else if (!strcmp(exec_name, "ns_release")) {
+		if (argc != 2) {
+			fprintf(stderr, "release <name>\n");
+			exit(1);
+		}
+
+		if (!strcmp(argv[1], "."))
+			ino = current_inode;
+		else {
+			rc = kvsns_lookup(&cred, &current_inode, argv[1], &ino);
+			if (rc != 0)
+				return rc;
+		}
+
+		rc = kvsns_release(&cred, &ino);
+		if (rc == 0)
+			printf("Success !!\n");
+		else
+			printf("Release failed, rc=%d\n", rc);
+
+		return 0;
+
+	} else if (!strcmp(exec_name, "ns_state")) {
+		char state[VLEN];
+
+		if (argc != 2) {
+			fprintf(stderr, "state <name>\n");
+			exit(1);
+		}
+
+		if (!strcmp(argv[1], "."))
+			ino = current_inode;
+		else {
+			rc = kvsns_lookup(&cred, &current_inode, argv[1], &ino);
+			if (rc != 0)
+				return rc;
+		}
+
+		rc = kvsns_state(&cred, &ino, state);
+		if (rc == 0)
+			printf("Success !! state=%s\n", state);
+		else
+			printf("state failed, rc=%d\n", rc);
+
+		return 0;
+
 	} else if (!strcmp(exec_name, "ns_truncate")) {
 		kvsns_ino_t fino = 0LL;
 		struct stat stat;
