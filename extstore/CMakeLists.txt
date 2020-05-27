@@ -10,3 +10,6 @@ if(USE_RADOS)
 	add_subdirectory(rados)
 endif(USE_RADOS)
 
+if(USE_CRUD_CACHE)
+	add_subdirectory(crud_cache)
+endif(USE_CRUD_CACHE)

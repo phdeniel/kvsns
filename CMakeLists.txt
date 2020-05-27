@@ -22,6 +22,7 @@ option(USE_KVS_MERO "Use MERO as a KVS in KVSAL" OFF)
 option(USE_POSIX_STORE "Use POSIX directory as object store" ON)
 option(USE_POSIX_OBJ "Use POSIX with objs and keys" OFF)
 option(USE_RADOS "Use Ceph/RADOS via librados" OFF)
+option(USE_CRUD_CACHE "Use CRUD cache" OFF)
 
 if(USE_FSAL_LUSTRE)
     set(BCOND_LUSTRE "%bcond_without")
@@ -54,16 +55,24 @@ else (USE_RADOS)
 	set(BCOND_RADOS "%bcond_with")
 endif (USE_RADOS)
 
+if (USE_CRUD_CACHE)
+	set(BCOND_CRUD_CACHE "%bcond_without")
+else (USE_CRUD_CACHE)
+	set(BCOND_CRUD_CACHE "%bcond_with")
+endif (USE_CRUD_CACHE)
+
 # Final tuning
-if (USE_POSIX_OBJ OR USE_RADOS)
+# Final tuning
+if (USE_POSIX_OBJ OR USE_RADOS OR USE_CRUD_CACHE)
   set(USE_POSIX_STORE OFF)
   message(STATUS "Disabling POSIX Store")
-endif(USE_POSIX_OBJ OR USE_RADOS)
+endif(USE_POSIX_OBJ OR USE_RADOS OR USE_CRUD_CACHE)
 
 message(STATUS "USE_KVS_REDIS=${USE_KVS_REDIS}")
 message(STATUS "USE_POSIX_STORE=${USE_POSIX_STORE}")
 message(STATUS "USE_POSIX_OBJ=${USE_POSIX_OBJ}")
 message(STATUS "USE_RADOS=${USE_RADOS}")
+message(STATUS "USE_CRUD_CACHE=${USE_CRUD_CACHE}")
 
 
 include(CheckIncludeFiles)
