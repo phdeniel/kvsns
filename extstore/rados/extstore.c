@@ -351,3 +351,18 @@ exitok:
 
 	return 0;
 }
+
+int extstore_archive(kvsns_ino_t *ino)
+{
+	return -ENOTSUP;
+}
+
+int extstore_release(kvsns_ino_t *ino)
+{
+	return -ENOTSUP;
+}
+
+int extstore_state(kvsns_ino_t *ino, char *state)
+{
+	return -ENOTSUP;
+}

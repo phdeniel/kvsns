@@ -639,4 +639,37 @@ int kvsns_attach(kvsns_cred_t *cred, kvsns_ino_t *parent, char *name,
 		 char *objid, int objid_len, struct stat *stat,
 		 int statflags, kvsns_ino_t *newfile);
 
+
+/* Pseudo HSM */
+
+/**
+ *  High level API: do an 'archive' coperation (if supported by extstore)
+ *
+ * @param cred - pointer to user's credentials
+ * @param ino - found inode if lookup is successful
+ *
+ * @return 0 if successful, a negative "-errno" value in case of failure
+ */
+int kvsns_archive(kvsns_cred_t *cred, kvsns_ino_t *ino);
+
+/**
+ *  High level API: do a 'release' coperation (if supported by extstore)
+ *
+ * @param cred - pointer to user's credentials
+ * @param ino - found inode if lookup is successful
+ *
+ * @return 0 if successful, a negative "-errno" value in case of failure
+ */
+int kvsns_release(kvsns_cred_t *cred, kvsns_ino_t *ino);
+
+/**
+ *  High level API: do a 'hsm state' query (if supported by extstore)
+ *
+ * @param cred - pointer to user's credentials
+ * @param ino - found inode if lookup is successful
+ *
+ * @return 0 if successful, a negative "-errno" value in case of failure
+ */
+int kvsns_state(kvsns_cred_t *cred, kvsns_ino_t *ino, char *state);
+
 #endif

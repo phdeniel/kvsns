@@ -312,3 +312,19 @@ int kvsns_attach(kvsns_cred_t *cred, kvsns_ino_t *parent, char *name,
 
 	return 0;
 }
+
+int kvsns_archive(kvsns_cred_t *cred, kvsns_ino_t *ino)
+{
+	return extstore_archive(ino);
+}
+
+int kvsns_release(kvsns_cred_t *cred, kvsns_ino_t *ino)
+{
+	return extstore_release(ino);
+}
+
+int kvsns_state(kvsns_cred_t *cred, kvsns_ino_t *ino, char *state)
+{
+	return extstore_state(ino, state);
+}
+
