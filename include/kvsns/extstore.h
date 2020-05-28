@@ -70,6 +70,7 @@ int extstore_getattr(kvsns_ino_t *ino,
 
 /* Pseudo HSM */
 int extstore_archive(kvsns_ino_t *ino);
+int extstore_restore(kvsns_ino_t *ino);
 int extstore_release(kvsns_ino_t *ino);
 int extstore_state(kvsns_ino_t *ino, char *state);
 #endif

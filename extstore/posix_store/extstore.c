@@ -280,6 +280,11 @@ int extstore_archive(kvsns_ino_t *ino)
 	return -ENOTSUP;
 }
 
+int extstore_restore(kvsns_ino_t *ino)
+{
+	return -ENOTSUP;
+}
+
 int extstore_release(kvsns_ino_t *ino)
 {
 	return -ENOTSUP;

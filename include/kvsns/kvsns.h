@@ -653,6 +653,16 @@ int kvsns_attach(kvsns_cred_t *cred, kvsns_ino_t *parent, char *name,
 int kvsns_archive(kvsns_cred_t *cred, kvsns_ino_t *ino);
 
 /**
+ *  High level API: do a 'restore (if supported by extstore)
+ *
+ * @param cred - pointer to user's credentials
+ * @param ino - found inode if lookup is successful
+ *
+ * @return 0 if successful, a negative "-errno" value in case of failure
+ */
+int kvsns_restore(kvsns_cred_t *cred, kvsns_ino_t *ino);
+
+/**
  *  High level API: do a 'release' coperation (if supported by extstore)
  *
  * @param cred - pointer to user's credentials

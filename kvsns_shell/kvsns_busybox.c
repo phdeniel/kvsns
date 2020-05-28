@@ -380,6 +380,28 @@ int main(int argc, char *argv[])
 
 		return 0;
 
+	} else if (!strcmp(exec_name, "ns_restore")) {
+		if (argc != 2) {
+			fprintf(stderr, "restore <name>\n");
+			exit(1);
+		}
+
+		if (!strcmp(argv[1], "."))
+			ino = current_inode;
+		else {
+			rc = kvsns_lookup(&cred, &current_inode, argv[1], &ino);
+			if (rc != 0)
+				return rc;
+		}
+
+		rc = kvsns_restore(&cred, &ino);
+		if (rc == 0)
+			printf("Success !!\n");
+		else
+			printf("Archive failed, rc=%d\n", rc);
+
+		return 0;
+
 	} else if (!strcmp(exec_name, "ns_release")) {
 		if (argc != 2) {
 			fprintf(stderr, "release <name>\n");

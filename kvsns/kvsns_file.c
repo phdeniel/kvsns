@@ -318,6 +318,11 @@ int kvsns_archive(kvsns_cred_t *cred, kvsns_ino_t *ino)
 	return extstore_archive(ino);
 }
 
+int kvsns_restore(kvsns_cred_t *cred, kvsns_ino_t *ino)
+{
+	return extstore_restore(ino);
+}
+
 int kvsns_release(kvsns_cred_t *cred, kvsns_ino_t *ino)
 {
 	return extstore_release(ino);
