@@ -29,9 +29,9 @@
  * KVSNS: implement a dummy object store inside a POSIX directory
  */
 
-
-#include <hiredis/hiredis.h>
+#include <sys/time.h>   /* for gettimeofday */
 #include <kvsns/extstore.h>
+
 
 #define RC_WRAP(__function, ...) ({\
 	int __rc = __function(__VA_ARGS__);\
@@ -45,16 +45,9 @@
 
 
 /* The REDIS context exists in the TLS, for MT-Safety */
-__thread redisContext *rediscontext = NULL;
-
 static char store_root[MAXPATHLEN];
 
 static struct collection_item *conf = NULL;
-
-static void extstore_reinit(void)
-{
-	extstore_init(conf);
-}
 
 enum state {
 	INVAL      = -1,
@@ -87,80 +80,13 @@ static enum state str2state(const char *str)
 	return INVAL;
 }
 
-
-static int setkey(char *k, char *v)
-{
-	redisReply *reply = NULL;
-
-	if (!k || !v)
-		return -EINVAL;
-
-	reply = redisCommand(rediscontext, "SET %s %s", k, v);
-	if (!reply)
-		return -1;
-	freeReplyObject(reply);
-
-	return 0;
-}
-
-static int getkey(char *k, char *v)
-{
-	redisReply *reply;
-
-	if (!k || !v)
-		return -EINVAL;
-
-	reply = NULL;
-	reply = redisCommand(rediscontext, "GET %s", k);
-	if (!reply)
-		return -1;
-
-	if (reply->len == 0)
-		return -ENOENT;
-
-	strcpy(v, reply->str);
-	freeReplyObject(reply);
-
-	return 0;
-}
-
-static int delkey(char *k)
-{
-	redisReply *reply = NULL;
-
-	if (!k)
-		return -EINVAL;
-
-	reply = redisCommand(rediscontext, "DEL %s", k);
-	if (!reply)
-		return -1;
-	freeReplyObject(reply);
-
-	return 0;
-}
-
-static int setkeybuf(char *k, char *v, size_t len)
-{
-	redisReply *reply = NULL;
-
-	if (!k || !v)
-		return -EINVAL;
-
-	reply = redisCommand(rediscontext, "SET %s %b", k, v, len);
-	if (!reply)
-		return -1;
-	freeReplyObject(reply);
-
-	return 0;
-}
-
 static int get_entry_state(kvsns_ino_t *ino, enum state *state)
 {
 	char k[KLEN];
 	char v[VLEN];
 
 	snprintf(k, KLEN, "%llu.cache_state", *ino);
-	RC_WRAP(getkey, k, v);
+	RC_WRAP(kvsal_get_char, k, v);
 
 	*state = str2state(v);
 
@@ -175,53 +101,16 @@ static int set_entry_state(kvsns_ino_t *ino, enum state state)
 	snprintf(k, KLEN, "%llu.cache_state", *ino);
 	v = (char *)state2str(state);
 
-	RC_WRAP(setkey, k, v);
+	RC_WRAP(kvsal_set_char, k, v);
 
 	return 0;
 }
 
 static int del_entry_state(kvsns_ino_t *ino)
 {
-	return -ENOTSUP;
-}
-
-static int set_stat(kvsns_ino_t *ino, struct stat *buf)
-{
 	char k[KLEN];
-
-	size_t size = sizeof(struct stat);
-
-	if (!ino || !buf)
-		return -EINVAL;
-
-	snprintf(k, KLEN, "%llu.data_attr", *ino);
-	RC_WRAP(setkeybuf, k, (char *)buf, size);
-
-	return 0;
-}
-
-static int get_stat(kvsns_ino_t *ino, struct stat *buf)
-{
-	char k[KLEN];
-	redisReply *reply;
-
-	if (!ino || !buf)
-		return -EINVAL;
-
-	snprintf(k, KLEN, "%llu.data_attr", *ino);
-	reply = redisCommand(rediscontext, "GET %s", k);
-	if (!reply)
-		return -1;
-
-	if (reply->type != REDIS_REPLY_STRING)
-		return -1;
-
-	if (reply->len != sizeof(struct stat))
-		return -1;
-
-	memcpy((char *)buf, reply->str, reply->len);
-
-	freeReplyObject(reply);
+	snprintf(k, KLEN, "%llu.cache_state", *ino);
+	RC_WRAP(kvsal_del, k);
 
 	return 0;
 }
@@ -235,12 +124,48 @@ static int build_extstore_path(kvsns_ino_t object,
 	if (!extstore_path)
 		return -1;
 
-	if (!rediscontext)
-		extstore_reinit();
-
 	snprintf(k, KLEN, "%llu.data", object);
-	RC_WRAP(getkey, k, extstore_path);
+	RC_WRAP(kvsal_get_char, k, extstore_path);
 
+	return 0;
+}
+
+static int objstore_put(char *path, kvsns_ino_t *ino)
+{
+	char storepath[MAXPATHLEN];
+	char objpath[MAXPATHLEN];
+
+	RC_WRAP(build_extstore_path, *ino, storepath, MAXPATHLEN);
+	strncpy(objpath, storepath, MAXPATHLEN);
+	strncat(objpath, ".store", MAXPATHLEN);
+
+	RC_WRAP(execl, "/usr/bin/cp", storepath, objpath, NULL);
+	return 0;
+}
+
+static int objstore_get(char *path, kvsns_ino_t *ino)
+{
+	char storepath[MAXPATHLEN];
+	char objpath[MAXPATHLEN];
+
+	RC_WRAP(build_extstore_path, *ino, storepath, MAXPATHLEN);
+	strncpy(objpath, storepath, MAXPATHLEN);
+	strncat(objpath, ".store", MAXPATHLEN);
+
+	RC_WRAP(execl, "/usr/bin/cp", objpath, storepath, NULL);
+	return 0;
+}
+
+static int objstore_del(kvsns_ino_t *ino)
+{
+	char storepath[MAXPATHLEN];
+	char objpath[MAXPATHLEN];
+
+	RC_WRAP(build_extstore_path, *ino, storepath, MAXPATHLEN);
+	strncpy(objpath, storepath, MAXPATHLEN);
+	strncat(objpath, ".store", MAXPATHLEN);
+
+	RC_WRAP(execl, "/usr/bin/rm", objpath, NULL);
 	return 0;
 }
 
@@ -298,14 +223,7 @@ int extstore_create(kvsns_ino_t object)
 	char v[VLEN];
 	char path[VLEN];
 	int fd;
-	size_t size;
 	struct stat stat;
-
-	if (!rediscontext)
-		extstore_reinit();
-
-	if (!rediscontext)
-		extstore_reinit();
 
 	fd = creat(path, 0777);
 	if (fd == -1)
@@ -316,20 +234,19 @@ int extstore_create(kvsns_ino_t object)
 	snprintf(path, VLEN, "%s/inum=%llu",
 		store_root, (unsigned long long)object);
 	strncpy(v, path, VLEN);
-	RC_WRAP(setkey, k, v);
+	RC_WRAP(kvsal_set_char, k, v);
 
 	snprintf(k, KLEN, "%llu.data_attr", object);
-	size = sizeof(struct stat);
 	memset((char *)&stat, 0, sizeof(stat));
-	RC_WRAP(setkeybuf, k, (char *)&stat, size);
+	RC_WRAP(kvsal_set_stat, k, &stat);
 
 	snprintf(k, KLEN, "%llu.data_ext", object);
 	v[0] = '\0'; /* snprintf(v, VLEN, ""); */
-	RC_WRAP(setkey, k, v);
+	RC_WRAP(kvsal_set_char, k, v);
 
 	snprintf(k, KLEN, "%llu.cache_state", object);
 	snprintf(v, VLEN, "1/0");
-	RC_WRAP(setkey, k, v);
+	RC_WRAP(kvsal_set_char, k, v);
 
 	return 0;
 }
@@ -338,31 +255,23 @@ int extstore_attach(kvsns_ino_t *ino, char *objid, int objid_len)
 {
 	char k[KLEN];
 	char v[VLEN];
-	size_t size;
 	struct stat stat;
-
-	if (!rediscontext)
-		extstore_reinit();
-
-	if (!rediscontext)
-		extstore_reinit();
 
 	snprintf(k, KLEN, "%llu.data", *ino);
 	strncpy(v, objid, (objid_len > VLEN)?VLEN:objid_len);
-	RC_WRAP(setkey, k, v);
+	RC_WRAP(kvsal_set_char, k, v);
 
 	snprintf(k, KLEN, "%llu.data_attr", *ino);
-	size = sizeof(struct stat);
 	memset((char *)&stat, 0, sizeof(stat));
-	RC_WRAP(setkeybuf, k, (char *)&stat, size);
+	RC_WRAP(kvsal_set_stat, k, &stat);
 
 	snprintf(k, KLEN, "%llu.data_ext", *ino);
 	v[0] = '\0'; /* snprintf(v, VLEN, ""); */
-	RC_WRAP(setkey, k, v);
+	RC_WRAP(kvsal_set_char, k, v);
 
 	snprintf(k, KLEN, "%llu.cache_state", *ino);
 	snprintf(v, VLEN, "YES");
-	RC_WRAP(setkey, k, v);
+	RC_WRAP(kvsal_set_char, k, v);
 
 	RC_WRAP(set_entry_state, ino, CACHED);
 
@@ -371,49 +280,11 @@ int extstore_attach(kvsns_ino_t *ino, char *objid, int objid_len)
 
 int extstore_init(struct collection_item *cfg_items)
 {
-	redisReply *reply;
-	char *hostname = NULL;
-	char hostname_default[] = "127.0.0.1";
-	struct timeval timeout = { 1, 500000 }; /* 1.5 seconds */
-	int port = 6379; /* REDIS default */
 	struct collection_item *item;
 	int rc;
 
 	if (cfg_items != NULL)
 		conf = cfg_items;
-
-	/* Get config from ini file */
-	item = NULL;
-	RC_WRAP(get_config_item, "posix_obj", "server", cfg_items, &item);
-	if (item == NULL)
-		hostname = hostname_default;
-	else
-		hostname = get_string_config_value(item, NULL);
-
-	item = NULL;
-	RC_WRAP(get_config_item, "posix_obj", "port", cfg_items, &item);
-	if (item != NULL)
-		port = (int)get_int_config_value(item, 0, 0, NULL);
-
-	rediscontext = redisConnectWithTimeout(hostname, port, timeout);
-	if (rediscontext == NULL || rediscontext->err) {
-		if (rediscontext) {
-			fprintf(stderr,
-				"Connection error: %s\n", rediscontext->errstr);
-			redisFree(rediscontext);
-		} else {
-			fprintf(stderr,
-				"Connection error: can't get redis context\n");
-		}
-		exit(1);
-	}
-
-	/* PING server */
-	reply = redisCommand(rediscontext, "PING");
-	if (!reply)
-		return -1;
-
-	freeReplyObject(reply);
 
 	/* Deal with store_root */
 	item = NULL;
@@ -454,19 +325,21 @@ int extstore_del(kvsns_ino_t *ino)
 
 	/* delete <inode>.data */
 	snprintf(k, KLEN, "%llu.data", *ino);
-	RC_WRAP(delkey, k);
+	RC_WRAP(kvsal_del, k);
 
 	/* delete <inode>.data_attr */
 	snprintf(k, KLEN, "%llu.data_attr", *ino);
-	RC_WRAP(delkey, k);
+	RC_WRAP(kvsal_del, k);
 
 	/* delete <inode>.data_ext */
 	snprintf(k, KLEN, "%llu.data_ext", *ino);
-	RC_WRAP(delkey, k);
+	RC_WRAP(kvsal_del, k);
 
 	/* delete state */
 	RC_WRAP(del_entry_state, ino);
 
+	/* Delete in the object store */
+	RC_WRAP(objstore_del, ino);
 	return 0;
 }
 
@@ -482,6 +355,7 @@ int extstore_read(kvsns_ino_t *ino,
 	int fd = 0;
 	ssize_t read_bytes;
 	enum state state;
+	char k[KLEN];
 
 	RC_WRAP(get_entry_state, ino, &state);
 
@@ -501,7 +375,8 @@ int extstore_read(kvsns_ino_t *ino,
 	}
 
 	RC_WRAP_LABEL(rc, errout, update_stat, stat, UP_ST_READ, 0);
-	RC_WRAP_LABEL(rc, errout, set_stat, ino, stat);
+	snprintf(k, KLEN, "%llu.data_attr", *ino);
+	RC_WRAP_LABEL(rc, errout, kvsal_set_stat, k, stat);
 
 	rc = close(fd);
 	if (rc < 0)
@@ -528,6 +403,7 @@ int extstore_write(kvsns_ino_t *ino,
 	ssize_t written_bytes;
 	struct stat objstat;
 	enum state state;
+	char k[KLEN];
 
 	if (!ino)
 		return -EINVAL;
@@ -553,10 +429,11 @@ int extstore_write(kvsns_ino_t *ino,
 	if (rc < 0)
 		return -errno;
 
-	RC_WRAP(get_stat, ino, &objstat);
+	snprintf(k, KLEN, "%llu.data_attr", *ino);
+	RC_WRAP(kvsal_get_stat, k, &objstat);
 	RC_WRAP(update_stat, &objstat, UP_ST_WRITE,
 		offset+written_bytes);
-	RC_WRAP(set_stat, ino, &objstat);
+	RC_WRAP(kvsal_set_stat, k, &objstat);
 
 	stat->st_size = objstat.st_size;
 	stat->st_blocks = objstat.st_blocks;
@@ -580,11 +457,13 @@ int extstore_truncate(kvsns_ino_t *ino,
 	char storepath[MAXPATHLEN];
 	struct stat objstat;
 	enum state state;
+	char k[KLEN];
 
 	if (!ino || !stat)
 		return -EINVAL;
 
 	RC_WRAP(get_entry_state, ino, &state);
+
 
 	switch (state) {
 	case CACHED:
@@ -599,7 +478,8 @@ int extstore_truncate(kvsns_ino_t *ino,
 		rc = 0;
 		break;
 	case RELEASED:
-		RC_WRAP(get_stat, ino, &objstat);
+		snprintf(k, KLEN, "%llu.data_attr", *ino);
+		RC_WRAP(kvsal_get_stat, k, &objstat);
 
 		stat->st_size = filesize;
 		objstat.st_size = filesize;
@@ -607,7 +487,7 @@ int extstore_truncate(kvsns_ino_t *ino,
 		stat->st_ctim = objstat.st_ctim;
 		stat->st_mtim = objstat.st_mtim;
 
-		RC_WRAP(set_stat, ino, &objstat);
+		RC_WRAP(kvsal_set_stat, k, &objstat);
 		rc = 0;
 		break;
 	default:
@@ -624,6 +504,7 @@ int extstore_getattr(kvsns_ino_t *ino,
 	int rc;
 	char storepath[MAXPATHLEN];
 	enum state state;
+	char k[KLEN];
 
 	/* Should be using stored stat */
 	if (!ino || !stat)
@@ -641,7 +522,8 @@ int extstore_getattr(kvsns_ino_t *ino,
 		break;
 	case RELEASED:
 		/* Get archived stats */
-		RC_WRAP(get_stat, ino, stat);
+		snprintf(k, KLEN, "%llu.data_attr", *ino);
+		RC_WRAP(kvsal_get_stat, k, stat);
 		rc = 0; /* Success */
 		break;
 	default:
@@ -654,22 +536,106 @@ int extstore_getattr(kvsns_ino_t *ino,
 
 int extstore_archive(kvsns_ino_t *ino)
 {
-	return -ENOTSUP;
+	enum state state;
+	char storepath[MAXPATHLEN];
+	int rc;
+
+	if (!ino)
+		return -EINVAL;
+
+	RC_WRAP(get_entry_state, ino, &state);
+
+	switch (state) {
+	case RELEASED:
+		rc = -EACCES;
+		break;
+	case DUPLICATED:
+		rc = 0;
+		break;
+	case CACHED:
+		/* Xfer wuth the object store */
+		RC_WRAP(build_extstore_path, *ino, storepath, MAXPATHLEN);
+
+		RC_WRAP(objstore_put, storepath, ino);
+		RC_WRAP(set_entry_state, ino, DUPLICATED);
+		rc = 0;
+		break;
+	default:
+		rc = -EINVAL; /* Should not occur */
+		break;
+	}
+
+	return rc;
 }
 
 int extstore_restore(kvsns_ino_t *ino)
 {
-	return -ENOTSUP;
+	enum state state;
+	char storepath[MAXPATHLEN];
+	int rc = 0;
+
+	if (!ino)
+		return -EINVAL;
+
+	RC_WRAP(get_entry_state, ino, &state);
+
+	switch (state) {
+	case DUPLICATED:
+	case CACHED:
+		rc = 0;
+		break;
+	case RELEASED:
+		/* Xfer with the object store */
+		RC_WRAP(build_extstore_path, *ino, storepath, MAXPATHLEN);
+		RC_WRAP(objstore_get, storepath, ino);
+		RC_WRAP(set_entry_state, ino, DUPLICATED);
+		rc = 0;
+		break;
+	default:
+		rc = -EINVAL; /* Should not occur */
+		break;
+	}
+
+	return rc;
 }
 
 int extstore_release(kvsns_ino_t *ino)
 {
-	return -ENOTSUP;
+	enum state state;
+	char storepath[MAXPATHLEN];
+	int rc = 0;
+
+	if (!ino)
+		return -EINVAL;
+
+	RC_WRAP(get_entry_state, ino, &state);
+
+	switch (state) {
+	case CACHED:
+		rc = -EACCES;
+		break;
+	case RELEASED:
+		rc = 0; /* Nothing to do */
+		break;
+	case DUPLICATED:
+		RC_WRAP(unlink, storepath);
+		RC_WRAP(set_entry_state, ino, RELEASED);
+		rc = 0;
+		break;
+	default:
+		rc = -EINVAL; /* Should not occur */
+		break;
+	}
+
+	return rc;
 }
 
 int extstore_state(kvsns_ino_t *ino, char *strstate)
 {
 	enum state state;
+
+	if (!ino)
+		return -EINVAL;
 
 	RC_WRAP(get_entry_state, ino, &state);
 	strcpy(strstate, state2str(state));
