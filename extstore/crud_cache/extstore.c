@@ -134,12 +134,16 @@ static int objstore_put(char *path, kvsns_ino_t *ino)
 {
 	char storepath[MAXPATHLEN];
 	char objpath[MAXPATHLEN];
+	char cmd[3*MAXPATHLEN];
+	FILE *fp;
 
 	RC_WRAP(build_extstore_path, *ino, storepath, MAXPATHLEN);
-	strncpy(objpath, storepath, MAXPATHLEN);
-	strncat(objpath, ".store", MAXPATHLEN);
+	sprintf(objpath, "%s.archive", storepath);
+	sprintf(cmd, "/usr/bin/cp %s %s", storepath, objpath);
 
-	RC_WRAP(execl, "/usr/bin/cp", storepath, objpath, NULL);
+	fp = popen(cmd, "r");
+	pclose(fp);
+
 	return 0;
 }
 
@@ -147,12 +151,16 @@ static int objstore_get(char *path, kvsns_ino_t *ino)
 {
 	char storepath[MAXPATHLEN];
 	char objpath[MAXPATHLEN];
+	char cmd[3*MAXPATHLEN];
+	FILE *fp;
 
 	RC_WRAP(build_extstore_path, *ino, storepath, MAXPATHLEN);
-	strncpy(objpath, storepath, MAXPATHLEN);
-	strncat(objpath, ".store", MAXPATHLEN);
+	sprintf(objpath, "%s.archive", storepath);
+	sprintf(cmd, "/usr/bin/cp %s %s", objpath, storepath);
 
-	RC_WRAP(execl, "/usr/bin/cp", objpath, storepath, NULL);
+	fp = popen(cmd, "r");
+	pclose(fp);
+
 	return 0;
 }
 
@@ -160,12 +168,16 @@ static int objstore_del(kvsns_ino_t *ino)
 {
 	char storepath[MAXPATHLEN];
 	char objpath[MAXPATHLEN];
+	char cmd[3*MAXPATHLEN];
+	FILE *fp;
 
 	RC_WRAP(build_extstore_path, *ino, storepath, MAXPATHLEN);
-	strncpy(objpath, storepath, MAXPATHLEN);
-	strncat(objpath, ".store", MAXPATHLEN);
+	sprintf(objpath, "%s.archive", storepath);
+	sprintf(cmd, "/usr/bin/rm %s", objpath);
 
-	RC_WRAP(execl, "/usr/bin/rm", objpath, NULL);
+	fp = popen(cmd, "r");
+	pclose(fp);
+
 	return 0;
 }
 
@@ -288,7 +300,7 @@ int extstore_init(struct collection_item *cfg_items)
 
 	/* Deal with store_root */
 	item = NULL;
-	rc = get_config_item("posix_obj", "root_path",
+	rc = get_config_item("crud_cache", "root_path",
 			      cfg_items, &item);
 	if (rc != 0)
 		return -rc;
@@ -618,6 +630,7 @@ int extstore_release(kvsns_ino_t *ino)
 		rc = 0; /* Nothing to do */
 		break;
 	case DUPLICATED:
+		RC_WRAP(build_extstore_path, *ino, storepath, MAXPATHLEN);
 		RC_WRAP(unlink, storepath);
 		RC_WRAP(set_entry_state, ino, RELEASED);
 		rc = 0;
