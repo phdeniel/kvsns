@@ -1,10 +1,10 @@
-cmake_minimum_required(VERSION 2.6.3)
+cmake_minimum_required(VERSION 2.6.4)
 cmake_policy(SET CMP0017 NEW)
 
 PROJECT(libkvsns C)
 set(LIBKVSNS_MAJOR_VERSION 1)
 set(LIBKVSNS_MINOR_VERSION 2)
-set(LIBKVSNS_PATCH_LEVEL 3)
+set(LIBKVSNS_PATCH_LEVEL 4)
 set(LIBKVSNS_EXTRA_VERSION "")
 
 set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -I${CMAKE_SOURCE_DIR}/include -fPIC -g")

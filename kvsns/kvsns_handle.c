@@ -567,8 +567,10 @@ int kvsns_rename(kvsns_cred_t *cred,  kvsns_ino_t *sino,
 	RC_WRAP(kvsns_access, cred, dino, KVSNS_ACCESS_WRITE);
 
 	rc = kvsns_lookup(cred, dino, dname, &ino);
-	if (rc == 0)
-		return -EEXIST;
+	if (rc == 0) {
+		/* Entry should be deleted so that the rename can be done */
+		RC_WRAP(kvsns_unlink, cred, dino, dname);
+	}
 
 	RC_WRAP(kvsns_get_stat, sino, &sino_stat);
 	if (*sino != *dino)
