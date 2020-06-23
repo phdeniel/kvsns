@@ -45,7 +45,12 @@
 
 
 /* The REDIS context exists in the TLS, for MT-Safety */
+#define LEN_CMD (MAXPATHLEN+2*MAXNAMLEN)
+
 static char store_root[MAXPATHLEN];
+static char cmd_put[LEN_CMD];
+static char cmd_get[LEN_CMD];
+static char cmd_del[LEN_CMD];
 
 static struct collection_item *conf = NULL;
 
@@ -139,7 +144,7 @@ static int objstore_put(char *path, kvsns_ino_t *ino)
 
 	RC_WRAP(build_extstore_path, *ino, storepath, MAXPATHLEN);
 	sprintf(objpath, "%s.archive", storepath);
-	sprintf(cmd, "/usr/bin/cp %s %s", storepath, objpath);
+	sprintf(cmd, cmd_put, storepath, objpath);
 
 	fp = popen(cmd, "r");
 	pclose(fp);
@@ -156,7 +161,7 @@ static int objstore_get(char *path, kvsns_ino_t *ino)
 
 	RC_WRAP(build_extstore_path, *ino, storepath, MAXPATHLEN);
 	sprintf(objpath, "%s.archive", storepath);
-	sprintf(cmd, "/usr/bin/cp %s %s", objpath, storepath);
+	sprintf(cmd, cmd_get, storepath, objpath);
 
 	fp = popen(cmd, "r");
 	pclose(fp);
@@ -173,7 +178,7 @@ static int objstore_del(kvsns_ino_t *ino)
 
 	RC_WRAP(build_extstore_path, *ino, storepath, MAXPATHLEN);
 	sprintf(objpath, "%s.archive", storepath);
-	sprintf(cmd, "/usr/bin/rm %s", objpath);
+	sprintf(cmd, cmd_del, objpath);
 
 	fp = popen(cmd, "r");
 	pclose(fp);
@@ -293,22 +298,39 @@ int extstore_attach(kvsns_ino_t *ino, char *objid, int objid_len)
 int extstore_init(struct collection_item *cfg_items)
 {
 	struct collection_item *item;
-	int rc;
 
 	if (cfg_items != NULL)
 		conf = cfg_items;
 
 	/* Deal with store_root */
 	item = NULL;
-	rc = get_config_item("crud_cache", "root_path",
-			      cfg_items, &item);
-	if (rc != 0)
-		return -rc;
+	RC_WRAP(get_config_item, "crud_cache", "root_path", cfg_items, &item);
 	if (item == NULL)
 		return -EINVAL;
+	else
+		strncpy(store_root, get_string_config_value(item, NULL),
+			MAXPATHLEN);
 
-	strncpy(store_root, get_string_config_value(item, NULL),
-		MAXPATHLEN);
+	RC_WRAP(get_config_item, "crud_cache", "command_put", cfg_items, &item);
+	if (item == NULL)
+		return -EINVAL;
+	else
+		strncpy(cmd_put, get_string_config_value(item, NULL),
+			LEN_CMD);
+
+	RC_WRAP(get_config_item, "crud_cache", "command_get", cfg_items, &item);
+	if (item == NULL)
+		return -EINVAL;
+	else
+		strncpy(cmd_get, get_string_config_value(item, NULL),
+			LEN_CMD);
+
+	RC_WRAP(get_config_item, "crud_cache", "command_del", cfg_items, &item);
+	if (item == NULL)
+		return -EINVAL;
+	else
+		strncpy(cmd_del, get_string_config_value(item, NULL),
+			LEN_CMD);
 
 	return 0;
 }
