@@ -94,6 +94,8 @@ install -m 644 kvsns/libkvsns.so %{buildroot}%{_libdir}
 install -m 644 libkvsns.pc  %{buildroot}%{_libdir}/pkgconfig
 install -m 755 kvsns_shell/kvsns_busybox %{buildroot}%{_bindir}
 install -m 755 kvsns_shell/kvsns_cp %{buildroot}%{_bindir}
+install -m 755 scripts/cp_put.sh %{buildroot}%{_bindir}
+install -m 755 scripts/cp_get.sh %{buildroot}%{_bindir}
 install -m 755 kvsns_attach/kvsns_attach %{buildroot}%{_bindir}
 install -m 644 kvsns.ini %{buildroot}%{_sysconfdir}/kvsns.d
 
@@ -119,8 +121,16 @@ rm -rf $RPM_BUILD_ROOT
 %{_bindir}/kvsns_busybox
 %{_bindir}/kvsns_cp
 %{_bindir}/kvsns_attach
+%{_bindir}/cp_put.sh
+%{_bindir}/cp_get.sh
 
 %changelog
+* Tue Jun 23 2020 Philippe DENIEL <philippe.deniel@cea.fr> 1.2.5
+- More modularity in crud_cache
+
+* Tue Jun 16 2020 Philippe DENIEL <philippe.deniel@cea.fr> 1.2.4
+- Add crud_cache feature for object stores that support only put/get/delete
+
 * Tue Oct 24 2017 Philippe DENIEL <philippe.deniel@cea.fr> 1.2.3
 - Support RADOS as an object store
 
