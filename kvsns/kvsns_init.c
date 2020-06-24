@@ -69,8 +69,7 @@ static int kvsns_load_libs(void)
 	else
 		extstore_lib_path = get_string_config_value(item, NULL);
 
-	handle_extstore = dlopen(extstore_lib_path,
-				 RTLD_NOW | RTLD_LOCAL | RTLD_DEEPBIND);
+	handle_extstore = dlopen(extstore_lib_path, RTLD_LAZY);
 
 	if (!handle_extstore)
 		return -EINVAL;
