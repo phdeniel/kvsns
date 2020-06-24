@@ -53,6 +53,7 @@ static char cmd_get[LEN_CMD];
 static char cmd_del[LEN_CMD];
 
 static struct collection_item *conf = NULL;
+struct kvsal_ops kvsal;
 
 enum state {
 	INVAL      = -1,
@@ -91,7 +92,7 @@ static int get_entry_state(kvsns_ino_t *ino, enum state *state)
 	char v[VLEN];
 
 	snprintf(k, KLEN, "%llu.cache_state", *ino);
-	RC_WRAP(kvsal_get_char, k, v);
+	RC_WRAP(kvsal.get_char, k, v);
 
 	*state = str2state(v);
 
@@ -106,7 +107,7 @@ static int set_entry_state(kvsns_ino_t *ino, enum state state)
 	snprintf(k, KLEN, "%llu.cache_state", *ino);
 	v = (char *)state2str(state);
 
-	RC_WRAP(kvsal_set_char, k, v);
+	RC_WRAP(kvsal.set_char, k, v);
 
 	return 0;
 }
@@ -115,7 +116,7 @@ static int del_entry_state(kvsns_ino_t *ino)
 {
 	char k[KLEN];
 	snprintf(k, KLEN, "%llu.cache_state", *ino);
-	RC_WRAP(kvsal_del, k);
+	RC_WRAP(kvsal.del, k);
 
 	return 0;
 }
@@ -130,7 +131,7 @@ static int build_extstore_path(kvsns_ino_t object,
 		return -1;
 
 	snprintf(k, KLEN, "%llu.data", object);
-	RC_WRAP(kvsal_get_char, k, extstore_path);
+	RC_WRAP(kvsal.get_char, k, extstore_path);
 
 	return 0;
 }
@@ -251,19 +252,19 @@ int extstore_create(kvsns_ino_t object)
 	snprintf(path, VLEN, "%s/inum=%llu",
 		store_root, (unsigned long long)object);
 	strncpy(v, path, VLEN);
-	RC_WRAP(kvsal_set_char, k, v);
+	RC_WRAP(kvsal.set_char, k, v);
 
 	snprintf(k, KLEN, "%llu.data_attr", object);
 	memset((char *)&stat, 0, sizeof(stat));
-	RC_WRAP(kvsal_set_stat, k, &stat);
+	RC_WRAP(kvsal.set_stat, k, &stat);
 
 	snprintf(k, KLEN, "%llu.data_ext", object);
 	v[0] = '\0'; /* snprintf(v, VLEN, ""); */
-	RC_WRAP(kvsal_set_char, k, v);
+	RC_WRAP(kvsal.set_char, k, v);
 
 	snprintf(k, KLEN, "%llu.cache_state", object);
 	snprintf(v, VLEN, "1/0");
-	RC_WRAP(kvsal_set_char, k, v);
+	RC_WRAP(kvsal.set_char, k, v);
 
 	return 0;
 }
@@ -276,31 +277,34 @@ int extstore_attach(kvsns_ino_t *ino, char *objid, int objid_len)
 
 	snprintf(k, KLEN, "%llu.data", *ino);
 	strncpy(v, objid, (objid_len > VLEN)?VLEN:objid_len);
-	RC_WRAP(kvsal_set_char, k, v);
+	RC_WRAP(kvsal.set_char, k, v);
 
 	snprintf(k, KLEN, "%llu.data_attr", *ino);
 	memset((char *)&stat, 0, sizeof(stat));
-	RC_WRAP(kvsal_set_stat, k, &stat);
+	RC_WRAP(kvsal.set_stat, k, &stat);
 
 	snprintf(k, KLEN, "%llu.data_ext", *ino);
 	v[0] = '\0'; /* snprintf(v, VLEN, ""); */
-	RC_WRAP(kvsal_set_char, k, v);
+	RC_WRAP(kvsal.set_char, k, v);
 
 	snprintf(k, KLEN, "%llu.cache_state", *ino);
 	snprintf(v, VLEN, "YES");
-	RC_WRAP(kvsal_set_char, k, v);
+	RC_WRAP(kvsal.set_char, k, v);
 
 	RC_WRAP(set_entry_state, ino, CACHED);
 
 	return 0;
 }
 
-int extstore_init(struct collection_item *cfg_items)
+int extstore_init(struct collection_item *cfg_items,
+		  struct kvsal_ops *kvsalops)
 {
 	struct collection_item *item;
 
 	if (cfg_items != NULL)
 		conf = cfg_items;
+
+	memcpy(&kvsal, kvsalops, sizeof(struct kvsal_ops));
 
 	/* Deal with store_root */
 	item = NULL;
@@ -359,15 +363,15 @@ int extstore_del(kvsns_ino_t *ino)
 
 	/* delete <inode>.data */
 	snprintf(k, KLEN, "%llu.data", *ino);
-	RC_WRAP(kvsal_del, k);
+	RC_WRAP(kvsal.del, k);
 
 	/* delete <inode>.data_attr */
 	snprintf(k, KLEN, "%llu.data_attr", *ino);
-	RC_WRAP(kvsal_del, k);
+	RC_WRAP(kvsal.del, k);
 
 	/* delete <inode>.data_ext */
 	snprintf(k, KLEN, "%llu.data_ext", *ino);
-	RC_WRAP(kvsal_del, k);
+	RC_WRAP(kvsal.del, k);
 
 	/* delete state */
 	RC_WRAP(del_entry_state, ino);
@@ -410,7 +414,7 @@ int extstore_read(kvsns_ino_t *ino,
 
 	RC_WRAP_LABEL(rc, errout, update_stat, stat, UP_ST_READ, 0);
 	snprintf(k, KLEN, "%llu.data_attr", *ino);
-	RC_WRAP_LABEL(rc, errout, kvsal_set_stat, k, stat);
+	RC_WRAP_LABEL(rc, errout, kvsal.set_stat, k, stat);
 
 	rc = close(fd);
 	if (rc < 0)
@@ -464,10 +468,10 @@ int extstore_write(kvsns_ino_t *ino,
 		return -errno;
 
 	snprintf(k, KLEN, "%llu.data_attr", *ino);
-	RC_WRAP(kvsal_get_stat, k, &objstat);
+	RC_WRAP(kvsal.get_stat, k, &objstat);
 	RC_WRAP(update_stat, &objstat, UP_ST_WRITE,
 		offset+written_bytes);
-	RC_WRAP(kvsal_set_stat, k, &objstat);
+	RC_WRAP(kvsal.set_stat, k, &objstat);
 
 	stat->st_size = objstat.st_size;
 	stat->st_blocks = objstat.st_blocks;
@@ -513,7 +517,7 @@ int extstore_truncate(kvsns_ino_t *ino,
 		break;
 	case RELEASED:
 		snprintf(k, KLEN, "%llu.data_attr", *ino);
-		RC_WRAP(kvsal_get_stat, k, &objstat);
+		RC_WRAP(kvsal.get_stat, k, &objstat);
 
 		stat->st_size = filesize;
 		objstat.st_size = filesize;
@@ -521,7 +525,7 @@ int extstore_truncate(kvsns_ino_t *ino,
 		stat->st_ctim = objstat.st_ctim;
 		stat->st_mtim = objstat.st_mtim;
 
-		RC_WRAP(kvsal_set_stat, k, &objstat);
+		RC_WRAP(kvsal.set_stat, k, &objstat);
 		rc = 0;
 		break;
 	default:
@@ -557,7 +561,7 @@ int extstore_getattr(kvsns_ino_t *ino,
 	case RELEASED:
 		/* Get archived stats */
 		snprintf(k, KLEN, "%llu.data_attr", *ino);
-		RC_WRAP(kvsal_get_stat, k, stat);
+		RC_WRAP(kvsal.get_stat, k, stat);
 		rc = 0; /* Success */
 		break;
 	default:

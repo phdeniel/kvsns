@@ -41,13 +41,15 @@
 #include <kvsns/kvsns.h>
 #include "kvsns_internal.h"
 
+extern struct kvsal_ops kvsal;
+
 int kvsns_next_inode(kvsns_ino_t *ino)
 {
 	int rc;
 	if (!ino)
 		return -EINVAL;
 
-	rc = kvsal_incr_counter("ino_counter", ino);
+	rc = kvsal.incr_counter("ino_counter", ino);
 	if (rc != 0)
 		return rc;
 
@@ -106,9 +108,9 @@ int kvsns_update_stat(kvsns_ino_t *ino, int flags)
 		return -EINVAL;
 
 	snprintf(k, KLEN, "%llu.stat", *ino);
-	RC_WRAP(kvsal_get_stat, k, &stat);
+	RC_WRAP(kvsal.get_stat, k, &stat);
 	RC_WRAP(kvsns_amend_stat, &stat, flags);
-	RC_WRAP(kvsal_set_stat, k, &stat);
+	RC_WRAP(kvsal.set_stat, k, &stat);
 
 	return 0;
 }
@@ -174,18 +176,18 @@ int kvsns_create_entry(kvsns_cred_t *cred, kvsns_ino_t *parent,
 	RC_WRAP(kvsns_next_inode, new_entry);
 	RC_WRAP(kvsns_get_stat, parent, &parent_stat);
 
-	RC_WRAP(kvsal_begin_transaction);
+	RC_WRAP(kvsal.begin_transaction);
 
 	snprintf(k, KLEN, "%llu.dentries.%s",
 		 *parent, name);
 	snprintf(v, VLEN, "%llu", *new_entry);
 
-	RC_WRAP_LABEL(rc, aborted, kvsal_set_char, k, v);
+	RC_WRAP_LABEL(rc, aborted, kvsal.set_char, k, v);
 
 	snprintf(k, KLEN, "%llu.parentdir", *new_entry);
 	snprintf(v, VLEN, "%llu|", *parent);
 
-	RC_WRAP_LABEL(rc, aborted, kvsal_set_char, k, v);
+	RC_WRAP_LABEL(rc, aborted, kvsal.set_char, k, v);
 
 	/* Set stat */
 	memset(&bufstat, 0, sizeof(struct stat));
@@ -225,22 +227,22 @@ int kvsns_create_entry(kvsns_cred_t *cred, kvsns_ino_t *parent,
 		return -EINVAL;
 	}
 	snprintf(k, KLEN, "%llu.stat", *new_entry);
-	RC_WRAP_LABEL(rc, aborted, kvsal_set_stat, k, &bufstat);
+	RC_WRAP_LABEL(rc, aborted, kvsal.set_stat, k, &bufstat);
 
 	if (type == KVSNS_SYMLINK) {
 		snprintf(k, KLEN, "%llu.link", *new_entry);
-		RC_WRAP_LABEL(rc, aborted, kvsal_set_char, k, lnk);
+		RC_WRAP_LABEL(rc, aborted, kvsal.set_char, k, lnk);
 	}
 
 	RC_WRAP_LABEL(rc, aborted, kvsns_amend_stat, &parent_stat,
 		      STAT_CTIME_SET|STAT_MTIME_SET);
 	RC_WRAP_LABEL(rc, aborted, kvsns_set_stat, parent, &parent_stat);
 
-	RC_WRAP(kvsal_end_transaction);
+	RC_WRAP(kvsal.end_transaction);
 	return 0;
 
 aborted:
-	kvsal_discard_transaction();
+	kvsal.discard_transaction();
 	return rc;
 }
 
@@ -315,7 +317,7 @@ int kvsns_get_stat(kvsns_ino_t *ino, struct stat *bufstat)
 		return -EINVAL;
 
 	snprintf(k, KLEN, "%llu.stat", *ino);
-	return kvsal_get_stat(k, bufstat);
+	return kvsal.get_stat(k, bufstat);
 }
 
 int kvsns_set_stat(kvsns_ino_t *ino, struct stat *bufstat)
@@ -326,7 +328,7 @@ int kvsns_set_stat(kvsns_ino_t *ino, struct stat *bufstat)
 		return -EINVAL;
 
 	snprintf(k, KLEN, "%llu.stat", *ino);
-	return kvsal_set_stat(k, bufstat);
+	return kvsal.set_stat(k, bufstat);
 }
 
 int kvsns_lookup_path(kvsns_cred_t *cred, kvsns_ino_t *parent, char *path,

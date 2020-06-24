@@ -46,15 +46,18 @@
 
 static struct collection_item *cfg_items;
 
-void *handle_extstore;
-char extstore_func[MAXNAMLEN];
+char funcname[MAXNAMLEN];
 
+void *handle_extstore;
 struct extstore_ops extstore;
 
-#define ADD_EXTSTORE_FUNC(__name__)                                         ({ \
-	snprintf(extstore_func, MAXNAMLEN, "extstore_%s", #__name__);          \
-	*(void**)(&extstore.__name__) = dlsym(handle_extstore, extstore_func); \
-	if (!extstore.__name__)                                                \
+void *handle_kvsal;
+struct kvsal_ops kvsal;
+
+#define ADD_FUNC(__module__, __name__, __handle__)		     ({ \
+	snprintf(funcname, MAXNAMLEN, "%s_%s", #__module__, #__name__); \
+	*(void **)(&__module__.__name__) = dlsym(__handle__, funcname); \
+	if (!__module__.__name__)				        \
 		return -EINVAL; })
 
 static int kvsns_load_libs(void)
@@ -62,7 +65,41 @@ static int kvsns_load_libs(void)
 	/* Read path to extstore lib in config file */
 	struct collection_item *item = NULL;
 	char *extstore_lib_path;
+	char *kvsal_lib_path;
 
+	/* Load kvsal library */
+	RC_WRAP(get_config_item, "kvsns", "kvsal_lib", cfg_items, &item);
+	if (item == NULL)
+		return -EINVAL;
+	else
+		kvsal_lib_path = get_string_config_value(item, NULL);
+
+	handle_kvsal = dlopen(kvsal_lib_path, RTLD_LAZY);
+	if (!handle_kvsal)
+		return -EINVAL;
+
+	ADD_FUNC(kvsal, init, handle_kvsal);
+	ADD_FUNC(kvsal, fini, handle_kvsal);
+	ADD_FUNC(kvsal, begin_transaction, handle_kvsal);
+	ADD_FUNC(kvsal, end_transaction, handle_kvsal);
+	ADD_FUNC(kvsal, exists, handle_kvsal);
+	ADD_FUNC(kvsal, set_char, handle_kvsal);
+	ADD_FUNC(kvsal, get_char, handle_kvsal);
+	ADD_FUNC(kvsal, set_binary, handle_kvsal);
+	ADD_FUNC(kvsal, get_binary, handle_kvsal);
+	ADD_FUNC(kvsal, set_stat, handle_kvsal);
+	ADD_FUNC(kvsal, get_stat, handle_kvsal);
+	ADD_FUNC(kvsal, get_list_size, handle_kvsal);
+	ADD_FUNC(kvsal, get_list, handle_kvsal);
+	ADD_FUNC(kvsal, del, handle_kvsal);
+	ADD_FUNC(kvsal, incr_counter, handle_kvsal);
+	ADD_FUNC(kvsal, get_list_pattern, handle_kvsal);
+	ADD_FUNC(kvsal, get_list, handle_kvsal);
+	ADD_FUNC(kvsal, fetch_list, handle_kvsal);
+	ADD_FUNC(kvsal, dispose_list, handle_kvsal);
+	ADD_FUNC(kvsal, init_list, handle_kvsal);
+
+	/* Load extstore library */
 	RC_WRAP(get_config_item, "kvsns", "extstore_lib", cfg_items, &item);
 	if (item == NULL)
 		return -EINVAL;
@@ -70,22 +107,21 @@ static int kvsns_load_libs(void)
 		extstore_lib_path = get_string_config_value(item, NULL);
 
 	handle_extstore = dlopen(extstore_lib_path, RTLD_LAZY);
-
 	if (!handle_extstore)
 		return -EINVAL;
 
-	ADD_EXTSTORE_FUNC(init);
-	ADD_EXTSTORE_FUNC(create);
-	ADD_EXTSTORE_FUNC(read);
-	ADD_EXTSTORE_FUNC(write);
-	ADD_EXTSTORE_FUNC(del);
-	ADD_EXTSTORE_FUNC(truncate);
-	ADD_EXTSTORE_FUNC(attach);
-	ADD_EXTSTORE_FUNC(getattr);
-	ADD_EXTSTORE_FUNC(archive);
-	ADD_EXTSTORE_FUNC(restore);
-	ADD_EXTSTORE_FUNC(release);
-	ADD_EXTSTORE_FUNC(state);
+	ADD_FUNC(extstore, init, handle_extstore);
+	ADD_FUNC(extstore, create, handle_extstore);
+	ADD_FUNC(extstore, read, handle_extstore);
+	ADD_FUNC(extstore, write, handle_extstore);
+	ADD_FUNC(extstore, del, handle_extstore);
+	ADD_FUNC(extstore, truncate, handle_extstore);
+	ADD_FUNC(extstore, attach, handle_extstore);
+	ADD_FUNC(extstore, getattr, handle_extstore);
+	ADD_FUNC(extstore, archive, handle_extstore);
+	ADD_FUNC(extstore, restore, handle_extstore);
+	ADD_FUNC(extstore, release, handle_extstore);
+	ADD_FUNC(extstore, state, handle_extstore);
 
 	return 0;
 }
@@ -107,9 +143,9 @@ int kvsns_start(const char *configpath)
 
 	RC_WRAP(kvsns_load_libs);
 
-	RC_WRAP(kvsal_init, cfg_items);
+	RC_WRAP(kvsal.init, cfg_items);
 
-	RC_WRAP(extstore.init, cfg_items);
+	RC_WRAP(extstore.init, cfg_items, &kvsal);
 
 	/** @todo : remove all existing opened FD (crash recovery) */
 	return 0;
@@ -117,7 +153,7 @@ int kvsns_start(const char *configpath)
 
 int kvsns_stop(void)
 {
-	RC_WRAP(kvsal_fini);
+	RC_WRAP(kvsal.fini);
 	free_ini_config_errors(cfg_items);
 	return 0;
 }
@@ -133,11 +169,11 @@ int kvsns_init_root(int openbar)
 
 	snprintf(k, KLEN, "%llu.parentdir", ino);
 	snprintf(v, VLEN, "%llu|", ino);
-	RC_WRAP(kvsal_set_char, k, v);
+	RC_WRAP(kvsal.set_char, k, v);
 
 	snprintf(k, KLEN, "ino_counter");
 	snprintf(v, VLEN, "3");
-	RC_WRAP(kvsal_set_char, k, v);
+	RC_WRAP(kvsal.set_char, k, v);
 
 	/* Set stat */
 	memset(&bufstat, 0, sizeof(struct stat));
@@ -154,7 +190,7 @@ int kvsns_init_root(int openbar)
 	bufstat.st_ctim.tv_sec = 0;
 
 	snprintf(k, KLEN, "%llu.stat", ino);
-	RC_WRAP(kvsal_set_stat, k, &bufstat);
+	RC_WRAP(kvsal.set_stat, k, &bufstat);
 
 	return 0;
 }

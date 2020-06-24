@@ -43,6 +43,7 @@
 #include "kvsns_internal.h"
 
 extern struct extstore_ops extstore;
+extern struct kvsal_ops kvsal;
 
 static int kvsns_str2ownerlist(kvsns_open_owner_t *ownerlist, int *size,
 			        char *str)
@@ -127,7 +128,7 @@ int kvsns_open(kvsns_cred_t *cred, kvsns_ino_t *ino,
 
 	/* Manage the list of open owners */
 	snprintf(k, KLEN, "%llu.openowner", *ino);
-	rc = kvsal_get_char(k, v);
+	rc = kvsal.get_char(k, v);
 	if (rc == 0) {
 		RC_WRAP(kvsns_str2ownerlist, owners, &size, v);
 		if (size == KVSAL_ARRAY_SIZE)
@@ -142,7 +143,7 @@ int kvsns_open(kvsns_cred_t *cred, kvsns_ino_t *ino,
 	} else
 		return rc;
 
-	RC_WRAP(kvsal_set_char, k, v);
+	RC_WRAP(kvsal.set_char, k, v);
 
 	/** @todo Do not forget store stuffs */
 	fd->ino = *ino;
@@ -184,7 +185,7 @@ int kvsns_close(kvsns_file_open_t *fd)
 		return -EINVAL;
 
 	snprintf(k, KLEN, "%llu.openowner", fd->ino);
-	rc = kvsal_get_char(k, v);
+	rc = kvsal.get_char(k, v);
 	if (rc != 0) {
 		if (rc == -ENOENT)
 			return -EBADF; /* File not opened */
@@ -195,20 +196,20 @@ int kvsns_close(kvsns_file_open_t *fd)
 	/* Was the file deleted as it was opened ? */
 	/* The last close should perform actual data deletion */
 	snprintf(k, KLEN, "%llu.opened_and_deleted", fd->ino);
-	rc = kvsal_exists(k);
+	rc = kvsal.exists(k);
 	if ((rc != 0) && (rc != -ENOENT))
 		return rc;
 	opened_and_deleted = (rc == -ENOENT) ? false : true;
 
 	RC_WRAP(kvsns_str2ownerlist, owners, &size, v);
 
-	RC_WRAP(kvsal_begin_transaction);
+	RC_WRAP(kvsal.begin_transaction);
 
 	if (size == 1) {
 		if (fd->owner.pid == owners[0].pid &&
 		    fd->owner.tid == owners[0].tid) {
 			snprintf(k, KLEN, "%llu.openowner", fd->ino);
-			RC_WRAP_LABEL(rc, aborted, kvsal_del, k);
+			RC_WRAP_LABEL(rc, aborted, kvsal.del, k);
 
 			/* Was the file deleted as it was opened ? */
 			if (opened_and_deleted) {
@@ -216,9 +217,9 @@ int kvsns_close(kvsns_file_open_t *fd)
 				snprintf(k, KLEN, "%llu.opened_and_deleted",
 					 fd->ino);
 				RC_WRAP_LABEL(rc, aborted,
-					      kvsal_del, k);
+					      kvsal.del, k);
 			}
-			RC_WRAP(kvsal_end_transaction);
+			RC_WRAP(kvsal.end_transaction);
 
 			if (delete_object)
 				RC_WRAP(extstore.del, &fd->ino);
@@ -247,9 +248,9 @@ int kvsns_close(kvsns_file_open_t *fd)
 
 	RC_WRAP_LABEL(rc, aborted, kvsns_ownerlist2str, owners, size, v);
 
-	RC_WRAP_LABEL(rc, aborted, kvsal_set_char, k, v);
+	RC_WRAP_LABEL(rc, aborted, kvsal.set_char, k, v);
 
-	RC_WRAP(kvsal_end_transaction);
+	RC_WRAP(kvsal.end_transaction);
 
 	/* To be done outside of the previous transaction */
 	if (delete_object)
@@ -258,7 +259,7 @@ int kvsns_close(kvsns_file_open_t *fd)
 	return 0;
 
 aborted:
-	kvsal_discard_transaction();
+	kvsal.discard_transaction();
 	return rc;
 }
 

@@ -44,7 +44,8 @@
 #include <kvsns/kvsal.h>
 #include <kvsns/kvsns.h>
 
-int extstore_init(struct collection_item *cfg_items);
+int extstore_init(struct collection_item *cfg_items,
+		  struct kvsal_ops *kvsalops);
 int extstore_create(kvsns_ino_t object);
 int extstore_read(kvsns_ino_t *ino,
 		  off_t offset,
@@ -75,7 +76,8 @@ int extstore_release(kvsns_ino_t *ino);
 int extstore_state(kvsns_ino_t *ino, char *state);
 
 struct extstore_ops {
-	int (*init)(struct collection_item *cfg_items);
+	int (*init)(struct collection_item *cfg_items,
+		    struct kvsal_ops *kvsalops);
 	int (*create)(kvsns_ino_t object);
 	int (*read)(kvsns_ino_t *ino,
 		    off_t offset,

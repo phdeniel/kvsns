@@ -91,4 +91,29 @@ int kvsal_fetch_list(char *pattern, kvsal_list_t *list);
 int kvsal_dispose_list(kvsal_list_t *list);
 int kvsal_init_list(kvsal_list_t *list);
 
+struct kvsal_ops {
+	int (*init)(struct collection_item *cfg_items);
+	int (*fini)(void);
+	int (*begin_transaction)(void);
+	int (*end_transaction)(void);
+	int (*discard_transaction)(void);
+	int (*exists)(char *k);
+	int (*set_char)(char *k, char *v);
+	int (*get_char)(char *k, char *v);
+	int (*set_binary)(char *k, char *buf, size_t size);
+	int (*get_binary)(char *k, char *buf, size_t *size);
+	int (*set_stat)(char *k, struct stat *buf);
+	int (*get_stat)(char *k, struct stat *buf);
+	int (*get_list_size)(char *pattern);
+	int (*del)(char *k);
+	int (*incr_counter)(char *k, unsigned long long *v);
+	int (*get_list_pattern)(char *pattern, int start, int *end,
+			   kvsal_item_t *items);
+	int (*get_list)(kvsal_list_t *list,
+			int start, int *end, kvsal_item_t *items);
+	int (*fetch_list)(char *pattern, kvsal_list_t *list);
+	int (*dispose_list)(kvsal_list_t *list);
+	int (*init_list)(kvsal_list_t *list);
+};
+
 #endif

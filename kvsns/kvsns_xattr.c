@@ -39,6 +39,8 @@
 #include <kvsns/kvsns.h>
 #include "kvsns_internal.h"
 
+extern struct kvsal_ops kvsal;
+
 int kvsns_setxattr(kvsns_cred_t *cred, kvsns_ino_t *ino,
 		   char *name, char *value, size_t size, int flags)
 {
@@ -50,12 +52,12 @@ int kvsns_setxattr(kvsns_cred_t *cred, kvsns_ino_t *ino,
 
 	snprintf(k, KLEN, "%llu.xattr.%s", *ino, name);
 	if (flags == XATTR_CREATE) {
-		rc = kvsal_get_char(k, value);
+		rc = kvsal.get_char(k, value);
 		if (rc == 0)
 			return -EEXIST;
 	}
 
-	return kvsal_set_binary(k, (char *)value, size);
+	return kvsal.set_binary(k, (char *)value, size);
 }
 
 int kvsns_getxattr(kvsns_cred_t *cred, kvsns_ino_t *ino,
@@ -67,7 +69,7 @@ int kvsns_getxattr(kvsns_cred_t *cred, kvsns_ino_t *ino,
 		return -EINVAL;
 
 	snprintf(k, KLEN, "%llu.xattr.%s", *ino, name);
-	RC_WRAP(kvsal_get_binary, k, value, size);
+	RC_WRAP(kvsal.get_binary, k, value, size);
 
 	return 0;
 }
@@ -89,12 +91,12 @@ int kvsns_listxattr(kvsns_cred_t *cred, kvsns_ino_t *ino, int offset,
 	if (items == NULL)
 		return -ENOMEM;
 
-	rc = kvsal_fetch_list(pattern, &l);
-	RC_WRAP_LABEL(rc, errout, kvsal_fetch_list, pattern, &l);
+	rc = kvsal.fetch_list(pattern, &l);
+	RC_WRAP_LABEL(rc, errout, kvsal.fetch_list, pattern, &l);
 
-	RC_WRAP_LABEL(rc, errout,  kvsal_get_list, &l, offset, size, items);
+	RC_WRAP_LABEL(rc, errout,  kvsal.get_list, &l, offset, size, items);
 
-	RC_WRAP_LABEL(rc, errout, kvsal_dispose_list, &l);
+	RC_WRAP_LABEL(rc, errout, kvsal.dispose_list, &l);
 
 	for (i = 0; i < *size ; i++)
 		strncpy(list[i].name, items[i].str, MAXNAMLEN);
@@ -115,7 +117,7 @@ int kvsns_removexattr(kvsns_cred_t *cred, kvsns_ino_t *ino, char *name)
 	char k[KLEN];
 
 	snprintf(k, KLEN, "%llu.xattr.%s", *ino, name);
-	RC_WRAP(kvsal_del, k);
+	RC_WRAP(kvsal.del, k);
 
 	return 0;
 }
@@ -134,22 +136,22 @@ int kvsns_remove_all_xattr(kvsns_cred_t *cred, kvsns_ino_t *ino)
 
 	snprintf(pattern, KLEN, "%llu.xattr.*", *ino);
 
-	rc = kvsal_fetch_list(pattern, &list);
+	rc = kvsal.fetch_list(pattern, &list);
 	if (rc < 0)
 		return rc;
 
 	do {
 		size = KVSAL_ARRAY_SIZE;
-		rc = kvsal_get_list(&list, 0, &size, items);
+		rc = kvsal.get_list(&list, 0, &size, items);
 		if (rc < 0)
 			return rc;
 
 		for (i = 0; i < size ; i++)
-			RC_WRAP(kvsal_del, items[i].str);
+			RC_WRAP(kvsal.del, items[i].str);
 
 	} while (size > 0);
 
-	rc = kvsal_dispose_list(&list);
+	rc = kvsal.dispose_list(&list);
 	if (rc < 0)
 		return rc;
 

@@ -40,6 +40,8 @@
 /* Required Protoype */
 int kvsns_next_inode(kvsns_ino_t *ino);
 
+extern struct kvsal_ops kvsal;
+
 int main(int argc, char *argv[])
 {
 	int rc;
@@ -76,41 +78,41 @@ int main(int argc, char *argv[])
 	}
 	printf("kvsns_next_inode: ino=%llu\n", ino);
 
-	rc = kvsal_set_char("test", "value");
+	rc = kvsal.set_char("test", "value");
 	if (rc != 0) {
 		fprintf(stderr, "kvsns_set_char: err=%d\n", rc);
 		exit(1);
 	}
 
-	rc = kvsal_get_char("test", val);
+	rc = kvsal.get_char("test", val);
 	if (rc != 0) {
 		fprintf(stderr, "kvsns_get_char: err=%d\n", rc);
 		exit(1);
 	}
-	printf("kvsal_get_char: val=%s\n", val);
+	printf("kvsal.get_char: val=%s\n", val);
 
-	rc = kvsal_exists("test");
+	rc = kvsal.exists("test");
 	printf("Check existing key rc=%d\n", rc);
 
-	rc = kvsal_exists("testfail");
+	rc = kvsal.exists("testfail");
 	printf("Check non-existing key rc=%d\n", rc);
 
-	rc = kvsal_del("test");
+	rc = kvsal.del("test");
 	if (rc != 0) {
 		fprintf(stderr, "kvsns_get_char: err=%d\n", rc);
 		exit(1);
 	}
-	printf("kvsal_get_char after del: %d\n", kvsal_get_char("test", val));
+	printf("kvsal.get_char after del: %d\n", kvsal.get_char("test", val));
 
-	rc = kvsal_get_list_size("*");
+	rc = kvsal.get_list_size("*");
 	if (rc < 0) {
-		fprintf(stderr, "kvsal_get_list_size: err=%d\n", rc);
+		fprintf(stderr, "kvsal.get_list_size: err=%d\n", rc);
 		exit(1);
 	}
-	printf("kvsal_get_list_size * : rc=%d\n", rc);
+	printf("kvsal.get_list_size * : rc=%d\n", rc);
 
 	end = 10;
-	rc = kvsal_get_list_pattern("*", 0, &end, items);
+	rc = kvsal.get_list_pattern("*", 0, &end, items);
 	if (rc != 0) {
 		fprintf(stderr, "kvsns_get_list_pattern: err=%d\n", rc);
 		exit(1);
@@ -120,7 +122,7 @@ int main(int argc, char *argv[])
 
 	printf("+++++++++++++++\n");
 	end = 10;
-	rc = kvsal_get_list_pattern("2.dentries.*", 0, &end, items);
+	rc = kvsal.get_list_pattern("2.dentries.*", 0, &end, items);
 	if (rc != 0) {
 		fprintf(stderr, "kvsns_get_list_pattern: err=%d\n", rc);
 		exit(1);

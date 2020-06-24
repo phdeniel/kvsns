@@ -4,7 +4,7 @@ cmake_policy(SET CMP0017 NEW)
 PROJECT(libkvsns C)
 set(LIBKVSNS_MAJOR_VERSION 1)
 set(LIBKVSNS_MINOR_VERSION 2)
-set(LIBKVSNS_PATCH_LEVEL 6)
+set(LIBKVSNS_PATCH_LEVEL 7)
 set(LIBKVSNS_EXTRA_VERSION "")
 
 set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -I${CMAKE_SOURCE_DIR}/include -fPIC -g")
@@ -16,7 +16,6 @@ message( STATUS "cmake version ${CMAKE_MAJOR_VERSION}.${CMAKE_MINOR_VERSION}" )
 message( STATUS "libkvsns version ${LIBKVSNS_BASE_VERSION}")
 
 # Option (for choosing KVSAL backend)
-option(USE_KVS_REDIS "Use REDIS as a KVS in KVSAL" ON)
 option(USE_KVS_MERO "Use MERO as a KVS in KVSAL" OFF)
 
 option(USE_POSIX_STORE "Use POSIX directory as object store" ON)
@@ -29,12 +28,6 @@ else(USE_FSAL_LUSTRE)
 endif(USE_FSAL_LUSTRE)
 
 # BCOND* variables for spec file */
-if (USE_KVS_REDIS)
-	set(BCOND_KVS_REDIS "%bcond_without")
-else (USE_KVS_REDIS)
-	set(BCOND_KVS_REDIS "%bcond_with")
-endif (USE_KVS_REDIS)
-
 if (USE_POSIX_STORE)
 	set(BCOND_POSIX_STORE "%bcond_without")
 else (USE_POSIX_STORE)
@@ -43,9 +36,6 @@ endif (USE_POSIX_STORE)
 
 # Final tuning
 # Final tuning
-
-message(STATUS "USE_KVS_REDIS=${USE_KVS_REDIS}")
-
 
 include(CheckIncludeFiles)
 include(CheckLibraryExists)
@@ -79,8 +69,6 @@ if((NOT HAVE_INI_CONFIG) OR (NOT HAVE_INI_CONFIG_H))
 endif((NOT HAVE_INI_CONFIG) OR (NOT HAVE_INI_CONFIG_H))
 
 ## Start building stuff ##
-if(USE_KVS_REDIS)
-
 
 find_library(HAVE_HIREDIS hiredis)
 check_library_exists(
@@ -94,7 +82,6 @@ check_include_files("hiredis/hiredis.h" HAVE_HIREDIS_H)
 if((NOT HAVE_HIREDIS) OR (NOT HAVE_HIREDIS_H))
       message(FATAL_ERROR "Cannot find hiredis")
 endif((NOT HAVE_HIREDIS) OR (NOT HAVE_HIREDIS_H))
-endif(USE_KVS_REDIS)
 
 if (HAVE_RADOS_H AND HAVE_LIBRADOS)
 	set(BCOND_RADOS "%bcond_without")
@@ -105,16 +92,11 @@ endif (HAVE_RADOS_H AND HAVE_LIBRADOS)
 
 # Build ancillary libs
 add_subdirectory(extstore)
-
 add_subdirectory(kvsal)
-set(KVSAL_LIBRARY kvsal)
-
 add_subdirectory(kvsns)
-
 add_subdirectory(tests)
 add_subdirectory(kvsns_shell)
 add_subdirectory(kvsns_attach)
-add_subdirectory(kvsal_non_reg)
 
 # CPack / rpmbuild specific stuff
 set(CPACK_PACKAGE_FILE_NAME "libkvsns-Source" )

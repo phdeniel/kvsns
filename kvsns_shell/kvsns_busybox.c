@@ -15,6 +15,8 @@
 #include <kvsns/kvsal.h>
 #include <kvsns/kvsns.h>
 
+extern struct kvsal_ops kvsal;
+
 int main(int argc, char *argv[])
 {
 	int rc;
@@ -42,19 +44,19 @@ int main(int argc, char *argv[])
 	}
 
 	strncpy(k, "KVSNS_INODE", KLEN);
-	if (kvsal_get_char(k, v) == 0)
+	if (kvsal.get_char(k, v) == 0)
 		sscanf(v, "%llu", &current_inode);
 
 	strncpy(k, "KVSNS_PARENT_INODE", KLEN);
-	if (kvsal_get_char(k, v) == 0)
+	if (kvsal.get_char(k, v) == 0)
 		sscanf(v, "%llu", &parent_inode);
 
 	strncpy(k, "KVSNS_PATH", KLEN);
-	if (kvsal_get_char(k, v) == 0)
+	if (kvsal.get_char(k, v) == 0)
 		strncpy(current_path, v, MAXPATHLEN);
 
 	strncpy(k, "KVSNS_PREV_PATH", KLEN);
-	if (kvsal_get_char(k, v) == 0)
+	if (kvsal.get_char(k, v) == 0)
 		strncpy(prev_path, v, MAXPATHLEN);
 
 	printf("exec=%s -- ino=%llu, parent=%llu, path=%s prev=%s\n",
@@ -66,20 +68,20 @@ int main(int argc, char *argv[])
 		strncpy(k, "KVSNS_INODE", KLEN);
 		snprintf(v, VLEN, "%llu", KVSNS_ROOT_INODE);
 		current_inode = KVSNS_ROOT_INODE;
-		kvsal_set_char(k, v);
+		kvsal.set_char(k, v);
 
 		strncpy(k, "KVSNS_PARENT_INODE", KLEN);
 		snprintf(v, VLEN, "%llu", KVSNS_ROOT_INODE);
 		parent_inode = KVSNS_ROOT_INODE;
-		kvsal_set_char(k, v);
+		kvsal.set_char(k, v);
 
 		strncpy(k, "KVSNS_PATH", KLEN);
 		strncpy(v, "/", VLEN);
-		kvsal_set_char(k, v);
+		kvsal.set_char(k, v);
 
 		strncpy(k, "KVSNS_PREV_PATH", KLEN);
 		strncpy(v, "/", VLEN);
-		kvsal_set_char(k, v);
+		kvsal.set_char(k, v);
 	} else if (!strcmp(exec_name, "ns_init")) {
 		rc = kvsns_init_root(1); /* Open Bar */
 		if (rc != 0) {
@@ -90,7 +92,7 @@ int main(int argc, char *argv[])
 		strncpy(k, "KVSNS_INODE", KLEN);
 		snprintf(v, VLEN, "%llu", KVSNS_ROOT_INODE);
 		current_inode = KVSNS_ROOT_INODE;
-		rc = kvsal_set_char(k, v);
+		rc = kvsal.set_char(k, v);
 		if (rc != 0) {
 			fprintf(stderr, "kvsns_init_root: err=%d\n", rc);
 			exit(1);
@@ -99,7 +101,7 @@ int main(int argc, char *argv[])
 		strncpy(k, "KVSNS_PARENT_INODE", KLEN);
 		snprintf(v, VLEN, "%llu", KVSNS_ROOT_INODE);
 		parent_inode = KVSNS_ROOT_INODE;
-		rc = kvsal_set_char(k, v);
+		rc = kvsal.set_char(k, v);
 		if (rc != 0) {
 			fprintf(stderr, "kvsns_init_root: err=%d\n", rc);
 			exit(1);
@@ -107,7 +109,7 @@ int main(int argc, char *argv[])
 
 		strncpy(k, "KVSNS_PATH", KLEN);
 		strncpy(v, "/", VLEN);
-		rc = kvsal_set_char(k, v);
+		rc = kvsal.set_char(k, v);
 		if (rc != 0) {
 			fprintf(stderr, "kvsns_init_root: err=%d\n", rc);
 			exit(1);
@@ -115,7 +117,7 @@ int main(int argc, char *argv[])
 
 		strncpy(k, "KVSNS_PREV_PATH", KLEN);
 		strncpy(v, "/", VLEN);
-		rc = kvsal_set_char(k, v);
+		rc = kvsal.set_char(k, v);
 		if (rc != 0) {
 			fprintf(stderr, "kvsns_init_root: err=%d\n", rc);
 			exit(1);
@@ -221,21 +223,21 @@ int main(int argc, char *argv[])
 			strncpy(k, "KVSNS_PARENT_INODE", KLEN);
 			snprintf(v, VLEN, "%llu", current_inode);
 			parent_inode = current_inode;
-			kvsal_set_char(k, v);
+			kvsal.set_char(k, v);
 
 			strncpy(k, "KVSNS_INODE", KLEN);
 			snprintf(v, VLEN, "%llu", ino);
 			current_inode = ino;
-			kvsal_set_char(k, v);
+			kvsal.set_char(k, v);
 
 			strncpy(k, "KVSNS_PREV_PATH", KLEN);
 			strncpy(current_path, prev_path, MAXPATHLEN);
 			strncpy(v, prev_path, VLEN);
-			kvsal_set_char(k, v);
+			kvsal.set_char(k, v);
 
 			strncpy(k, "KVSNS_PATH", KLEN);
 			strncpy(v, current_path, VLEN);
-			kvsal_set_char(k, v);
+			kvsal.set_char(k, v);
 
 			printf("exec=%s ino=%llu parent=%llu path=%s prev=%s\n",
 				exec_name, current_inode, parent_inode,
@@ -251,23 +253,23 @@ int main(int argc, char *argv[])
 			strncpy(k, "KVSNS_PARENT_INODE", KLEN);
 			snprintf(v, VLEN, "%llu", current_inode);
 			parent_inode = current_inode;
-			kvsal_set_char(k, v);
+			kvsal.set_char(k, v);
 
 			strncpy(k, "KVSNS_INODE", KLEN);
 			snprintf(v, VLEN, "%llu", ino);
 			current_inode = ino;
-			kvsal_set_char(k, v);
+			kvsal.set_char(k, v);
 
 			strncpy(k, "KVSNS_PREV_PATH", KLEN);
 			strncpy(prev_path, current_path, MAXPATHLEN);
 			strncpy(v, prev_path, VLEN);
-			kvsal_set_char(k, v);
+			kvsal.set_char(k, v);
 
 			strncpy(k, "KVSNS_PATH", KLEN);
 			snprintf(current_path, MAXPATHLEN, "%s/%s",
 				v, argv[1]);
 			strncpy(v, current_path, VLEN);
-			kvsal_set_char(k, v);
+			kvsal.set_char(k, v);
 
 			printf("exec=%s ino=%llu parent=%llu path=%s prev=%s\n",
 				exec_name, current_inode, parent_inode,

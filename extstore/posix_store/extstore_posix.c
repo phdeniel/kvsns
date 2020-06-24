@@ -83,7 +83,8 @@ int extstore_create(kvsns_ino_t object)
 	return 0;
 }
 
-int extstore_init(struct collection_item *cfg_items)
+int extstore_init(struct collection_item *cfg_items,
+		  struct kvsal_ops *kvsalops)
 {
 	struct collection_item *item;
 	int rc;

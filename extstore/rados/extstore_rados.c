@@ -84,7 +84,8 @@ int extstore_attach(kvsns_ino_t *ino, char *objid, int objid_len)
 	return 0;
 }
 
-int extstore_init(struct collection_item *cfg_items)
+int extstore_init(struct collection_item *cfg_items,
+		  struct kvsal_ops *kvsalops)
 {
 	struct collection_item *item;
 	int rc;

@@ -3,10 +3,7 @@ SET(kvsal_LIB_SRCS
    kvsal_redis.c
 )
 
-add_library(kvsal SHARED ${kvsal_LIB_SRCS})
-target_link_libraries(kvsal hiredis ini_config)
+add_library(kvsal_redis SHARED ${kvsal_LIB_SRCS})
+target_link_libraries(kvsal_redis hiredis ini_config)
 
-add_custom_command(TARGET kvsal
-                   COMMAND ${CMAKE_COMMAND} -E copy libkvsal.so ..)
-
-install(TARGETS kvsal DESTINATION lib)
+install(TARGETS kvsal_redis DESTINATION lib)

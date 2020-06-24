@@ -26,9 +26,6 @@ Provides: %{name} = %{version}-%{release}
 # %bcond_with means you add a "--with" option, default = without this feature
 # %bcond_without adds a"--without" so the feature is enabled by default
 
-@BCOND_KVS_REDIS@ kvs_redis
-%global use_kvs_redis %{on_off_switch kvs_redis}
-
 @BCOND_RADOS@ rados
 %global use_rados %{on_off_switch rados}
 
@@ -65,8 +62,7 @@ This package contains the tools for libkvsns.
 %setup -q -n %{sourcename}
 
 %build
-cmake . -DUSE_KVS_REDIS=%{use_kvs_redis}     \
-	-DUSE_RADOS=%{use_rados}	     \
+cmake . -DUSE_RAOS=%{use_rados}
 
 make %{?_smp_mflags} || make %{?_smp_mflags} || make
 
@@ -80,7 +76,7 @@ mkdir -p %{buildroot}%{_sysconfdir}/kvsns.d
 install -m 644 include/kvsns/kvsns.h  %{buildroot}%{_includedir}/kvsns
 install -m 644 include/kvsns/kvsal.h  %{buildroot}%{_includedir}/kvsns
 install -m 644 include/kvsns/extstore.h  %{buildroot}%{_includedir}/kvsns
-install -m 644 kvsal/libkvsal.so %{buildroot}%{_libdir}
+install -m 644 kvsal/redis/libkvsal_redis.so %{buildroot}%{_libdir}
 
 install -m 644 extstore/posix_store/libextstore_posix.so %{buildroot}%{_libdir}
 install -m 644 extstore/crud_cache/external_cmd/libextstore_crud_cache_cmd.so %{buildroot}%{_libdir}
@@ -102,7 +98,7 @@ rm -rf $RPM_BUILD_ROOT
 
 %files
 %defattr(-,root,root)
-%{_libdir}/libkvsal.so*
+%{_libdir}/libkvsal_redis.so*
 %{_libdir}/libextstore_posix.so*
 %{_libdir}/libextstore_crud_cache_cmd.so*
 %if %{with rados gnutls}
@@ -127,6 +123,9 @@ rm -rf $RPM_BUILD_ROOT
 %{_bindir}/cp_get.sh
 
 %changelog
+* Wed Jun 24 2020 Philippe DENIEL <philippe.deniel@cea.fr> 1.2.7
+- Use dlopen and dlsym to manage kvsal
+
 * Wed Jun 24 2020 Philippe DENIEL <philippe.deniel@cea.fr> 1.2.6
 - Use dlopen and dlsym to manage extstore
 
