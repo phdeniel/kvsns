@@ -32,10 +32,10 @@ Provides: %{name} = %{version}-%{release}
 @BCOND_POSIX_STORE@ posix_store
 %global use_posix_store %{on_off_switch posix_store}
 
-@BCOND_POSIX_OBJ@ posix_obj
-%global use_posix_obj %{on_off_switch posix_obj}
-
 @BCOND_RADOS@ rados
+%global use_rados %{on_off_switch rados}
+
+@BCOND_CRUD_CACHE@ rados
 %global use_rados %{on_off_switch rados}
 
 %description
@@ -73,7 +73,7 @@ This package contains the tools for libkvsns.
 %build
 cmake . -DUSE_KVS_REDIS=%{use_kvs_redis}     \
 	-DUSE_POSIX_STORE=%{use_posix_store} \
-	-DUSE_POSIX_OBJ=%{use_posix_obj}     \
+	-DUSE_CRUD_CACHE=%{use_crud_cache}   \
 	-DUSE_RADOS=%{use_rados}	     \
 
 make %{?_smp_mflags} || make %{?_smp_mflags} || make
