@@ -73,4 +73,37 @@ int extstore_archive(kvsns_ino_t *ino);
 int extstore_restore(kvsns_ino_t *ino);
 int extstore_release(kvsns_ino_t *ino);
 int extstore_state(kvsns_ino_t *ino, char *state);
+
+struct extstore_ops {
+	int (*init)(struct collection_item *cfg_items);
+	int (*create)(kvsns_ino_t object);
+	int (*read)(kvsns_ino_t *ino,
+		    off_t offset,
+		    size_t buffer_size,
+		    void *buffer,
+		    bool *end_of_file,
+		    struct stat *stat);
+	int (*write)(kvsns_ino_t *ino,
+		     off_t offset,
+		     size_t buffer_size,
+		     void *buffer,
+		     bool *fsal_stable,
+		     struct stat *stat);
+	int (*del)(kvsns_ino_t *ino);
+	int (*truncate)(kvsns_ino_t *ino,
+			off_t filesize,
+			bool running_attach,
+			struct stat *stat);
+	int (*attach)(kvsns_ino_t *ino,
+		      char *objid,
+		      int objid_len);
+	int (*getattr)(kvsns_ino_t *ino,
+		       struct stat *stat);
+	int (*archive)(kvsns_ino_t *ino);
+	int (*restore)(kvsns_ino_t *ino);
+	int (*release)(kvsns_ino_t *ino);
+	int (*state)(kvsns_ino_t *ino,
+			      char *state);
+};
+
 #endif

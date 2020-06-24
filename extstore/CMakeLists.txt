@@ -1,11 +1,7 @@
-if(USE_POSIX_STORE)
-	add_subdirectory(posix_store)
-endif(USE_POSIX_STORE)
+add_subdirectory(posix_store)
 
-if(USE_RADOS)
+if (HAVE_LIBRADOS AND HAVE_RADOS_H)
 	add_subdirectory(rados)
-endif(USE_RADOS)
+endif (HAVE_LIBRADOS AND HAVE_RADOS_H)
 
-if(USE_CRUD_CACHE)
-	add_subdirectory(crud_cache)
-endif(USE_CRUD_CACHE)
+add_subdirectory(crud_cache)

@@ -42,6 +42,8 @@
 #include <kvsns/extstore.h>
 #include "kvsns_internal.h"
 
+extern struct extstore_ops extstore;
+
 static int kvsns_str2ownerlist(kvsns_open_owner_t *ownerlist, int *size,
 			        char *str)
 {
@@ -101,7 +103,7 @@ int kvsns_creat(kvsns_cred_t *cred, kvsns_ino_t *parent, char *name,
 	RC_WRAP(kvsns_create_entry, cred, parent, name, NULL,
 				  mode, newfile, KVSNS_FILE);
 	RC_WRAP(kvsns_get_stat, newfile, &stat);
-	RC_WRAP(extstore_create, *newfile);
+	RC_WRAP(extstore.create, *newfile);
 
 	return 0;
 }
@@ -219,7 +221,7 @@ int kvsns_close(kvsns_file_open_t *fd)
 			RC_WRAP(kvsal_end_transaction);
 
 			if (delete_object)
-				RC_WRAP(extstore_del, &fd->ino);
+				RC_WRAP(extstore.del, &fd->ino);
 
 			return 0;
 		} else {
@@ -251,7 +253,7 @@ int kvsns_close(kvsns_file_open_t *fd)
 
 	/* To be done outside of the previous transaction */
 	if (delete_object)
-		RC_WRAP(extstore_del, &fd->ino);
+		RC_WRAP(extstore.del, &fd->ino);
 
 	return 0;
 
@@ -270,7 +272,7 @@ ssize_t kvsns_write(kvsns_cred_t *cred, kvsns_file_open_t *fd,
 	memset(&wstat, 0, sizeof(wstat));
 
 	/** @todo use flags to check correct access */
-	write_amount = extstore_write(&fd->ino,
+	write_amount = extstore.write(&fd->ino,
 				      offset,
 				      count,
 				      buf,
@@ -288,7 +290,7 @@ ssize_t kvsns_read(kvsns_cred_t *cred, kvsns_file_open_t *fd,
 	struct stat stat;
 
 	/** @todo use flags to check correct access */
-	read_amount = extstore_read(&fd->ino,
+	read_amount = extstore.read(&fd->ino,
 				    offset,
 				    count,
 				    buf,
@@ -308,28 +310,28 @@ int kvsns_attach(kvsns_cred_t *cred, kvsns_ino_t *parent, char *name,
 				    stat->st_mode, newfile, KVSNS_FILE);
 	RC_WRAP(kvsns_setattr, cred, newfile, stat, statflags);
 	RC_WRAP(kvsns_getattr, cred, newfile, stat);
-	RC_WRAP(extstore_attach, newfile, objid, objid_len);
+	RC_WRAP(extstore.attach, newfile, objid, objid_len);
 
 	return 0;
 }
 
 int kvsns_archive(kvsns_cred_t *cred, kvsns_ino_t *ino)
 {
-	return extstore_archive(ino);
+	return extstore.archive(ino);
 }
 
 int kvsns_restore(kvsns_cred_t *cred, kvsns_ino_t *ino)
 {
-	return extstore_restore(ino);
+	return extstore.restore(ino);
 }
 
 int kvsns_release(kvsns_cred_t *cred, kvsns_ino_t *ino)
 {
-	return extstore_release(ino);
+	return extstore.release(ino);
 }
 
 int kvsns_state(kvsns_cred_t *cred, kvsns_ino_t *ino, char *state)
 {
-	return extstore_state(ino, state);
+	return extstore.state(ino, state);
 }
 

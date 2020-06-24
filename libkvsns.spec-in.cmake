@@ -29,13 +29,7 @@ Provides: %{name} = %{version}-%{release}
 @BCOND_KVS_REDIS@ kvs_redis
 %global use_kvs_redis %{on_off_switch kvs_redis}
 
-@BCOND_POSIX_STORE@ posix_store
-%global use_posix_store %{on_off_switch posix_store}
-
 @BCOND_RADOS@ rados
-%global use_rados %{on_off_switch rados}
-
-@BCOND_CRUD_CACHE@ rados
 %global use_rados %{on_off_switch rados}
 
 %description
@@ -72,8 +66,6 @@ This package contains the tools for libkvsns.
 
 %build
 cmake . -DUSE_KVS_REDIS=%{use_kvs_redis}     \
-	-DUSE_POSIX_STORE=%{use_posix_store} \
-	-DUSE_CRUD_CACHE=%{use_crud_cache}   \
 	-DUSE_RADOS=%{use_rados}	     \
 
 make %{?_smp_mflags} || make %{?_smp_mflags} || make
@@ -89,7 +81,13 @@ install -m 644 include/kvsns/kvsns.h  %{buildroot}%{_includedir}/kvsns
 install -m 644 include/kvsns/kvsal.h  %{buildroot}%{_includedir}/kvsns
 install -m 644 include/kvsns/extstore.h  %{buildroot}%{_includedir}/kvsns
 install -m 644 kvsal/libkvsal.so %{buildroot}%{_libdir}
-install -m 644 extstore/libextstore.so %{buildroot}%{_libdir}
+
+install -m 644 extstore/posix_store/libextstore_posix.so %{buildroot}%{_libdir}
+install -m 644 extstore/crud_cache/external_cmd/libextstore_crud_cache_cmd.so %{buildroot}%{_libdir}
+%if %{with rados gnutls}
+install -m 644 extstore/rados/libextstore_rados.so %{buildroot}%{_libdir}
+%endif
+
 install -m 644 kvsns/libkvsns.so %{buildroot}%{_libdir}
 install -m 644 libkvsns.pc  %{buildroot}%{_libdir}/pkgconfig
 install -m 755 kvsns_shell/kvsns_busybox %{buildroot}%{_bindir}
@@ -105,7 +103,11 @@ rm -rf $RPM_BUILD_ROOT
 %files
 %defattr(-,root,root)
 %{_libdir}/libkvsal.so*
-%{_libdir}/libextstore.so*
+%{_libdir}/libextstore_posix.so*
+%{_libdir}/libextstore_crud_cache_cmd.so*
+%if %{with rados gnutls}
+%{_libdir}/libextstore_rados.so*
+%endif
 %{_libdir}/libkvsns.so*
 %config(noreplace) %{_sysconfdir}/kvsns.d/kvsns.ini
 
@@ -125,6 +127,9 @@ rm -rf $RPM_BUILD_ROOT
 %{_bindir}/cp_get.sh
 
 %changelog
+* Wed Jun 24 2020 Philippe DENIEL <philippe.deniel@cea.fr> 1.2.6
+- Use dlopen and dlsym to manage extstore
+
 * Tue Jun 23 2020 Philippe DENIEL <philippe.deniel@cea.fr> 1.2.5
 - More modularity in crud_cache
 

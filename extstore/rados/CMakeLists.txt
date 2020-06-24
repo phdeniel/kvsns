@@ -1,12 +1,9 @@
 
-SET(extstore_LIB_SRCS
-   extstore.c
+SET(extstore_rados_LIB_SRCS
+   extstore_rados.c
 )
 
-add_library(extstore SHARED ${extstore_LIB_SRCS})
-target_link_libraries(extstore rados ini_config)
+add_library(extstore_rados SHARED ${extstore_rados_LIB_SRCS})
+target_link_libraries(extstore_rados rados ini_config)
 
-add_custom_command(TARGET extstore
-                   COMMAND ${CMAKE_COMMAND} -E copy libextstore.so ..)
-
-install(TARGETS extstore DESTINATION lib)
+install(TARGETS extstore_rados DESTINATION lib)

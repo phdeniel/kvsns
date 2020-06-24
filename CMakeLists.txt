@@ -4,7 +4,7 @@ cmake_policy(SET CMP0017 NEW)
 PROJECT(libkvsns C)
 set(LIBKVSNS_MAJOR_VERSION 1)
 set(LIBKVSNS_MINOR_VERSION 2)
-set(LIBKVSNS_PATCH_LEVEL 5)
+set(LIBKVSNS_PATCH_LEVEL 6)
 set(LIBKVSNS_EXTRA_VERSION "")
 
 set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -I${CMAKE_SOURCE_DIR}/include -fPIC -g")
@@ -20,7 +20,6 @@ option(USE_KVS_REDIS "Use REDIS as a KVS in KVSAL" ON)
 option(USE_KVS_MERO "Use MERO as a KVS in KVSAL" OFF)
 
 option(USE_POSIX_STORE "Use POSIX directory as object store" ON)
-option(USE_RADOS "Use Ceph/RADOS via librados" OFF)
 option(USE_CRUD_CACHE "Use CRUD cache" OFF)
 
 if(USE_FSAL_LUSTRE)
@@ -42,29 +41,10 @@ else (USE_POSIX_STORE)
 	set(BCOND_POSIX_STORE "%bcond_with")
 endif (USE_POSIX_STORE)
 
-if (USE_RADOS)
-	set(BCOND_RADOS "%bcond_without")
-else (USE_RADOS)
-	set(BCOND_RADOS "%bcond_with")
-endif (USE_RADOS)
-
-if (USE_CRUD_CACHE)
-	set(BCOND_CRUD_CACHE "%bcond_without")
-else (USE_CRUD_CACHE)
-	set(BCOND_CRUD_CACHE "%bcond_with")
-endif (USE_CRUD_CACHE)
-
 # Final tuning
 # Final tuning
-if (USE_RADOS OR USE_CRUD_CACHE)
-  set(USE_POSIX_STORE OFF)
-  message(STATUS "Disabling POSIX Store")
-endif(USE_RADOS OR USE_CRUD_CACHE)
 
 message(STATUS "USE_KVS_REDIS=${USE_KVS_REDIS}")
-message(STATUS "USE_POSIX_STORE=${USE_POSIX_STORE}")
-message(STATUS "USE_RADOS=${USE_RADOS}")
-message(STATUS "USE_CRUD_CACHE=${USE_CRUD_CACHE}")
 
 
 include(CheckIncludeFiles)
@@ -79,6 +59,19 @@ check_library_exists(
 	""
 	HAVE_INI_CONFIG
 	)
+
+### Check for rados ###
+check_library_exists(
+	rados
+	rados_connect
+	""
+	HAVE_LIBRADOS
+	)
+check_include_files("rados/librados.h" HAVE_RADOS_H)
+
+if((NOT HAVE_LIBRADOS) OR (NOT HAVE_RADOS_H))
+      message(STATUS "Cannot find librados")
+endif((NOT HAVE_LIBRADOS) OR (NOT HAVE_RADOS_H))
 
 
 if((NOT HAVE_INI_CONFIG) OR (NOT HAVE_INI_CONFIG_H))
@@ -103,26 +96,15 @@ if((NOT HAVE_HIREDIS) OR (NOT HAVE_HIREDIS_H))
 endif((NOT HAVE_HIREDIS) OR (NOT HAVE_HIREDIS_H))
 endif(USE_KVS_REDIS)
 
-### Check for rados ###
-if(USE_RADOS)
-check_library_exists(
-	rados
-	rados_connect
-	""
-	HAVE_LIBRADOS
-	)
-check_include_files("rados/librados.h" HAVE_RADOS_H)
-
-if((NOT HAVE_LIBRADOS) OR (NOT HAVE_RADOS_H))
-      message(FATAL_ERROR "Cannot find librados")
-endif((NOT HAVE_LIBRADOS) OR (NOT HAVE_RADOS_H))
-
-endif(USE_RADOS)
+if (HAVE_RADOS_H AND HAVE_LIBRADOS)
+	set(BCOND_RADOS "%bcond_without")
+else (HAVE_RADOS_H AND HAVE_LIBRADOS)
+	set(BCOND_RADOS "%bcond_with")
+endif (HAVE_RADOS_H AND HAVE_LIBRADOS)
 
 
 # Build ancillary libs
 add_subdirectory(extstore)
-set(STORE_LIBRARY extstore)
 
 add_subdirectory(kvsal)
 set(KVSAL_LIBRARY kvsal)

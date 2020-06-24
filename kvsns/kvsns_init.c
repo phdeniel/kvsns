@@ -37,6 +37,7 @@
 #include <string.h>
 #include <time.h>
 #include <sys/time.h>
+#include <dlfcn.h>  /* for dlopen and dlsym */
 #include <ini_config.h>
 #include <kvsns/kvsal.h>
 #include <kvsns/kvsns.h>
@@ -44,6 +45,52 @@
 #include "kvsns_internal.h"
 
 static struct collection_item *cfg_items;
+
+void *handle_extstore;
+char extstore_func[MAXNAMLEN];
+
+struct extstore_ops extstore;
+
+#define ADD_EXTSTORE_FUNC(__name__)                                         ({ \
+	snprintf(extstore_func, MAXNAMLEN, "extstore_%s", #__name__);          \
+	*(void**)(&extstore.__name__) = dlsym(handle_extstore, extstore_func); \
+	if (!extstore.__name__)                                                \
+		return -EINVAL; })
+
+static int kvsns_load_libs(void)
+{
+	/* Read path to extstore lib in config file */
+	struct collection_item *item = NULL;
+	char *extstore_lib_path;
+
+	RC_WRAP(get_config_item, "kvsns", "extstore_lib", cfg_items, &item);
+	if (item == NULL)
+		return -EINVAL;
+	else
+		extstore_lib_path = get_string_config_value(item, NULL);
+
+	handle_extstore = dlopen(extstore_lib_path,
+				 RTLD_NOW | RTLD_LOCAL | RTLD_DEEPBIND);
+
+	if (!handle_extstore)
+		return -EINVAL;
+
+	ADD_EXTSTORE_FUNC(init);
+	ADD_EXTSTORE_FUNC(create);
+	ADD_EXTSTORE_FUNC(read);
+	ADD_EXTSTORE_FUNC(write);
+	ADD_EXTSTORE_FUNC(del);
+	ADD_EXTSTORE_FUNC(truncate);
+	ADD_EXTSTORE_FUNC(attach);
+	ADD_EXTSTORE_FUNC(getattr);
+	ADD_EXTSTORE_FUNC(archive);
+	ADD_EXTSTORE_FUNC(restore);
+	ADD_EXTSTORE_FUNC(release);
+	ADD_EXTSTORE_FUNC(state);
+
+	return 0;
+}
+
 
 int kvsns_start(const char *configpath)
 {
@@ -59,9 +106,11 @@ int kvsns_start(const char *configpath)
 		return -rc;
 	}
 
+	RC_WRAP(kvsns_load_libs);
+
 	RC_WRAP(kvsal_init, cfg_items);
 
-	RC_WRAP(extstore_init, cfg_items);
+	RC_WRAP(extstore.init, cfg_items);
 
 	/** @todo : remove all existing opened FD (crash recovery) */
 	return 0;

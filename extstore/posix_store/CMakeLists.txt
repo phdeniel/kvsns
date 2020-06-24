@@ -1,13 +1,10 @@
 
-SET(extstore_LIB_SRCS
-   extstore.c
+SET(extstore_posix_LIB_SRCS
+   extstore_posix.c
 )
 
-add_library(extstore SHARED ${extstore_LIB_SRCS})
+add_library(extstore_posix SHARED ${extstore_posix_LIB_SRCS})
 
-target_link_libraries(extstore ini_config)
+target_link_libraries(extstore_posix ini_config)
 
-add_custom_command(TARGET extstore
-                   COMMAND ${CMAKE_COMMAND} -E copy libextstore.so ..)
-
-install(TARGETS extstore DESTINATION lib)
+install(TARGETS extstore_posix DESTINATION lib)

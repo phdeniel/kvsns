@@ -42,6 +42,8 @@
 #include <kvsns/extstore.h>
 #include "kvsns_internal.h"
 
+extern struct extstore_ops extstore;
+
 int kvsns_fsstat(kvsns_fsstat_t *stat)
 {
 	char k[KLEN];
@@ -294,7 +296,7 @@ int kvsns_getattr(kvsns_cred_t *cred, kvsns_ino_t *ino, struct stat *bufstat)
 
 	if (S_ISREG(bufstat->st_mode)) {
 		/* for file, information is to be retrieved form extstore */
-		rc = extstore_getattr(ino, &data_stat);
+		rc = extstore.getattr(ino, &data_stat);
 		if (rc != 0) {
 			if (rc == -ENOENT)
 				return 0; /* no associated data */
@@ -350,11 +352,11 @@ int kvsns_setattr(kvsns_cred_t *cred, kvsns_ino_t *ino,
 		bufstat.st_gid = setstat->st_gid;
 
 	if (statflag & STAT_SIZE_SET)
-		RC_WRAP(extstore_truncate, ino, setstat->st_size, true,
+		RC_WRAP(extstore.truncate, ino, setstat->st_size, true,
 			&bufstat);
 
 	if (statflag & STAT_SIZE_ATTACH)
-		RC_WRAP(extstore_truncate, ino, setstat->st_size, false,
+		RC_WRAP(extstore.truncate, ino, setstat->st_size, false,
 			&bufstat);
 
 	if (statflag & STAT_ATIME_SET) {
@@ -531,7 +533,7 @@ int kvsns_unlink(kvsns_cred_t *cred, kvsns_ino_t *dir, char *name)
 
 	/* Call to object store : do not mix with metadata transaction */
 	if (!opened)
-		RC_WRAP(extstore_del, &ino);
+		RC_WRAP(extstore.del, &ino);
 
 	if (deleted)
 		RC_WRAP(kvsns_remove_all_xattr, cred, &ino);
