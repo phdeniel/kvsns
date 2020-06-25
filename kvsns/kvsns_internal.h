@@ -39,16 +39,30 @@
 #include <ini_config.h>
 #include <kvsns/kvsns.h>
 #include <string.h>
+#include <syslog.h>
+
+#define LogCrit(fmt, ...)   syslog(LOG_CRIT, (fmt), ## __VA_ARGS__)
+#define LogMajor(fmt, ...)  syslog(LOG_WARNING, (fmt), ##__VA_ARGS__)
+#define LogEvent(fmt, ...)  syslog(LOG_NOTICE, fmt, ## __VA_ARGS__)
+#define LogVerb(fmt, ...)   syslog(LOG_INFO, fmt, ## __VA_ARGS__)
+#define LogDebug(fmt, ...)  syslog(LOG_DEBUG, fmt, ## __VA_ARGS__)
 
 #define RC_WRAP(__function, ...) ({\
 	int __rc = __function(__VA_ARGS__);\
-	if (__rc != 0)        \
-		return __rc; })
+	syslog(LOG_DEBUG, "Call to %s rc=%d", #__function, __rc); \
+	if (__rc != 0) {        \
+		syslog(LOG_INFO, "Call to %s failed, rc=%d", \
+			#__function, __rc); \
+		return __rc; } })
 
 #define RC_WRAP_LABEL(__rc, __label, __function, ...) ({\
 	__rc = __function(__VA_ARGS__);\
-	if (__rc != 0)        \
-		goto __label; })
+	syslog(LOG_DEBUG, "Call to %s rc=%d", #__function, __rc); \
+	if (__rc != 0) {       \
+		syslog(LOG_INFO, "Call to %s failed, rc=%d", \
+			#__function, __rc); \
+		goto __label; }  })
+
 
 int kvsns_next_inode(kvsns_ino_t *ino);
 int kvsns_str2parentlist(kvsns_ino_t *inolist, int *size, char *str);

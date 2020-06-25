@@ -38,6 +38,7 @@
 #include <time.h>
 #include <sys/time.h>
 #include <dlfcn.h>  /* for dlopen and dlsym */
+#include <syslog.h>
 #include <ini_config.h>
 #include <kvsns/kvsal.h>
 #include <kvsns/kvsns.h>
@@ -54,6 +55,8 @@ struct extstore_ops extstore;
 void *handle_kvsal;
 struct kvsal_ops kvsal;
 
+#define LOG_DEFAULT LOG_CRIT
+
 #define ADD_FUNC(__module__, __name__, __handle__)		     ({ \
 	snprintf(funcname, MAXNAMLEN, "%s_%s", #__module__, #__name__); \
 	*(void **)(&__module__.__name__) = dlsym(__handle__, funcname); \
@@ -69,14 +72,18 @@ static int kvsns_load_libs(void)
 
 	/* Load kvsal library */
 	RC_WRAP(get_config_item, "kvsns", "kvsal_lib", cfg_items, &item);
-	if (item == NULL)
+	if (item == NULL) {
+		LogCrit("Can't find [kvsns]:kvsal_lib in config file");
 		return -EINVAL;
-	else
+	} else
 		kvsal_lib_path = get_string_config_value(item, NULL);
 
 	handle_kvsal = dlopen(kvsal_lib_path, RTLD_LAZY);
-	if (!handle_kvsal)
+	if (!handle_kvsal) {
+		LogCrit("Can't open %s errno=%d",
+			kvsal_lib_path, errno);
 		return -EINVAL;
+	}
 
 	ADD_FUNC(kvsal, init, handle_kvsal);
 	ADD_FUNC(kvsal, fini, handle_kvsal);
@@ -101,14 +108,18 @@ static int kvsns_load_libs(void)
 
 	/* Load extstore library */
 	RC_WRAP(get_config_item, "kvsns", "extstore_lib", cfg_items, &item);
-	if (item == NULL)
+	if (item == NULL) {
+		LogCrit("Can't find [kvsns]:extstore_lib in config file");
 		return -EINVAL;
-	else
+	} else
 		extstore_lib_path = get_string_config_value(item, NULL);
 
 	handle_extstore = dlopen(extstore_lib_path, RTLD_LAZY);
-	if (!handle_extstore)
+	if (!handle_extstore) {
+		LogCrit("Can't open %s errno=%d",
+			extstore_lib_path, errno);
 		return -EINVAL;
+	}
 
 	ADD_FUNC(extstore, init, handle_extstore);
 	ADD_FUNC(extstore, create, handle_extstore);
@@ -122,6 +133,61 @@ static int kvsns_load_libs(void)
 	ADD_FUNC(extstore, restore, handle_extstore);
 	ADD_FUNC(extstore, release, handle_extstore);
 	ADD_FUNC(extstore, state, handle_extstore);
+
+	return 0;
+}
+
+static int kvsns_init_log(void)
+{
+	struct collection_item *item = NULL;
+	int level;
+	char *strlevel = NULL;
+
+	RC_WRAP(get_config_item, "kvsns", "log_level", cfg_items, &item);
+	if (item == NULL) {
+		/* Log level is not set, using default */
+		level = LOG_DEFAULT;
+	} else {
+		strlevel = get_string_config_value(item, NULL);
+		if (!strcmp(strlevel, "LOG_EMERG")) {
+			level = LOG_EMERG;
+			goto done;
+		}
+		if (!strcmp(strlevel, "LOG_ALERT")) {
+			level = LOG_ALERT;
+			goto done;
+		}
+		if (!strcmp(strlevel, "LOG_CRIT")) {
+			level = LOG_CRIT;
+			goto done;
+		}
+		if (!strcmp(strlevel, "LOG_ERR")) {
+			level = LOG_ERR;
+			goto done;
+		}
+		if (!strcmp(strlevel, "LOG_WARNING")) {
+			level = LOG_WARNING;
+			goto done;
+		}
+		if (!strcmp(strlevel, "LOG_NOTICE")) {
+			level = LOG_NOTICE;
+			goto done;
+		}
+		if (!strcmp(strlevel, "LOG_INFO")) {
+			level = LOG_INFO;
+			goto done;
+		}
+		if (!strcmp(strlevel, "LOG_DEBUG")) {
+			level = LOG_DEBUG;
+			goto done;
+		}
+
+		level = LOG_DEFAULT; /* default value */
+	}
+
+done:
+	openlog("libkvsns", LOG_PID, LOG_DAEMON);
+	setlogmask(LOG_UPTO(level));
 
 	return 0;
 }
@@ -141,11 +207,15 @@ int kvsns_start(const char *configpath)
 		return -rc;
 	}
 
+	RC_WRAP(kvsns_init_log);
+
 	RC_WRAP(kvsns_load_libs);
 
 	RC_WRAP(kvsal.init, cfg_items);
 
 	RC_WRAP(extstore.init, cfg_items, &kvsal);
+
+	LogEvent("KVSNS is started");
 
 	/** @todo : remove all existing opened FD (crash recovery) */
 	return 0;
@@ -154,7 +224,9 @@ int kvsns_start(const char *configpath)
 int kvsns_stop(void)
 {
 	RC_WRAP(kvsal.fini);
+	LogEvent("KVSNS is stoping");
 	free_ini_config_errors(cfg_items);
+	closelog(); /* for syslog */
 	return 0;
 }
 
