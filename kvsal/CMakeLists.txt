@@ -1,2 +1,4 @@
-add_subdirectory(redis)
+if(HAVE_HIREDIS AND HAVE_HIREDIS_H)
+	add_subdirectory(redis)
+endif(HAVE_HIREDIS AND HAVE_HIREDIS_H)
 
