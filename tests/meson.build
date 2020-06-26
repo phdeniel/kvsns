@@ -1,0 +1,7 @@
+# cmake_policy(['SET', 'CMP0017', 'NEW'])
+kvsns_test_exe = executable('kvsns_test', 'kvsns_test.c')
+# target_link_libraries(['kvsns_test', 'kvsns'])
+kvsns_file_test_unlink_on_close_exe = executable('kvsns_file_test_unlink_on_close', 'kvsns_file_test_unlink_on_close.c')
+# target_link_libraries(['kvsns_file_test_unlink_on_close', 'kvsns'])
+kvsns_file_test_write_exe = executable('kvsns_file_test_write', 'kvsns_file_test_write.c')
+# target_link_libraries(['kvsns_file_test_write', 'kvsns'])
