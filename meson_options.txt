@@ -1,0 +1,3 @@
+option('USE_KVS_MERO', type : 'boolean', value : false, description : 'Use MERO as a KVS in KVSAL')
+option('USE_POSIX_STORE', type : 'boolean', value : true, description : 'Use POSIX directory as object store')
+option('USE_CRUD_CACHE', type : 'boolean', value : false, description : 'Use CRUD cache')
