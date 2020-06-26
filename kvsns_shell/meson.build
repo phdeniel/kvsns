@@ -7,5 +7,15 @@ kvsns_cp_exe = executable('kvsns_cp',
 			  'kvsns_cp.c',
 			   dependencies: kvsns_dep)
 
+busybox_path=meson.build_root() + '/kvsns_shell/kvsns_busybox'
 
-# add_custom_command(['TARGET', 'links', 'COMMAND', '/usr/bin/ln', '-sf', 'kvsns_busybox', 'ns_reset', 'COMMAND', '/usr/bin/ln', '-sf', 'kvsns_busybox', 'ns_init', 'COMMAND', '/usr/bin/ln', '-sf', 'kvsns_busybox', 'ns_mkdir', 'COMMAND', '/usr/bin/ln', '-sf', 'kvsns_busybox', 'ns_rmdir', 'COMMAND', '/usr/bin/ln', '-sf', 'kvsns_busybox', 'ns_creat', 'COMMAND', '/usr/bin/ln', '-sf', 'kvsns_busybox', 'ns_cd', 'COMMAND', '/usr/bin/ln', '-sf', 'kvsns_busybox', 'ns_ln', 'COMMAND', '/usr/bin/ln', '-sf', 'kvsns_busybox', 'ns_link', 'COMMAND', '/usr/bin/ln', '-sf', 'kvsns_busybox', 'ns_rm', 'COMMAND', '/usr/bin/ln', '-sf', 'kvsns_busybox', 'ns_rename', 'COMMAND', '/usr/bin/ln', '-sf', 'kvsns_busybox', 'ns_readlink', 'COMMAND', '/usr/bin/ln', '-sf', 'kvsns_busybox', 'ns_getattr', 'COMMAND', '/usr/bin/ln', '-sf', 'kvsns_busybox', 'ns_getxattr', 'COMMAND', '/usr/bin/ln', '-sf', 'kvsns_busybox', 'ns_setxattr', 'COMMAND', '/usr/bin/ln', '-sf', 'kvsns_busybox', 'ns_listxattr', 'COMMAND', '/usr/bin/ln', '-sf', 'kvsns_busybox', 'ns_removexattr', 'COMMAND', '/usr/bin/ln', '-sf', 'kvsns_busybox', 'ns_clearxattr', 'COMMAND', '/usr/bin/ln', '-sf', 'kvsns_busybox', 'ns_ls', 'COMMAND', '/usr/bin/ln', '-sf', 'kvsns_busybox', 'ns_fsstat', 'COMMAND', '/usr/bin/ln', '-sf', 'kvsns_busybox', 'ns_truncate', 'COMMAND', '/usr/bin/ln', '-sf', 'kvsns_busybox', 'ns_mr_proper', 'COMMAND', '/usr/bin/ln', '-sf', 'kvsns_busybox', 'ns_cp', 'COMMAND', '/usr/bin/ln', '-sf', 'kvsns_busybox', 'ns_archive', 'COMMAND', '/usr/bin/ln', '-sf', 'kvsns_busybox', 'ns_restore', 'COMMAND', '/usr/bin/ln', '-sf', 'kvsns_busybox', 'ns_release', 'COMMAND', '/usr/bin/ln', '-sf', 'kvsns_busybox', 'ns_state', 'WORKING_DIRECTORY', cmake_current_binary_dir, 'VERBATIM'])
+foreach t: ['ns_archive', 'ns_cd', 'ns_clearxattr', 'ns_cp', 'ns_creat',
+	    'ns_fsstat', 'ns_getattr', 'ns_getxattr', 'ns_init', 'ns_link',
+	    'ns_listxattr', 'ns_ln', 'ns_ls', 'ns_mkdir', 'ns_mr_proper',
+	    'ns_readlink', 'ns_release', 'ns_removexattr', 'ns_rename',
+	    'ns_reset', 'ns_restore', 'ns_rm', 'ns_rmdir', 'ns_setxattr',
+	    'ns_state', 'ns_truncate']
+	run_command('/usr/bin/ln', '-sf', busybox_path,
+		    meson.build_root() + '/kvsns_shell/' + t)
+endforeach
+
