@@ -15,25 +15,6 @@ set(LIBKVSNS_BASE_VERSION ${LIBKVSNS_MAJOR_VERSION}.${LIBKVSNS_MINOR_VERSION}.${
 message( STATUS "cmake version ${CMAKE_MAJOR_VERSION}.${CMAKE_MINOR_VERSION}" )
 message( STATUS "libkvsns version ${LIBKVSNS_BASE_VERSION}")
 
-# Option (for choosing KVSAL backend)
-option(USE_KVS_MERO "Use MERO as a KVS in KVSAL" OFF)
-
-option(USE_POSIX_STORE "Use POSIX directory as object store" ON)
-option(USE_CRUD_CACHE "Use CRUD cache" OFF)
-
-if(USE_FSAL_LUSTRE)
-    set(BCOND_LUSTRE "%bcond_without")
-else(USE_FSAL_LUSTRE)
-    set(BCOND_LUSTRE "%bcond_with")
-endif(USE_FSAL_LUSTRE)
-
-# BCOND* variables for spec file */
-if (USE_POSIX_STORE)
-	set(BCOND_POSIX_STORE "%bcond_without")
-else (USE_POSIX_STORE)
-	set(BCOND_POSIX_STORE "%bcond_with")
-endif (USE_POSIX_STORE)
-
 # Final tuning
 # Final tuning
 
@@ -50,6 +31,10 @@ check_library_exists(
 	HAVE_INI_CONFIG
 	)
 
+if((NOT HAVE_INI_CONFIG) OR (NOT HAVE_INI_CONFIG_H))
+      message(FATAL_ERROR "Cannot find ini_config")
+endif((NOT HAVE_INI_CONFIG) OR (NOT HAVE_INI_CONFIG_H))
+
 ### Check for rados ###
 check_library_exists(
 	rados
@@ -64,11 +49,7 @@ if((NOT HAVE_LIBRADOS) OR (NOT HAVE_RADOS_H))
 endif((NOT HAVE_LIBRADOS) OR (NOT HAVE_RADOS_H))
 
 
-if((NOT HAVE_INI_CONFIG) OR (NOT HAVE_INI_CONFIG_H))
-      message(FATAL_ERROR "Cannot find ini_config")
-endif((NOT HAVE_INI_CONFIG) OR (NOT HAVE_INI_CONFIG_H))
-
-## Start building stuff ##
+## Check for HIREDIS ##
 
 find_library(HAVE_HIREDIS hiredis)
 check_library_exists(
@@ -83,12 +64,18 @@ if((NOT HAVE_HIREDIS) OR (NOT HAVE_HIREDIS_H))
       message(FATAL_ERROR "Cannot find hiredis")
 endif((NOT HAVE_HIREDIS) OR (NOT HAVE_HIREDIS_H))
 
+## Set BCOND for spec file management */
 if (HAVE_RADOS_H AND HAVE_LIBRADOS)
 	set(BCOND_RADOS "%bcond_without")
 else (HAVE_RADOS_H AND HAVE_LIBRADOS)
 	set(BCOND_RADOS "%bcond_with")
 endif (HAVE_RADOS_H AND HAVE_LIBRADOS)
 
+if (HAVE_HOREDIS_H AND HAVE_HIREDIS)
+	set(BCOND_REDIS "%bcond_without")
+else (HAVE_HOREDIS_H AND HAVE_HIREDIS)
+	set(BCOND_REDIS "%bcond_with")
+endif (HAVE_HOREDIS_H AND HAVE_HIREDIS)
 
 # Build ancillary libs
 add_subdirectory(extstore)
@@ -153,6 +140,3 @@ add_custom_command(TARGET srpm
 # INSTALL
 install(FILES ${PROJECT_SOURCE_DIR}/libkvsns.pc DESTINATION lib)
 install(DIRECTORY ${PROJECT_SOURCE_DIR}/include/kvsns DESTINATION include)
-#install(FILES ${PROJECT_SOURCE_DIR}/include/kvsns/kvsns.h DESTINATION include/kvsns)
-#install(FILES ${PROJECT_SOURCE_DIR}/include/kvsns/kvsal.h DESTINATION include/kvsns)
-##install(FILES ${PROJECT_SOURCE_DIR}/include/kvsns/extstore.h DESTINATION include/kvsns)
