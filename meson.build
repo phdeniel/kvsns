@@ -4,10 +4,12 @@ project('libkvsns',
 	 license: 'LGPL3.0-or-later',
 	 default_options : ['default_library=shared',
 			     'werror=true'])
-cmake_c_flags = '${CMAKE_C_FLAGS} -I${CMAKE_SOURCE_DIR}/include -fPIC -g'
-cmake_c_flags = '${CMAKE_C_FLAGS} -Wall -Werror'
 
 cc = meson.get_compiler('c')
+options = cc.get_supported_arguments([
+    '-Werror -Wall', # gcc >= 10.1.0 (maybe less)
+])
+add_project_arguments(options, language: 'c')
 
 ini_config_lib = cc.find_library('libini_config', required: true)
 hiredis_lib = cc.find_library('libhiredis', required: true)
