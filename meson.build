@@ -20,3 +20,22 @@ subdir('kvsns')
 subdir('kvsns_shell')
 subdir('kvsns_attach')
 subdir('tests')
+
+# Build the spec file
+conf_data = configuration_data()
+conf_data.set('LIBKVSNS_BASE_VERSION', '1.2.3')
+conf_data.set('LIBKVSNS_EXTRA_VERSION', '')
+
+distfile = meson.project_name() +  '-' + meson.project_version()
+conf_data.set('CPACK_SOURCE_PACKAGE_FILE_NAME', distfile)
+
+if rados_lib.found()
+	conf_data.set('BCOND_RADOS','%bcond_without')
+else
+	conf_data.set('BCOND_RADOS', '%bcond_with')
+endif
+
+configure_file(input : 'libkvsns.spec-in.cmake',
+               output : 'libkvsns.spec',
+               configuration : conf_data)
+
