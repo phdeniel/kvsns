@@ -23,10 +23,11 @@ subdir('tests')
 
 # Build the spec file
 conf_data = configuration_data()
-conf_data.set('LIBKVSNS_BASE_VERSION', '1.2.3')
+conf_data.set('LIBKVSNS_BASE_VERSION', meson.project_version())
 conf_data.set('LIBKVSNS_EXTRA_VERSION', '')
 
-distfile = meson.project_name() +  '-' + meson.project_version()
+distdir = meson.build_root() + '/meson-dist'
+distfile = meson.project_name() +  '-' + meson.project_version() + '.tar.xz'
 conf_data.set('CPACK_SOURCE_PACKAGE_FILE_NAME', distfile)
 
 if rados_lib.found()
@@ -39,3 +40,8 @@ configure_file(input : 'libkvsns.spec-in.cmake',
                output : 'libkvsns.spec',
                configuration : conf_data)
 
+message(distdir)
+message(distfile)
+message(distdir + '/' + distfile)
+
+#add_dist_script('add_spec_meson.sh', distdir + '/' + distfile, meson.source_root())
