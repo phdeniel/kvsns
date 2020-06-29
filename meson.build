@@ -28,7 +28,6 @@ conf_data = configuration_data()
 conf_data.set('LIBKVSNS_BASE_VERSION', meson.project_version())
 conf_data.set('LIBKVSNS_EXTRA_VERSION', '')
 
-distdir = meson.build_root() + '/meson-dist'
 distfile = meson.project_name() +  '-' + meson.project_version() + '.tar.xz'
 conf_data.set('CPACK_SOURCE_PACKAGE_FILE_NAME', distfile)
 
@@ -42,8 +41,7 @@ configure_file(input : 'libkvsns.spec-in.cmake',
                output : 'libkvsns.spec',
                configuration : conf_data)
 
-message(distdir)
-message(distfile)
-message(distdir + '/' + distfile)
+filespec = meson.source_root() + '/libkvsns.spec'
+distdir = meson.build_root() + '/meson-dist/' + meson.project_name() +  '-' + meson.project_version()
 
-#add_dist_script('add_spec_meson.sh', distdir + '/' + distfile, meson.source_root())
+meson.add_dist_script('/usr/bin/cp', filespec, distdir)
