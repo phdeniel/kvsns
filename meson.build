@@ -37,7 +37,7 @@ else
 	conf_data.set('BCOND_RADOS', '%bcond_with')
 endif
 
-configure_file(input : 'libkvsns.spec-in.cmake',
+configure_file(input : 'libkvsns.spec-in.meson',
                output : 'libkvsns.spec',
                configuration : conf_data)
 
