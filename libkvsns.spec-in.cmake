@@ -62,7 +62,7 @@ This package contains the tools for libkvsns.
 %setup -q -n %{sourcename}
 
 %build
-cmake . -DUSE_RAOS=%{use_rados}
+cmake . -DUSE_RADOS=%{use_rados}
 
 make %{?_smp_mflags} || make %{?_smp_mflags} || make
 
