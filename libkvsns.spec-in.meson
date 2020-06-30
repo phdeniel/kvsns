@@ -9,9 +9,9 @@ License: LGPLv3
 Group: Development/Libraries
 Url: http://github.com/phdeniel/libkvsns
 Source: %{sourcename}.tar.gz
-BuildRequires: cmake hiredis-devel libini_config-devel
+BuildRequires: hiredis-devel libini_config-devel
 BuildRequires: gcc
-BuildRequires: meson
+#BuildRequires: meson ninja
 Requires: redis hiredis libini_config
 Provides: %{name} = %{version}-%{release}
 
@@ -63,9 +63,8 @@ This package contains the tools for libkvsns.
 %setup -q -n %{sourcename}
 
 %build
-cmake . -DUSE_RAOS=%{use_rados}
-
-make %{?_smp_mflags} || make %{?_smp_mflags} || make
+meson %{_builddir}
+ninja -C %{_builddir}
 
 %install
 
