@@ -21,6 +21,7 @@ subdir('kvsal')
 subdir('kvsns')
 subdir('kvsns_shell')
 subdir('kvsns_attach')
+subdir('kvsns_hsm')
 subdir('tests')
 
 # Build the spec file
