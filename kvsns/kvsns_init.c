@@ -83,7 +83,8 @@ static int kvsns_load_libs(void)
 		LogCrit("Can't open %s errno=%d",
 			kvsal_lib_path, errno);
 		return -EINVAL;
-	}
+	} else
+		LogMajor("kvsns loaded %s as kvsal", kvsal_lib_path);
 
 	ADD_FUNC(kvsal, init, handle_kvsal);
 	ADD_FUNC(kvsal, fini, handle_kvsal);
@@ -119,7 +120,8 @@ static int kvsns_load_libs(void)
 		LogCrit("Can't open %s errno=%d",
 			extstore_lib_path, errno);
 		return -EINVAL;
-	}
+	} else
+		LogMajor("kvsns loaded %s as extstore", extstore_lib_path);
 
 	ADD_FUNC(extstore, init, handle_extstore);
 	ADD_FUNC(extstore, create, handle_extstore);
