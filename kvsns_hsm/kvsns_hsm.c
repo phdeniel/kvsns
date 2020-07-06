@@ -119,6 +119,8 @@ static int do_action(enum action action, char *path)
 	switch (action) {
 	case STATE:
 		rc = kvsns_state(&cred, &ino, state);
+		if (rc == 0)
+			printf("state = %s\n", state);
 		break;
 	case ARCHIVE:
 		rc = kvsns_archive(&cred, &ino);
