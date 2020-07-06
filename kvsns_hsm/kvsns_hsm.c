@@ -82,7 +82,7 @@ static enum action str2action(char *str)
 
 static void help(char *exec)
 {
-	fprintf(stderr, "%s: [status,migrate,release,restore] <path>\n", exec);
+	fprintf(stderr, "%s: [status,archive,release,restore] <path>\n", exec);
 	exit(0);
 }
 
