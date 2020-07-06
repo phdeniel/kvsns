@@ -243,16 +243,16 @@ int extstore_create(kvsns_ino_t object)
 	int fd;
 	struct stat stat;
 
-	fd = creat(path, 0777);
-	if (fd == -1)
-		return -errno;
-	close(fd);
-
 	snprintf(k, KLEN, "%llu.data", object);
 	snprintf(path, VLEN, "%s/inum=%llu",
 		store_root, (unsigned long long)object);
 	strncpy(v, path, VLEN);
 	RC_WRAP(kvsal.set_char, k, v);
+
+	fd = creat(path, 0777);
+	if (fd == -1)
+		return -errno;
+	close(fd);
 
 	snprintf(k, KLEN, "%llu.data_attr", object);
 	memset((char *)&stat, 0, sizeof(stat));
@@ -263,7 +263,7 @@ int extstore_create(kvsns_ino_t object)
 	RC_WRAP(kvsal.set_char, k, v);
 
 	snprintf(k, KLEN, "%llu.cache_state", object);
-	snprintf(v, VLEN, "1/0");
+	snprintf(v, VLEN, state2str(CACHED));
 	RC_WRAP(kvsal.set_char, k, v);
 
 	return 0;
@@ -288,7 +288,7 @@ int extstore_attach(kvsns_ino_t *ino, char *objid, int objid_len)
 	RC_WRAP(kvsal.set_char, k, v);
 
 	snprintf(k, KLEN, "%llu.cache_state", *ino);
-	snprintf(v, VLEN, "YES");
+	snprintf(v, VLEN, state2str(CACHED));
 	RC_WRAP(kvsal.set_char, k, v);
 
 	RC_WRAP(set_entry_state, ino, CACHED);
