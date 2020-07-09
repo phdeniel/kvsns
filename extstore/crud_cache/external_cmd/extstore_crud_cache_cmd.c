@@ -235,6 +235,7 @@ static int update_stat(struct stat *stat, enum update_stat_how how,
 
 	return 0;
 }
+
 int extstore_create(kvsns_ino_t object)
 {
 	char k[KLEN];
@@ -258,10 +259,6 @@ int extstore_create(kvsns_ino_t object)
 	memset((char *)&stat, 0, sizeof(stat));
 	RC_WRAP(kvsal.set_stat, k, &stat);
 
-	snprintf(k, KLEN, "%llu.data_ext", object);
-	v[0] = '\0'; /* snprintf(v, VLEN, ""); */
-	RC_WRAP(kvsal.set_char, k, v);
-
 	snprintf(k, KLEN, "%llu.cache_state", object);
 	snprintf(v, VLEN, state2str(CACHED));
 	RC_WRAP(kvsal.set_char, k, v);
@@ -282,10 +279,6 @@ int extstore_attach(kvsns_ino_t *ino, char *objid, int objid_len)
 	snprintf(k, KLEN, "%llu.data_attr", *ino);
 	memset((char *)&stat, 0, sizeof(stat));
 	RC_WRAP(kvsal.set_stat, k, &stat);
-
-	snprintf(k, KLEN, "%llu.data_ext", *ino);
-	v[0] = '\0'; /* snprintf(v, VLEN, ""); */
-	RC_WRAP(kvsal.set_char, k, v);
 
 	snprintf(k, KLEN, "%llu.cache_state", *ino);
 	snprintf(v, VLEN, state2str(CACHED));
@@ -345,6 +338,9 @@ int extstore_del(kvsns_ino_t *ino)
 	char storepath[MAXPATHLEN];
 	int rc;
 
+	/* Delete in the object store */
+	RC_WRAP(objstore_del, ino);
+
 	rc = build_extstore_path(*ino, storepath, MAXPATHLEN);
 	if (rc) {
 		if (rc == -ENOENT) /* No data created */
@@ -369,15 +365,9 @@ int extstore_del(kvsns_ino_t *ino)
 	snprintf(k, KLEN, "%llu.data_attr", *ino);
 	RC_WRAP(kvsal.del, k);
 
-	/* delete <inode>.data_ext */
-	snprintf(k, KLEN, "%llu.data_ext", *ino);
-	RC_WRAP(kvsal.del, k);
-
 	/* delete state */
 	RC_WRAP(del_entry_state, ino);
 
-	/* Delete in the object store */
-	RC_WRAP(objstore_del, ino);
 	return 0;
 }
 
