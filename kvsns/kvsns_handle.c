@@ -447,9 +447,11 @@ int kvsns_unlink(kvsns_cred_t *cred, kvsns_ino_t *dir, char *name)
 	int i;
 	bool opened;
 	bool deleted;
+	bool is_symlink;
 
 	opened = false;
 	deleted = false;
+	is_symlink = false;
 
 	if (!cred || !dir || !name)
 		return -EINVAL;
@@ -524,6 +526,7 @@ int kvsns_unlink(kvsns_cred_t *cred, kvsns_ino_t *dir, char *name)
 	if ((ino_stat.st_mode & S_IFLNK) == S_IFLNK) {
 		snprintf(k, KLEN, "%llu.link", ino);
 		RC_WRAP_LABEL(rc, aborted, kvsal.del, k);
+		is_symlink = true;
 	}
 
 	RC_WRAP_LABEL(rc, aborted, kvsns_amend_stat, &dir_stat,
@@ -533,7 +536,7 @@ int kvsns_unlink(kvsns_cred_t *cred, kvsns_ino_t *dir, char *name)
 	RC_WRAP(kvsal.end_transaction);
 
 	/* Call to object store : do not mix with metadata transaction */
-	if (!opened && deleted)
+	if (!opened && deleted && !is_symlink)
 		RC_WRAP(extstore.del, &ino);
 
 	if (deleted)
