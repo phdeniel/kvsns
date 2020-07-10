@@ -533,7 +533,7 @@ int kvsns_unlink(kvsns_cred_t *cred, kvsns_ino_t *dir, char *name)
 	RC_WRAP(kvsal.end_transaction);
 
 	/* Call to object store : do not mix with metadata transaction */
-	if (!opened)
+	if (!opened && deleted)
 		RC_WRAP(extstore.del, &ino);
 
 	if (deleted)
