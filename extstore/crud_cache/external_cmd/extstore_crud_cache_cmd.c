@@ -138,6 +138,7 @@ static int build_extstore_path(kvsns_ino_t object,
 
 static int objstore_put(char *path, kvsns_ino_t *ino)
 {
+	char k[KLEN];
 	char storepath[MAXPATHLEN];
 	char objpath[MAXPATHLEN];
 	char cmd[3*MAXPATHLEN];
@@ -150,18 +151,23 @@ static int objstore_put(char *path, kvsns_ino_t *ino)
 	fp = popen(cmd, "r");
 	pclose(fp);
 
+	snprintf(k, KLEN, "%llu.data_obj", *ino);
+	RC_WRAP(kvsal.set_char, k, objpath);
+
 	return 0;
 }
 
 static int objstore_get(char *path, kvsns_ino_t *ino)
 {
+	char k[KLEN];
 	char storepath[MAXPATHLEN];
 	char objpath[MAXPATHLEN];
 	char cmd[3*MAXPATHLEN];
 	FILE *fp;
 
 	RC_WRAP(build_extstore_path, *ino, storepath, MAXPATHLEN);
-	sprintf(objpath, "%s.archive", storepath);
+	snprintf(k, KLEN, "%llu.data_obj", *ino);
+	RC_WRAP(kvsal.get_char, k, objpath);
 	sprintf(cmd, cmd_get, storepath, objpath);
 
 	fp = popen(cmd, "r");
@@ -172,17 +178,22 @@ static int objstore_get(char *path, kvsns_ino_t *ino)
 
 static int objstore_del(kvsns_ino_t *ino)
 {
+	char k[KLEN];
 	char storepath[MAXPATHLEN];
 	char objpath[MAXPATHLEN];
 	char cmd[3*MAXPATHLEN];
 	FILE *fp;
 
 	RC_WRAP(build_extstore_path, *ino, storepath, MAXPATHLEN);
-	sprintf(objpath, "%s.archive", storepath);
-	sprintf(cmd, cmd_del, objpath);
+	snprintf(k, KLEN, "%llu.data_obj", *ino);
 
-	fp = popen(cmd, "r");
-	pclose(fp);
+	if (kvsal.exists(k) != -ENOENT) {
+		RC_WRAP(kvsal.get_char, k, objpath);
+		sprintf(cmd, cmd_del, objpath);
+
+		fp = popen(cmd, "r");
+		pclose(fp);
+	}
 
 	return 0;
 }
@@ -364,6 +375,10 @@ int extstore_del(kvsns_ino_t *ino)
 	/* delete <inode>.data_attr */
 	snprintf(k, KLEN, "%llu.data_attr", *ino);
 	RC_WRAP(kvsal.del, k);
+
+	snprintf(k, KLEN, "%llu.data_obj", *ino);
+	if (kvsal.exists(k) != -ENOENT)
+		RC_WRAP(kvsal.del, k);
 
 	/* delete state */
 	RC_WRAP(del_entry_state, ino);
