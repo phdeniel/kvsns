@@ -128,6 +128,9 @@ rm -rf $RPM_BUILD_ROOT
 %{_bindir}/cp_get.sh
 
 %changelog
+* Mon Aug  3 2020 Philippe DENIEL <philippe.deniel@cea.fr> 1.2.8
+- Change dependencies so that libkvsns-utils can be built
+
 * Wed Jun 24 2020 Philippe DENIEL <philippe.deniel@cea.fr> 1.2.7
 - Use dlopen and dlsym to manage kvsal
 
