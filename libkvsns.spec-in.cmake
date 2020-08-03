@@ -14,6 +14,9 @@ BuildRequires: gcc
 Requires: redis hiredis libini_config
 Provides: %{name} = %{version}-%{release}
 
+# Remove implicit dep to libkvsns (which prevent from building libkvsns-utils
+%global __requires_exclude ^libkvsns\\.so.*$
+
 # Conditionally enable KVS and object stores
 #
 # 1. rpmbuild accepts these options (gpfs as example):
