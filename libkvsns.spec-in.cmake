@@ -130,6 +130,9 @@ rm -rf $RPM_BUILD_ROOT
 %{_bindir}/cp_get.sh
 
 %changelog
+* Tue Aug  4 2020 Philippe DENIEL <philippe.deniel@cea.fr> 1.2.9
+- Rename extstore_crud_cache_cmd and add objstore_cmd
+
 * Mon Aug  3 2020 Philippe DENIEL <philippe.deniel@cea.fr> 1.2.8
 - Change dependencies so that libkvsns-utils can be built
 
