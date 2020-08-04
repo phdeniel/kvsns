@@ -31,7 +31,18 @@
 
 #include <sys/time.h>   /* for gettimeofday */
 #include <kvsns/extstore.h>
+#include <dlfcn.h>  /* for dlopen and dlsym */
 
+char funcname[MAXNAMLEN];
+
+void *handle_objstore;
+struct objstore_ops objstore;
+
+#define ADD_FUNC(__module__, __name__, __handle__)                   ({ \
+        snprintf(funcname, MAXNAMLEN, "%s_%s", #__module__, #__name__); \
+        *(void **)(&__module__.__name__) = dlsym(__handle__, funcname); \
+        if (!__module__.__name__)                                       \
+                return -EINVAL; })
 
 #define RC_WRAP(__function, ...) ({\
 	int __rc = __function(__VA_ARGS__);\
@@ -48,9 +59,6 @@
 #define LEN_CMD (MAXPATHLEN+2*MAXNAMLEN)
 
 static char store_root[MAXPATHLEN];
-static char cmd_put[LEN_CMD];
-static char cmd_get[LEN_CMD];
-static char cmd_del[LEN_CMD];
 
 static struct collection_item *conf = NULL;
 struct kvsal_ops kvsal;
@@ -132,68 +140,6 @@ static int build_extstore_path(kvsns_ino_t object,
 
 	snprintf(k, KLEN, "%llu.data", object);
 	RC_WRAP(kvsal.get_char, k, extstore_path);
-
-	return 0;
-}
-
-static int objstore_put(char *path, kvsns_ino_t *ino)
-{
-	char k[KLEN];
-	char storepath[MAXPATHLEN];
-	char objpath[MAXPATHLEN];
-	char cmd[3*MAXPATHLEN];
-	FILE *fp;
-
-	RC_WRAP(build_extstore_path, *ino, storepath, MAXPATHLEN);
-	sprintf(objpath, "%s.archive", storepath);
-	sprintf(cmd, cmd_put, storepath, objpath);
-
-	fp = popen(cmd, "r");
-	pclose(fp);
-
-	snprintf(k, KLEN, "%llu.data_obj", *ino);
-	RC_WRAP(kvsal.set_char, k, objpath);
-
-	return 0;
-}
-
-static int objstore_get(char *path, kvsns_ino_t *ino)
-{
-	char k[KLEN];
-	char storepath[MAXPATHLEN];
-	char objpath[MAXPATHLEN];
-	char cmd[3*MAXPATHLEN];
-	FILE *fp;
-
-	RC_WRAP(build_extstore_path, *ino, storepath, MAXPATHLEN);
-	snprintf(k, KLEN, "%llu.data_obj", *ino);
-	RC_WRAP(kvsal.get_char, k, objpath);
-	sprintf(cmd, cmd_get, storepath, objpath);
-
-	fp = popen(cmd, "r");
-	pclose(fp);
-
-	return 0;
-}
-
-static int objstore_del(kvsns_ino_t *ino)
-{
-	char k[KLEN];
-	char storepath[MAXPATHLEN];
-	char objpath[MAXPATHLEN];
-	char cmd[3*MAXPATHLEN];
-	FILE *fp;
-
-	RC_WRAP(build_extstore_path, *ino, storepath, MAXPATHLEN);
-	snprintf(k, KLEN, "%llu.data_obj", *ino);
-
-	if (kvsal.exists(k) != -ENOENT) {
-		RC_WRAP(kvsal.get_char, k, objpath);
-		sprintf(cmd, cmd_del, objpath);
-
-		fp = popen(cmd, "r");
-		pclose(fp);
-	}
 
 	return 0;
 }
@@ -304,9 +250,11 @@ int extstore_init(struct collection_item *cfg_items,
 		  struct kvsal_ops *kvsalops)
 {
 	struct collection_item *item;
+	char *objstore_lib_path;
 
 	if (cfg_items != NULL)
 		conf = cfg_items;
+
 
 	memcpy(&kvsal, kvsalops, sizeof(struct kvsal_ops));
 
@@ -319,26 +267,27 @@ int extstore_init(struct collection_item *cfg_items,
 		strncpy(store_root, get_string_config_value(item, NULL),
 			MAXPATHLEN);
 
-	RC_WRAP(get_config_item, "crud_cache", "command_put", cfg_items, &item);
+	item = NULL;
+	RC_WRAP(get_config_item, "crud_cache", "objstore_lib",
+				 cfg_items, &item);
 	if (item == NULL)
 		return -EINVAL;
 	else
-		strncpy(cmd_put, get_string_config_value(item, NULL),
-			LEN_CMD);
+		objstore_lib_path = get_string_config_value(item, NULL);
 
-	RC_WRAP(get_config_item, "crud_cache", "command_get", cfg_items, &item);
-	if (item == NULL)
+	handle_objstore = dlopen(objstore_lib_path, RTLD_LAZY);
+	if (!handle_objstore) {
+		fprintf(stderr, "Can't open %s errno=%d\n",
+			objstore_lib_path, errno);
 		return -EINVAL;
-	else
-		strncpy(cmd_get, get_string_config_value(item, NULL),
-			LEN_CMD);
+	}
 
-	RC_WRAP(get_config_item, "crud_cache", "command_del", cfg_items, &item);
-	if (item == NULL)
-		return -EINVAL;
-	else
-		strncpy(cmd_del, get_string_config_value(item, NULL),
-			LEN_CMD);
+	ADD_FUNC(objstore, init, handle_objstore);
+	ADD_FUNC(objstore, get, handle_objstore);
+	ADD_FUNC(objstore, put, handle_objstore);
+	ADD_FUNC(objstore, del, handle_objstore);
+
+	RC_WRAP(objstore.init, cfg_items, kvsalops, build_extstore_path);
 
 	return 0;
 }
@@ -350,7 +299,7 @@ int extstore_del(kvsns_ino_t *ino)
 	int rc;
 
 	/* Delete in the object store */
-	RC_WRAP(objstore_del, ino);
+	RC_WRAP(objstore.del, ino);
 
 	rc = build_extstore_path(*ino, storepath, MAXPATHLEN);
 	if (rc) {
@@ -599,7 +548,7 @@ int extstore_archive(kvsns_ino_t *ino)
 		/* Xfer wuth the object store */
 		RC_WRAP(build_extstore_path, *ino, storepath, MAXPATHLEN);
 
-		RC_WRAP(objstore_put, storepath, ino);
+		RC_WRAP(objstore.put, storepath, ino);
 		RC_WRAP(set_entry_state, ino, DUPLICATED);
 		rc = 0;
 		break;
@@ -630,7 +579,7 @@ int extstore_restore(kvsns_ino_t *ino)
 	case RELEASED:
 		/* Xfer with the object store */
 		RC_WRAP(build_extstore_path, *ino, storepath, MAXPATHLEN);
-		RC_WRAP(objstore_get, storepath, ino);
+		RC_WRAP(objstore.get, storepath, ino);
 		RC_WRAP(set_entry_state, ino, DUPLICATED);
 		rc = 0;
 		break;

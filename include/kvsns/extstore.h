@@ -108,4 +108,25 @@ struct extstore_ops {
 			      char *state);
 };
 
+typedef int build_extstore_path_func(kvsns_ino_t object,
+				     char *extstore_path,
+				     size_t pathlen);
+
+/* Objstore */
+int objstore_init(struct collection_item *cfg_items,
+		  struct kvsal_ops *kvsalops,
+		  build_extstore_path_func *bespf);
+int objstore_put(char *path, kvsns_ino_t *ino);
+int objstore_get(char *path, kvsns_ino_t *ino);
+int objstore_del(kvsns_ino_t *ino);
+
+struct objstore_ops {
+	int (*init)(struct collection_item *cfg_items,
+		    struct kvsal_ops *kvsalops,
+		    build_extstore_path_func *bespf);
+	int (*put)(char *path, kvsns_ino_t *ino);
+	int (*get)(char *path, kvsns_ino_t *ino);
+	int (*del)(kvsns_ino_t *ino);
+};
+
 #endif
