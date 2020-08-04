@@ -195,15 +195,25 @@ done:
 }
 
 
-int kvsns_start(const char *configpath)
+int kvsns_start(const char *conf)
 {
 	struct collection_item *errors = NULL;
 	int rc;
+	char *configpath = NULL;
+
+	if (conf != NULL)
+		configpath = (char *)conf;
+	else {
+		configpath = getenv(KVSNS_GETENV);
+		if (configpath == NULL)
+			configpath = KVSNS_DEFAULT_CONFIG;
+	}
 
 	rc = config_from_file("libkvsns", configpath, &cfg_items,
 			      INI_STOP_ON_ERROR, &errors);
 	if (rc) {
-		fprintf(stderr, "Can't load config rc=%d\n", rc);
+		fprintf(stderr, "Can't load config %s rc=%d\n",
+			configpath, rc);
 
 		free_ini_config_errors(errors);
 		return -rc;

@@ -135,11 +135,17 @@ int main(int argc, char **argv)
 	bool path_set = false;
 	bool objid_set = false;
 	int rc;
+	char *defconf = NULL;
 
 	/* stat structure with default values */
 	memset(path, 0, MAXPATHLEN);
 	memset(objid, 0, MAXPATHLEN);
-	strncpy(kvsns_conf, KVSNS_DEFAULT_CONFIG, MAXPATHLEN);
+
+	defconf = getenv(KVSNS_GETENV);
+	if (defconf == NULL)
+		defconf = KVSNS_DEFAULT_CONFIG;
+
+	strncpy(kvsns_conf, defconf, MAXPATHLEN);
 
 	default_stat(&stat);
 	cred.uid = getuid();

@@ -55,6 +55,7 @@
 #define KVSNS_ROOT_UID 0
 
 #define KVSNS_DEFAULT_CONFIG "/etc/kvsns.d/kvsns.ini"
+#define KVSNS_GETENV "KVSNS_CONFIG"
 #define KVSNS_STORE "KVSNS_STORE"
 #define KVSNS_SERVER "KVSNS_SERVER"
 #define KLEN 256

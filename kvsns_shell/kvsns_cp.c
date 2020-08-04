@@ -112,7 +112,7 @@ int main(int argc, char *argv[])
 	}
 
 	/* Start KVSNS Lib */
-	rc = kvsns_start(KVSNS_DEFAULT_CONFIG);
+	rc = kvsns_start(NULL);
 	exit_rc("kvsns_start faild", rc);
 
 	rc = kvsns_get_root(&parent);

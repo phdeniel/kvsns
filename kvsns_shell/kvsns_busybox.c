@@ -37,7 +37,7 @@ int main(int argc, char *argv[])
 
 	strncpy(exec_name, basename(argv[0]), MAXPATHLEN);
 
-	rc = kvsns_start(KVSNS_DEFAULT_CONFIG);
+	rc = kvsns_start(NULL);
 	if (rc != 0) {
 		fprintf(stderr, "kvsns_start: err=%d\n", rc);
 		exit(1);
