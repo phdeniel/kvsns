@@ -135,7 +135,8 @@ int objstore_init(struct collection_item *cfg_items,
 
 	/* Deal with store_root */
 	item = NULL;
-	RC_WRAP(get_config_item, "crud_cache", "command_put", cfg_items, &item);
+	RC_WRAP(get_config_item, "objstore_cmd", "command_put",
+				 cfg_items, &item);
 	if (item == NULL)
 		return -EINVAL;
 	else
@@ -143,7 +144,8 @@ int objstore_init(struct collection_item *cfg_items,
 			LEN_CMD);
 
 	item = NULL;
-	RC_WRAP(get_config_item, "crud_cache", "command_get", cfg_items, &item);
+	RC_WRAP(get_config_item, "objstore_cmd", "command_get",
+				 cfg_items, &item);
 	if (item == NULL)
 		return -EINVAL;
 	else
@@ -151,7 +153,8 @@ int objstore_init(struct collection_item *cfg_items,
 			LEN_CMD);
 
 	item = NULL;
-	RC_WRAP(get_config_item, "crud_cache", "command_del", cfg_items, &item);
+	RC_WRAP(get_config_item, "objstore_cmd", "command_del",
+				 cfg_items, &item);
 	if (item == NULL)
 		return -EINVAL;
 	else
