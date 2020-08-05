@@ -35,6 +35,16 @@ if((NOT HAVE_INI_CONFIG) OR (NOT HAVE_INI_CONFIG_H))
       message(FATAL_ERROR "Cannot find ini_config")
 endif((NOT HAVE_INI_CONFIG) OR (NOT HAVE_INI_CONFIG_H))
 
+## Check for MERO
+find_library(HAVE_MERO mero)
+check_library_exists(
+        mero
+        m0_clovis_init
+        ""
+        HAVE_MERO
+	)
+check_include_files("mero/config.h" HAVE_MERO_H)
+
 ### Check for rados ###
 check_library_exists(
 	rados
@@ -85,6 +95,10 @@ add_subdirectory(tests)
 add_subdirectory(kvsns_shell)
 add_subdirectory(kvsns_attach)
 add_subdirectory(kvsns_hsm)
+if (HAVE_MERO AND HAVE_MERO_H)
+	add_subdirectory(mero)
+endif (HAVE_MERO AND HAVE_MERO_H)
+
 
 # CPack / rpmbuild specific stuff
 set(CPACK_PACKAGE_FILE_NAME "libkvsns-Source" )

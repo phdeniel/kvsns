@@ -1,0 +1,9 @@
+ls -l /root/kvsns/build/CPackConfig.cmake
+-rw-r--r-- 1 root root 2853 May 10 14:24 /root/kvsns/build/CPackConfig.cmake
+                       ^^^^
+
+./extstore/m0store/m0store_cp_to CPackConfig.cmake 2000030 4096
+
+./extstore/m0store/m0store_cp_from 2000030 /tmp/c 4096 2853
+
+
