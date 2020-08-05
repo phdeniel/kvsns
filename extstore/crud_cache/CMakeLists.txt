@@ -4,7 +4,7 @@ SET(extstore_crud_cache_LIB_SRCS
 )
 
 add_library(extstore_crud_cache SHARED ${extstore_crud_cache_LIB_SRCS})
-target_link_libraries(extstore_crud_cache ini_config)
+target_link_libraries(extstore_crud_cache ini_config dl)
 
 install(TARGETS extstore_crud_cache DESTINATION lib)
 
