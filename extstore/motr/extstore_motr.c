@@ -32,7 +32,7 @@
 #include <ini_config.h>
 #include <hiredis/hiredis.h>
 #include <kvsns/extstore.h>
-#include "../../mero/m0common.h"
+#include "../../motr/m0common.h"
 
 #define RC_WRAP(__function, ...) ({\
 	int __rc = __function(__VA_ARGS__);\
@@ -57,7 +57,7 @@ static int build_m0store_id(kvsns_ino_t	 object,
 	if (rc != 0)
 		return rc;
 
-	*id = M0_CLOVIS_ID_APP;
+	*id = M0_ID_APP;
 	id->u_lo = atoi(v);
 
 	return 0;
@@ -124,7 +124,7 @@ int extstore_create(kvsns_ino_t object)
 	snprintf(k, KLEN, "%llu.data", object);
 	klen = strnlen(k, KLEN) + 1;
 
-	id = M0_CLOVIS_ID_APP;
+	id = M0_ID_APP;
 	id.u_lo += (unsigned long long)object;
 	snprintf(v, VLEN, "%llu", (unsigned long long)id.u_lo);
 	vlen = strnlen(v, KLEN) + 1;
@@ -161,7 +161,7 @@ int extstore_attach(kvsns_ino_t *ino, char *objid, int objid_len)
 
 	snprintf(k, KLEN, "%llu.data", *ino);
 	klen = strnlen(k, KLEN) + 1;
-	id = M0_CLOVIS_ID_APP;
+	id = M0_ID_APP;
 	id.u_lo = atoi(objid);
 
 	snprintf(v, VLEN, "%llu", (unsigned long long)id.u_lo);
@@ -304,4 +304,33 @@ int extstore_truncate(kvsns_ino_t *ino,
 
 	return 0;
 }
+
+int extstore_getattr(kvsns_ino_t *ino,
+		     struct stat *stat)
+{
+	return -ENOENT; /* Attrs are not ,anaged here */
+}
+
+int extstore_archive(kvsns_ino_t *ino)
+{
+	return -ENOTSUP;
+}
+
+int extstore_restore(kvsns_ino_t *ino)
+{
+	return -ENOTSUP;
+}
+
+int extstore_release(kvsns_ino_t *ino)
+{
+	return -ENOTSUP;
+}
+
+int extstore_state(kvsns_ino_t *ino,
+		   char *state)
+{
+	return -ENOTSUP;
+}
+
+
 

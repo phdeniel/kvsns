@@ -25,8 +25,8 @@
  * -------------
  */
 
-/* kvsal_mero.c
- * KVS Abstraction Layer: interface for MERO 
+/* kvsal_motr.c
+ * KVS Abstraction Layer: interface for MOTR 
  */
 
 #include <errno.h>
@@ -35,7 +35,7 @@
 #include <string.h>
 #include <pthread.h>
 #include <time.h>
-#include "../../mero/m0common.h"
+#include "../../motr/m0common.h"
 #include <kvsns/kvsal.h>
 
 
