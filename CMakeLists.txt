@@ -35,15 +35,15 @@ if((NOT HAVE_INI_CONFIG) OR (NOT HAVE_INI_CONFIG_H))
       message(FATAL_ERROR "Cannot find ini_config")
 endif((NOT HAVE_INI_CONFIG) OR (NOT HAVE_INI_CONFIG_H))
 
-## Check for MERO
-find_library(HAVE_MERO mero)
+## Check for MOTR
+find_library(HAVE_MOTR motr)
 check_library_exists(
-        mero
-        m0_clovis_init
+        motr
+        m0_init
         ""
-        HAVE_MERO
+        HAVE_MOTR
 	)
-check_include_files("mero/config.h" HAVE_MERO_H)
+check_include_files("motr/config.h" HAVE_MOTR_H)
 
 ### Check for rados ###
 check_library_exists(
@@ -95,9 +95,9 @@ add_subdirectory(tests)
 add_subdirectory(kvsns_shell)
 add_subdirectory(kvsns_attach)
 add_subdirectory(kvsns_hsm)
-if (HAVE_MERO AND HAVE_MERO_H)
-	add_subdirectory(mero)
-endif (HAVE_MERO AND HAVE_MERO_H)
+if (HAVE_MOTR AND HAVE_MOTR_H)
+	add_subdirectory(motr)
+endif (HAVE_MOTR AND HAVE_MOTR_H)
 
 
 # CPack / rpmbuild specific stuff

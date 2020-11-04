@@ -36,16 +36,19 @@
 #include <assert.h>
 #include <fnmatch.h>
 
-#include "clovis/clovis.h"
-#include "clovis/clovis_internal.h"
-#include "clovis/clovis_idx.h"
-
+#include "motr/client.h"
+#include "motr/client_internal.h"
+#include "motr/init.h"
+#include "motr/idx.h"
+#include "lib/memory.h"
+#include "lib/thread.h"
 #include <kvsns/kvsal.h>
 
 typedef bool (*get_list_cb)(char *k, void *arg);
 
 int m0init(struct collection_item *cfg_items);
 void m0fini(void);
+int m0_obj_id_sscanf(char *idstr, struct m0_uint128 *obj_id);
 int m0kvs_reinit(void);
 
 int m0kvs_set(char *k, size_t klen,

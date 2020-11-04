@@ -9,10 +9,10 @@
 #include <errno.h>
 #include <string.h>
 #include <ini_config.h>
-#include "../../mero/m0common.h"
+#include "../../motr/m0common.h"
 
 static struct collection_item *cfg_items;
-#define CONF "~/kvsns.ini"
+#define CONF "/etc/kvsns.d/kvsns.ini"
 
 int copy_from_mero(struct m0_uint128 id, int fd_dest,
 		   int iolen, size_t filesize)
@@ -103,8 +103,17 @@ int main(int argc, char *argv[])
 	iolen = atoi(argv[3]);
 	printf("Start: iolen=%u\n", iolen);
 
-	id = M0_CLOVIS_ID_APP;
-	id.u_lo = atoi(argv[1]);
+        /* hande object id */
+        if (m0_obj_id_sscanf(argv[1], &id) < 0) {
+                fprintf(stderr, "Bad Id\n");
+                exit(1);
+        }
+
+        if (!entity_id_is_valid(&id)) {
+                fprintf(stderr, "Entity Id is invalid\n");
+                exit(1);
+        }
+
 
 	filesize = atoi(argv[4]);
 

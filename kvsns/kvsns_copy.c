@@ -130,7 +130,8 @@ int kvsns_cp_to(kvsns_cred_t *cred, int fd_source,
 		remains -= rsize;
 	}
 
-	rc = kvsns_setattr(cred, &kfd->ino, &srcstat, STAT_MODE_SET);
+	rc = kvsns_setattr(cred, &kfd->ino, &srcstat,
+			   STAT_MODE_SET|STAT_SIZE_SET);
 	if (rc < 0)
 		return rc;
 
