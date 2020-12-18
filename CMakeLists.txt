@@ -4,7 +4,7 @@ cmake_policy(SET CMP0017 NEW)
 PROJECT(libkvsns C)
 set(LIBKVSNS_MAJOR_VERSION 1)
 set(LIBKVSNS_MINOR_VERSION 2)
-set(LIBKVSNS_PATCH_LEVEL 9)
+set(LIBKVSNS_PATCH_LEVEL 10)
 set(LIBKVSNS_EXTRA_VERSION "")
 
 set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -I${CMAKE_SOURCE_DIR}/include -fPIC -g")
@@ -86,6 +86,13 @@ if (HAVE_HOREDIS_H AND HAVE_HIREDIS)
 else (HAVE_HOREDIS_H AND HAVE_HIREDIS)
 	set(BCOND_REDIS "%bcond_with")
 endif (HAVE_HOREDIS_H AND HAVE_HIREDIS)
+
+
+if (HAVE_MOTR_H AND HAVE_MOTR)
+	set(BCOND_MOTR "%bcond_without")
+else (HAVE_MOTR_H AND HAVE_MOTR)
+	set(BCOND_MOTR "%bcond_with")
+endif (HAVE_MOTR_H AND HAVE_MOTR)
 
 # Build ancillary libs
 add_subdirectory(extstore)

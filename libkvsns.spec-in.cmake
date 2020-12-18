@@ -32,6 +32,9 @@ Provides: %{name} = %{version}-%{release}
 @BCOND_RADOS@ rados
 %global use_rados %{on_off_switch rados}
 
+@BCOND_MOTR@ motr
+%global use_motr %{on_off_switch motr}
+
 %description
 The libkvsns is a library that allows of a POSIX namespace built on top of
 a Key-Value Store.
@@ -42,6 +45,30 @@ Group: Development/Libraries
 Requires: %{name} = %{version}-%{release} pkgconfig
 Requires: hiredis-devel
 Provides: %{name}-devel = %{version}-%{release}
+
+# RADOS
+%if %{with rados}
+%package rados
+Summary: The RADOS based backend for libkvsns
+Group: Applications/System
+Requires: %{name} = %{version}-%{release} librados2
+Provides: %{name}-rados = %{version}-%{release}
+
+%description rados
+This package contains a library for using RADOS as a backed for libkvsns
+%endif
+
+# MOTR
+%if %{with motr}
+%package motr
+Summary: The MOTR based backend for libkvsns
+Group: Applications/System
+Requires: %{name} = %{version}-%{release} cortx-motr
+Provides: %{name}-motr = %{version}-%{release}
+
+%description motr
+This package contains libraries for using CORTX-MOTR as a backend for libkvsns
+%endif
 
 
 %description devel
@@ -65,7 +92,7 @@ This package contains the tools for libkvsns.
 %setup -q -n %{sourcename}
 
 %build
-cmake . -DUSE_RADOS=%{use_rados}
+cmake . 
 
 make %{?_smp_mflags} || make %{?_smp_mflags} || make
 
@@ -87,6 +114,11 @@ install -m 644 extstore/crud_cache/libobjstore_cmd.so %{buildroot}%{_libdir}
 %if %{with rados gnutls}
 install -m 644 extstore/rados/libextstore_rados.so %{buildroot}%{_libdir}
 %endif
+%if %{with motr}
+install -m 644 extstore/motr/libextstore_motr.so %{buildroot}%{_libdir}
+install -m 644 kvsal/motr/libkvsal_motr.so %{buildroot}%{_libdir}
+install -m 644 motr/libm0common.so %{buildroot}%{_libdir}
+%endif
 
 install -m 644 kvsns/libkvsns.so %{buildroot}%{_libdir}
 install -m 644 libkvsns.pc  %{buildroot}%{_libdir}/pkgconfig
@@ -107,9 +139,6 @@ rm -rf $RPM_BUILD_ROOT
 %{_libdir}/libextstore_posix.so*
 %{_libdir}/libextstore_crud_cache.so*
 %{_libdir}/libobjstore_cmd.so*
-%if %{with rados gnutls}
-%{_libdir}/libextstore_rados.so*
-%endif
 %{_libdir}/libkvsns.so*
 %config(noreplace) %{_sysconfdir}/kvsns.d/kvsns.ini
 
@@ -129,7 +158,23 @@ rm -rf $RPM_BUILD_ROOT
 %{_bindir}/cp_put.sh
 %{_bindir}/cp_get.sh
 
+%if %{with motr}
+%files motr
+%{_libdir}/libextstore_motr.so*
+%{_libdir}/libkvsal_motr.so*
+%{_libdir}/libm0common.so*
+%endif
+
+%if %{with rados}
+%files rados
+%{_libdir}/libextstore_rados.so*
+%endif
+
+
 %changelog
+* Fri Dec 18 2020 Philippe DENIEL <philippe.deniel@cea.fr> 1.2.10
+- Support for COTRX-MOTR as a backed for both kvsal and extstore
+
 * Tue Aug  4 2020 Philippe DENIEL <philippe.deniel@cea.fr> 1.2.9
 - Rename extstore_crud_cache_cmd and add objstore_cmd
 
