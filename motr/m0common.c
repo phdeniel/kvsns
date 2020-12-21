@@ -57,7 +57,7 @@ static struct m0_idx_dix_config	dix_conf;
 struct m0_realm     clovis_uber_realm;
 
 #define WRAP_CONFIG(__name, __cfg, __item) ({\
-	int __rc = get_config_item("mero", __name, __cfg, &__item);\
+	int __rc = get_config_item("motr", __name, __cfg, &__item);\
 	if (__rc != 0)\
 		return -__rc;\
 	if (__item == NULL)\
