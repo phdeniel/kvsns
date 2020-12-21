@@ -41,8 +41,8 @@ static char *clovis_local_addr;
 static char *clovis_ha_addr;
 static char *clovis_prof;
 static char *clovis_proc_fid;
-static char *clovis_index_dir = "/tmp/";
 static char *ifid_str;
+static uint32_t layoutid = 0;
 
 /* Clovis Instance */
 static struct m0_client	  *clovis_instance = NULL;
@@ -89,13 +89,13 @@ static int get_clovis_conf(struct collection_item *cfg)
 	clovis_proc_fid = get_string_config_value(item, NULL);
 
 	item = NULL;
-	WRAP_CONFIG("index_dir", cfg, item);
-	clovis_index_dir = get_string_config_value(item, NULL);
-
-	item = NULL;
 	WRAP_CONFIG("kvs_fid", cfg, item);
 	ifid_str = get_string_config_value(item, NULL);
 
+	item = NULL;
+	WRAP_CONFIG("layoutid", cfg, item);
+	layoutid = get_uint32_config_value(item, 0, 0, NULL);	
+	
 	return 0;
 }
 
@@ -105,8 +105,8 @@ static void print_config(void)
 	printf("ha_addr    = %s\n", clovis_ha_addr);
 	printf("profile    = %s\n", clovis_prof);
 	printf("proc_fid   = %s\n", clovis_proc_fid);
-	printf("index_dir  = %s\n", clovis_index_dir);
 	printf("kvs_fid    = %s\n", ifid_str);
+	printf("layoutid   = %u\n", layoutid);
 	printf("---------------------------\n");
 }
 
@@ -130,10 +130,10 @@ static int init_clovis(void)
 	clovis_conf.mc_local_addr	= clovis_local_addr;
 	clovis_conf.mc_ha_addr		= clovis_ha_addr;
 	clovis_conf.mc_profile		= clovis_prof;
-	clovis_conf.mc_process_fid       = clovis_proc_fid;
+	clovis_conf.mc_process_fid      = clovis_proc_fid;
+	clovis_conf.mc_layout_id	= layoutid;
 	clovis_conf.mc_tm_recv_queue_min_len    = M0_NET_TM_RECV_QUEUE_DEF_LEN;
 	clovis_conf.mc_max_rpc_msg_size	 = M0_RPC_DEF_MAX_RPC_MSG_SIZE;
-	clovis_conf.mc_layout_id	= 9;  /* @todo CHECK FOR LAYOUT ID !!!!! */
 
 	/* Index service parameters */
 	clovis_conf.mc_idx_service_id	= M0_IDX_DIX;
