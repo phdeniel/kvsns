@@ -30,7 +30,7 @@
  */
 
 #include <ini_config.h>
-#include <hiredis/hiredis.h>
+//#include <hiredis/hiredis.h>
 #include <kvsns/extstore.h>
 #include "../../motr/m0common.h"
 

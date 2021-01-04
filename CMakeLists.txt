@@ -4,7 +4,7 @@ cmake_policy(SET CMP0017 NEW)
 PROJECT(libkvsns C)
 set(LIBKVSNS_MAJOR_VERSION 1)
 set(LIBKVSNS_MINOR_VERSION 2)
-set(LIBKVSNS_PATCH_LEVEL 10)
+set(LIBKVSNS_PATCH_LEVEL 11)
 set(LIBKVSNS_EXTRA_VERSION "")
 
 set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -I${CMAKE_SOURCE_DIR}/include -fPIC -g")
@@ -70,10 +70,6 @@ check_library_exists(
     )
 check_include_files("hiredis/hiredis.h" HAVE_HIREDIS_H)
 
-if((NOT HAVE_HIREDIS) OR (NOT HAVE_HIREDIS_H))
-      message(FATAL_ERROR "Cannot find hiredis")
-endif((NOT HAVE_HIREDIS) OR (NOT HAVE_HIREDIS_H))
-
 ## Set BCOND for spec file management */
 if (HAVE_RADOS_H AND HAVE_LIBRADOS)
 	set(BCOND_RADOS "%bcond_without")
@@ -81,11 +77,11 @@ else (HAVE_RADOS_H AND HAVE_LIBRADOS)
 	set(BCOND_RADOS "%bcond_with")
 endif (HAVE_RADOS_H AND HAVE_LIBRADOS)
 
-if (HAVE_HOREDIS_H AND HAVE_HIREDIS)
+if (HAVE_HIREDIS_H AND HAVE_HIREDIS)
 	set(BCOND_REDIS "%bcond_without")
-else (HAVE_HOREDIS_H AND HAVE_HIREDIS)
+else (HAVE_HIREDIS_H AND HAVE_HIREDIS)
 	set(BCOND_REDIS "%bcond_with")
-endif (HAVE_HOREDIS_H AND HAVE_HIREDIS)
+endif (HAVE_HIREDIS_H AND HAVE_HIREDIS)
 
 
 if (HAVE_MOTR_H AND HAVE_MOTR)
@@ -93,6 +89,21 @@ if (HAVE_MOTR_H AND HAVE_MOTR)
 else (HAVE_MOTR_H AND HAVE_MOTR)
 	set(BCOND_MOTR "%bcond_with")
 endif (HAVE_MOTR_H AND HAVE_MOTR)
+
+# Check if a KVS if available
+set(HAVE_KVS FALSE)
+
+if (HAVE_HIREDIS_H AND HAVE_HIREDIS)
+	set(HAVE_KVS TRUE)
+endif (HAVE_HIREDIS_H AND HAVE_HIREDIS)
+
+if (HAVE_MOTR_H AND HAVE_MOTR)
+	set(HAVE_KVS TRUE)
+endif (HAVE_MOTR_H AND HAVE_MOTR)
+
+if (NOT HAVE_KVS)
+	message(FATAL_ERROR "Can't find a KVS")
+endif (NOT HAVE_KVS)
 
 # Build ancillary libs
 add_subdirectory(extstore)

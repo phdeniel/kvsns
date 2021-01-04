@@ -9,9 +9,9 @@ License: LGPLv3
 Group: Development/Libraries
 Url: http://github.com/phdeniel/libkvsns
 Source: %{sourcename}.tar.gz
-BuildRequires: cmake hiredis-devel libini_config-devel
+BuildRequires: cmake libini_config-devel
 BuildRequires: gcc
-Requires: redis hiredis libini_config
+Requires: libini_config
 Provides: %{name} = %{version}-%{release}
 
 # Remove implicit dep to libkvsns (which prevent from building libkvsns-utils
@@ -35,6 +35,9 @@ Provides: %{name} = %{version}-%{release}
 @BCOND_MOTR@ motr
 %global use_motr %{on_off_switch motr}
 
+@BCOND_REDIS@ redis
+%global use_redis %{on_off_switch redis}
+
 %description
 The libkvsns is a library that allows of a POSIX namespace built on top of
 a Key-Value Store.
@@ -43,8 +46,22 @@ a Key-Value Store.
 Summary: Development file for the library libkvsns
 Group: Development/Libraries
 Requires: %{name} = %{version}-%{release} pkgconfig
-Requires: hiredis-devel
 Provides: %{name}-devel = %{version}-%{release}
+
+# REDIS
+%if %{with redis}
+%package redis
+Summary: The REDIS based kvsal
+Group: Applications/System
+Requires: %{name} = %{version}-%{release} librados2
+Provides: %{name}-rados = %{version}-%{release}
+Requires: redis hiredis
+BuildRequires: hiredis-devel
+
+%description redis
+This package contains a library for using REDIS as a KVS for libkvsns
+%endif
+
 
 # RADOS
 %if %{with rados}
@@ -106,7 +123,9 @@ mkdir -p %{buildroot}%{_sysconfdir}/kvsns.d
 install -m 644 include/kvsns/kvsns.h  %{buildroot}%{_includedir}/kvsns
 install -m 644 include/kvsns/kvsal.h  %{buildroot}%{_includedir}/kvsns
 install -m 644 include/kvsns/extstore.h  %{buildroot}%{_includedir}/kvsns
+%if %{with redis}
 install -m 644 kvsal/redis/libkvsal_redis.so %{buildroot}%{_libdir}
+%endif
 
 install -m 644 extstore/posix_store/libextstore_posix.so %{buildroot}%{_libdir}
 install -m 644 extstore/crud_cache/libextstore_crud_cache.so %{buildroot}%{_libdir}
@@ -135,7 +154,6 @@ rm -rf $RPM_BUILD_ROOT
 
 %files
 %defattr(-,root,root)
-%{_libdir}/libkvsal_redis.so*
 %{_libdir}/libextstore_posix.so*
 %{_libdir}/libextstore_crud_cache.so*
 %{_libdir}/libobjstore_cmd.so*
@@ -157,6 +175,11 @@ rm -rf $RPM_BUILD_ROOT
 %{_bindir}/kvsns_hsm
 %{_bindir}/cp_put.sh
 %{_bindir}/cp_get.sh
+ 
+%if %{with redis}
+%files redis
+%{_libdir}/libkvsal_redis.so*
+%endif
 
 %if %{with motr}
 %files motr
@@ -172,6 +195,9 @@ rm -rf $RPM_BUILD_ROOT
 
 
 %changelog
+* Mon Jan  4 2021 Philippe DENIEL <philippe.deniel@cea.fr> 1.2.11
+- Build libkvsns does not requires redis or hiredis, a special rpm is created
+
 * Fri Dec 18 2020 Philippe DENIEL <philippe.deniel@cea.fr> 1.2.10
 - Support for COTRX-MOTR as a backed for both kvsal and extstore
 
