@@ -1,6 +1,7 @@
 /* -*- C -*- */
 #include <stdlib.h>
 #include <stdio.h>
+#include <stdbool.h>
 #include <unistd.h>
 #include <sys/time.h>
 #include <sys/param.h>
@@ -43,6 +44,7 @@ static char *clovis_prof;
 static char *clovis_proc_fid;
 static char *ifid_str;
 static uint32_t layoutid = 0;
+static bool use_m0trace = false;
 
 /* Clovis Instance */
 static struct m0_client	  *clovis_instance = NULL;
@@ -95,18 +97,23 @@ static int get_clovis_conf(struct collection_item *cfg)
 	item = NULL;
 	WRAP_CONFIG("layoutid", cfg, item);
 	layoutid = get_uint32_config_value(item, 0, 0, NULL);	
-	
+
+	item = NULL;
+	WRAP_CONFIG("layoutid", cfg, item);
+	use_m0trace = get_bool_config_value(item, 0, NULL);
+
 	return 0;
 }
 
 static void print_config(void)
 {
-	printf("local_addr = %s\n", clovis_local_addr);
-	printf("ha_addr    = %s\n", clovis_ha_addr);
-	printf("profile    = %s\n", clovis_prof);
-	printf("proc_fid   = %s\n", clovis_proc_fid);
-	printf("kvs_fid    = %s\n", ifid_str);
-	printf("layoutid   = %u\n", layoutid);
+	printf("local_addr  = %s\n", clovis_local_addr);
+	printf("ha_addr     = %s\n", clovis_ha_addr);
+	printf("profile     = %s\n", clovis_prof);
+	printf("proc_fid    = %s\n", clovis_proc_fid);
+	printf("kvs_fid     = %s\n", ifid_str);
+	printf("layoutid    = %u\n", layoutid);
+	printf("use_m0trace = %d\n", use_m0trace);
 	printf("---------------------------\n");
 }
 
