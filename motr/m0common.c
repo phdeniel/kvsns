@@ -140,6 +140,9 @@ static int init_clovis(void)
 	dix_conf.kc_create_meta		= false;
 	clovis_conf.mc_idx_service_conf	= &dix_conf;
 
+	/* Tell MOTR not to produce m0trace files */
+	m0_trace_set_mmapped_buffer(false);
+
 	/* Create Clovis instance */
 	rc = m0_client_init(&clovis_instance, &clovis_conf, true);
 	if (rc != 0) {

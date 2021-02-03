@@ -42,6 +42,7 @@
 #include "motr/idx.h"
 #include "lib/memory.h"
 #include "lib/thread.h"
+#include "lib/user_space/trace.h"
 #include <kvsns/kvsal.h>
 
 typedef bool (*get_list_cb)(char *k, void *arg);
