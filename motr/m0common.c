@@ -99,7 +99,7 @@ static int get_clovis_conf(struct collection_item *cfg)
 	layoutid = get_uint32_config_value(item, 0, 0, NULL);	
 
 	item = NULL;
-	WRAP_CONFIG("layoutid", cfg, item);
+	WRAP_CONFIG("use_m0trace", cfg, item);
 	use_m0trace = get_bool_config_value(item, 0, NULL);
 
 	return 0;
@@ -148,7 +148,7 @@ static int init_clovis(void)
 	clovis_conf.mc_idx_service_conf	= &dix_conf;
 
 	/* Tell MOTR not to produce m0trace files */
-	m0_trace_set_mmapped_buffer(false);
+	m0_trace_set_mmapped_buffer(use_m0trace);
 
 	/* Create Clovis instance */
 	rc = m0_client_init(&clovis_instance, &clovis_conf, true);
