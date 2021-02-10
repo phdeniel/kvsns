@@ -5,3 +5,6 @@ if rados_lib.found()
 	subdir('rados')
 endif
 
+if motr_lib.found()
+	subdir('motr')
+endif

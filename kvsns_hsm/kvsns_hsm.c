@@ -29,7 +29,9 @@
  * KVSNS: manage the HSM status from the command line
  */
 
+#ifndef _GNU_SOURCE
 #define _GNU_SOURCE
+#endif
 
 #include <stdio.h>
 #include <errno.h>
