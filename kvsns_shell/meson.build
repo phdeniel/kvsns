@@ -1,4 +1,3 @@
-cmake_c_flags = '${CMAKE_C_FLAGS} -fPIC -g'
 kvsns_busybox_exe = executable('kvsns_busybox',
 			       'kvsns_busybox.c',
 			        dependencies: kvsns_dep)
