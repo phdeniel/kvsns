@@ -8,10 +8,10 @@ Summary: Library to access to a namespace inside a KVS
 License: LGPLv3
 Group: Development/Libraries
 Url: http://github.com/phdeniel/libkvsns
-Source: %{sourcename}.tar.gz
+Source: %{sourcename}.tar.xz
 BuildRequires: hiredis-devel libini_config-devel
 BuildRequires: gcc
-#BuildRequires: meson ninja
+BuildRequires: meson ninja-build
 Requires: redis hiredis libini_config
 Provides: %{name} = %{version}-%{release}
 
