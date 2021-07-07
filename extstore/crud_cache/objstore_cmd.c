@@ -57,16 +57,20 @@ struct objstore_ops objstore;
 
 build_extstore_path_func *build_extstore_path;
 
+#define PUT_STR ".archive"
+#define PUT_STR_SIZE sizeof(PUT_STR)
+
 int objstore_put(char *path, kvsns_ino_t *ino)
 {
-	char k[KLEN];
-	char storepath[MAXPATHLEN];
+	char storepath[MAXPATHLEN - PUT_STR_SIZE];
 	char objpath[MAXPATHLEN];
 	char cmd[3*MAXPATHLEN];
+	char k[KLEN];
 	FILE *fp;
 
-	RC_WRAP(build_extstore_path, *ino, storepath, MAXPATHLEN);
-	sprintf(objpath, "%s.archive", storepath);
+	RC_WRAP(build_extstore_path, *ino, storepath,
+                MAXPATHLEN - PUT_STR_SIZE);
+	snprintf(objpath, MAXPATHLEN, "%s%s", storepath, PUT_STR);
 	sprintf(cmd, cmd_put, storepath, objpath);
 
 	fp = popen(cmd, "r");

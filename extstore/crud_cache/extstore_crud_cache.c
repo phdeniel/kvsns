@@ -195,16 +195,16 @@ static int update_stat(struct stat *stat, enum update_stat_how how,
 
 int extstore_create(kvsns_ino_t object)
 {
-	char k[KLEN];
-	char v[VLEN];
-	char path[VLEN];
-	int fd;
+	char path[sizeof(store_root) + KLEN];
+	char v[sizeof(store_root) + KLEN];
 	struct stat stat;
+	char k[KLEN];
+	int fd;
 
 	snprintf(k, KLEN, "%llu.data", object);
-	snprintf(path, VLEN, "%s/inum=%llu",
-		store_root, (unsigned long long)object);
-	strncpy(v, path, VLEN);
+	snprintf(path, sizeof(store_root) + KLEN,
+                 "%s/inum=%llu", store_root, object);
+	strncpy(v, path, sizeof(store_root) + KLEN);
 	RC_WRAP(kvsal.set_char, k, v);
 
 	fd = creat(path, 0777);
