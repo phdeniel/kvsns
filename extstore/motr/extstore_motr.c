@@ -39,6 +39,8 @@
 	if (__rc != 0)	\
 		return __rc; })
 
+
+
 static int build_m0store_id(kvsns_ino_t	 object,
 			    struct m0_uint128  *id)
 {
@@ -272,6 +274,9 @@ int extstore_write(kvsns_ino_t *ino,
 	ssize_t written_bytes;
 	struct m0_uint128 id;
 	ssize_t bsize;
+	char k[KLEN];
+	size_t klen, vlen;
+	struct stat motr_stat;
 
 	RC_WRAP(build_m0store_id, *ino, &id);
 
@@ -286,6 +291,17 @@ int extstore_write(kvsns_ino_t *ino,
 
 	RC_WRAP(update_stat, stat, UP_ST_WRITE,
 		offset+written_bytes);
+
+	snprintf(k, KLEN, "%llu.stat", *ino);
+	klen = strnlen(k, KLEN)+1;
+	vlen = sizeof(struct stat);
+	RC_WRAP(m0kvs_get, k, klen, (char *)&motr_stat, &vlen);
+	RC_WRAP(update_stat, &motr_stat, UP_ST_WRITE,
+		offset+written_bytes);
+	
+	klen = strnlen(k, KLEN)+1;
+	vlen = sizeof(struct stat);
+	RC_WRAP(m0kvs_set, k, klen, (char *)&motr_stat, vlen);
 
 	*fsal_stable = true;
 	return written_bytes;
