@@ -144,6 +144,7 @@ install -m 644 libkvsns.pc  %{buildroot}%{_libdir}/pkgconfig
 install -m 755 kvsns_shell/kvsns_busybox %{buildroot}%{_bindir}
 install -m 755 kvsns_shell/kvsns_cp %{buildroot}%{_bindir}
 install -m 755 kvsns_hsm/kvsns_hsm %{buildroot}%{_bindir}
+install -m 755 kvsns_script/kvsns_script %{buildroot}%{_bindir}
 install -m 755 scripts/cp_put.sh %{buildroot}%{_bindir}
 install -m 755 scripts/cp_get.sh %{buildroot}%{_bindir}
 install -m 755 kvsns_attach/kvsns_attach %{buildroot}%{_bindir}
@@ -173,6 +174,7 @@ rm -rf $RPM_BUILD_ROOT
 %{_bindir}/kvsns_cp
 %{_bindir}/kvsns_attach
 %{_bindir}/kvsns_hsm
+%{_bindir}/kvsns_script
 %{_bindir}/cp_put.sh
 %{_bindir}/cp_get.sh
  
