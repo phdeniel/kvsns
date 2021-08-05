@@ -27,6 +27,8 @@ struct clovis_io_ctx {
 /* To be passed as argument */
 struct m0_realm     clovis_uber_realm;
 
+pthread_mutex_t big_motr_lock = PTHREAD_MUTEX_INITIALIZER;
+
 static pthread_once_t clovis_init_once = PTHREAD_ONCE_INIT;
 bool clovis_init_done = false;
 __thread struct m0_thread *m0thread; /* stored in the TLS */
@@ -131,6 +133,9 @@ static int init_clovis(void)
 	if (rc != 0)
 		return rc;
 
+	/* Index service parameters */
+	dix_conf.kc_create_meta		= false;
+
 	/* Initialize Clovis configuration */
 	clovis_conf.mc_is_oostore	= true;
 	clovis_conf.mc_is_read_verify	= false;
@@ -141,10 +146,7 @@ static int init_clovis(void)
 	clovis_conf.mc_layout_id	= layoutid;
 	clovis_conf.mc_tm_recv_queue_min_len    = M0_NET_TM_RECV_QUEUE_DEF_LEN;
 	clovis_conf.mc_max_rpc_msg_size	 = M0_RPC_DEF_MAX_RPC_MSG_SIZE;
-
-	/* Index service parameters */
 	clovis_conf.mc_idx_service_id	= M0_IDX_DIX;
-	dix_conf.kc_create_meta		= false;
 	clovis_conf.mc_idx_service_conf	= &dix_conf;
 
 	/* Tell MOTR not to produce m0trace files */
@@ -238,7 +240,9 @@ static int m0_op_kvs(enum m0_idx_opcode opcode,
 	if (rc)
 		return rc;
 
+	pthread_mutex_lock(&big_motr_lock);
 	m0_op_launch(&op, 1);
+	pthread_mutex_unlock(&big_motr_lock);
 	rc = m0_op_wait(op, M0_BITS(M0_OS_STABLE),
 			       M0_TIME_NEVER);
 	if (rc)
@@ -463,7 +467,9 @@ int m0_pattern_kvs(char *k, char *pattern,
 			m0_bufvec_free(&vals);
 			return rc;
 		}
+		pthread_mutex_lock(&big_motr_lock);
 		m0_op_launch(&op, 1);
+		pthread_mutex_unlock(&big_motr_lock);
 		rc = m0_op_wait(op, M0_BITS(M0_OS_STABLE),
 				       M0_TIME_NEVER);
 		/* @todo : Why is op null after this call ??? */
@@ -555,7 +561,9 @@ void open_entity(struct m0_entity *entity)
 	struct m0_op *ops[1] = {NULL};
 
 	m0_entity_open(entity, &ops[0]);
+	pthread_mutex_lock(&big_motr_lock);
 	m0_op_launch(ops, 1);
+	pthread_mutex_unlock(&big_motr_lock);
 	m0_op_wait(ops[0], M0_BITS(M0_OS_FAILED,
 					  M0_OS_STABLE),
 			  M0_TIME_NEVER);
@@ -615,7 +623,9 @@ int m0store_create_object(struct m0_uint128 id)
 
 	m0_entity_create(NULL, &obj.ob_entity, &ops[0]);
 
+	pthread_mutex_lock(&big_motr_lock);
 	m0_op_launch(ops, ARRAY_SIZE(ops));
+	pthread_mutex_unlock(&big_motr_lock);
 
 	rc = m0_op_wait(
 		ops[0], M0_BITS(M0_OS_FAILED, M0_OS_STABLE),
@@ -646,7 +656,9 @@ int m0store_delete_object(struct m0_uint128 id)
 
 	m0_entity_delete(&obj.ob_entity, &ops[0]);
 
+	pthread_mutex_lock(&big_motr_lock);
 	m0_op_launch(ops, ARRAY_SIZE(ops));
+	pthread_mutex_unlock(&big_motr_lock);
 
 	rc = m0_op_wait(
 		ops[0], M0_BITS(M0_OS_FAILED, M0_OS_STABLE),
@@ -695,7 +707,9 @@ again:
 			 &ioctx.ext, &ioctx.data, &ioctx.attr, 0, 0, &ops[0]);
 
 	/* Launch the write request*/
+	pthread_mutex_lock(&big_motr_lock);
 	m0_op_launch(ops, 1);
+	pthread_mutex_unlock(&big_motr_lock);
 
 	/* wait */
 	rc = m0_op_wait(ops[0],
@@ -779,7 +793,9 @@ static int read_data_aligned(struct m0_uint128 id,
 	assert(ops[0] != NULL);
 	assert(ops[0]->op_sm.sm_rc == 0);
 
+	pthread_mutex_lock(&big_motr_lock);
 	m0_op_launch(ops, 1);
+	pthread_mutex_unlock(&big_motr_lock);
 
 	/* wait */
 	rc = m0_op_wait(ops[0],
