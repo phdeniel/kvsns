@@ -691,6 +691,5 @@ int do_op(int argc, char *argv[])
 	} else
 		fprintf(stderr, "%s does not exists\n", exec_name);
 
-	printf("######## OK ########\n");
 	return 0;
 }
