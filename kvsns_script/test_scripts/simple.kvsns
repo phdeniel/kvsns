@@ -1,0 +1,29 @@
+# Do the init
+init
+
+# Create a/b/c and cd to it
+mkdir a
+cd a
+mkdir b 
+cd b
+mkdir c
+cd c
+
+# Create Two files and a directory
+creat f1
+creat f2 
+mkdir dir
+
+# View things
+ls
+getattr f1
+getattr dir
+
+# Delete things
+rm f
+rmdir dir
+ls
+
+# Clean everything
+mr_proper
+
