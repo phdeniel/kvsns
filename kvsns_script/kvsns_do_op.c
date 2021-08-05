@@ -682,8 +682,15 @@ int do_op(int argc, char *argv[])
 	} else if (!strcmp(exec_name, "mr_proper")) {
 		rc = kvsns_mr_proper();
 		printf("Mr Proper: rc=%d\n", rc);
+	} else if (!strcmp(exec_name, "print")) {
+		int i;
+
+		for (i = 0; i < argc; i++)
+			printf("%s ", argv[i]);
+		printf("\n");
 	} else
 		fprintf(stderr, "%s does not exists\n", exec_name);
+
 	printf("######## OK ########\n");
 	return 0;
 }
