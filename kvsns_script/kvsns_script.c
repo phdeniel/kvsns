@@ -8,6 +8,7 @@
 #include <string.h>
 #include <errno.h>
 #include <time.h>
+#include <ctype.h>
 #include <sys/stat.h>
 #include <sys/types.h>
 #include <sys/param.h>
@@ -680,9 +681,70 @@ int do_op(int argc, char *argv[])
 	return 0;
 }
 
+static int setargs(char *args, char **argv)
+{
+	int count = 0;
+
+	while (isspace(*args)) ++args;
+	while (*args) {
+		if (argv) argv[count] = args;
+		while (*args && !isspace(*args)) ++args;
+		if (argv && *args) *args++ = '\0';
+		while (isspace(*args)) ++args;
+		count++;
+	}
+	return count;
+}
+
+char **parsedargs(char *args, int *argc)
+{
+	char **argv = NULL;
+	int    argn = 0;
+
+	if (args && *args
+		 && (args = strdup(args))
+		 && (argn = setargs(args,NULL))
+		 && (argv = malloc((argn+1) * sizeof(char *)))) {
+		*argv++ = args;
+		argn = setargs(args,argv);
+	}
+
+	if (args && !argv) free(args);
+
+	*argc = argn;
+	return argv;
+}
+
+void freeparsedargs(char **argv)
+{
+	if (argv) {
+		free(argv[-1]);
+		free(argv-1);
+	} 
+}
+
+void read_file_by_line(char *filename)
+{
+	FILE *file;
+	char line[256];
+
+	file = fopen(filename, "r");
+	if (file == NULL) {
+		fprintf(stderr, "Can't open %s : errno=%d\n", filename, errno);
+		exit(1);
+	}
+	
+	while (fgets(line, sizeof(line), file)) 
+		printf("==>%s", line);
+}
+
 int main(int argc, char *argv[])
 {
 	int rc;
+
+	int i;
+	char **av;
+	int ac;
 
 	cred.uid = getuid();
 	cred.gid = getgid();
@@ -715,6 +777,20 @@ int main(int argc, char *argv[])
 		exec_name, current_inode, parent_inode,
 		current_path, prev_path);
 
+	av = parsedargs("rename a b", &ac);
+	printf("ac == %d\n",ac);
+	for (i = 0; i < ac; i++)
+		printf("\t[%s]\n",av[i]);
+
+	freeparsedargs(av);
+
+
+#if 0
 	return do_op(argc, argv);
+#endif
+
+	read_file_by_line("/etc/passwd");	
+	return 0;
 }
+
 
