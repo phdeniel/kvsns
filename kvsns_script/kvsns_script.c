@@ -34,6 +34,8 @@ int do_op(int argc, char *argv[])
 {
 	int rc;
 
+	strncpy(exec_name, basename(argv[0]), MAXPATHLEN);
+
 	/* Look at exec name and see what is to be done */
 	if (!strcmp(exec_name, "reset")) {
 		strncpy(k, "KVSNS_INODE", KLEN);
@@ -723,10 +725,18 @@ void freeparsedargs(char **argv)
 	} 
 }
 
-void read_file_by_line(char *filename)
+int read_file_by_line(char *filename)
 {
 	FILE *file;
 	char line[256];
+
+#ifdef DEBUG
+	int i;
+#endif
+	char **av;
+	int ac;
+
+	int rc = 0;
 
 	file = fopen(filename, "r");
 	if (file == NULL) {
@@ -734,22 +744,41 @@ void read_file_by_line(char *filename)
 		exit(1);
 	}
 	
-	while (fgets(line, sizeof(line), file)) 
+	while (fgets(line, sizeof(line), file)) {
 		printf("==>%s", line);
+
+	
+		av = parsedargs(line, &ac);
+#ifdef DEBUG
+		printf("\tac == %d\n",ac);
+		for (i = 0; i < ac; i++)
+			printf("\t\t[%s]\n",av[i]);
+#endif
+		if (ac != 0)
+			rc = do_op(ac, av);
+
+		freeparsedargs(av);
+
+		if (rc)
+			return rc;
+	}
+
+	return 0;
 }
 
 int main(int argc, char *argv[])
 {
 	int rc;
 
-	int i;
-	char **av;
-	int ac;
-
 	cred.uid = getuid();
 	cred.gid = getgid();
 
 	strncpy(exec_name, basename(argv[0]), MAXPATHLEN);
+
+	if (argc != 2) {
+		fprintf(stderr, "%s <script file>\n", exec_name);
+		exit(1); 
+	}
 
 	rc = kvsns_start(NULL);
 	if (rc != 0) {
@@ -777,20 +806,13 @@ int main(int argc, char *argv[])
 		exec_name, current_inode, parent_inode,
 		current_path, prev_path);
 
-	av = parsedargs("rename a b", &ac);
-	printf("ac == %d\n",ac);
-	for (i = 0; i < ac; i++)
-		printf("\t[%s]\n",av[i]);
-
-	freeparsedargs(av);
 
 
 #if 0
 	return do_op(argc, argv);
 #endif
 
-	read_file_by_line("/etc/passwd");	
-	return 0;
+	return read_file_by_line(argv[1]);	
 }
 
 
