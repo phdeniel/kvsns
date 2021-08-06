@@ -90,7 +90,7 @@ static int kvsns_ownerlist2str(kvsns_open_owner_t *ownerlist, int size,
 				 ownerlist[i].pid, ownerlist[i].tid);
 			strcat(str, tmp);
 		}
-	
+
 	return 0;
 }
 
@@ -109,7 +109,7 @@ int kvsns_creat(kvsns_cred_t *cred, kvsns_ino_t *parent, char *name,
 	return 0;
 }
 
-int kvsns_open(kvsns_cred_t *cred, kvsns_ino_t *ino, 
+int kvsns_open(kvsns_cred_t *cred, kvsns_ino_t *ino,
 	       int flags, mode_t mode, kvsns_file_open_t *fd)
 {
 	kvsns_open_owner_t me;
@@ -122,7 +122,8 @@ int kvsns_open(kvsns_cred_t *cred, kvsns_ino_t *ino,
 	if (!cred || !ino || !fd)
 		return -EINVAL;
 
-	/** @todo Put here the access control base on flags and mode values */
+	RC_WRAP(kvsns_access, cred, ino, flags);
+
 	me.pid = getpid();
 	me.tid = syscall(SYS_gettid);
 
@@ -272,14 +273,14 @@ ssize_t kvsns_write(kvsns_cred_t *cred, kvsns_file_open_t *fd,
 
 	memset(&wstat, 0, sizeof(wstat));
 
-	/** @todo use flags to check correct access */
-	write_amount = extstore.write(&fd->ino,
-				      offset,
-				      count,
-				      buf,
-				      &stable,
-				      &wstat);
+	RC_WRAP(kvsns_access, cred, &fd->ino, KVSNS_ACCESS_WRITE);
 
+	write_amount = extstore.write(&fd->ino,
+                                      offset,
+                                      count,
+                                      buf,
+                                      &stable,
+                                      &wstat);
 	return write_amount;
 }
 
@@ -290,14 +291,14 @@ ssize_t kvsns_read(kvsns_cred_t *cred, kvsns_file_open_t *fd,
 	bool eof;
 	struct stat stat;
 
-	/** @todo use flags to check correct access */
-	read_amount = extstore.read(&fd->ino,
-				    offset,
-				    count,
-				    buf,
-				    &eof,
-				    &stat);
+	RC_WRAP(kvsns_access, cred, &fd->ino, KVSNS_ACCESS_READ);
 
+	read_amount = extstore.read(&fd->ino,
+                                    offset,
+                                    count,
+                                    buf,
+                                    &eof,
+                                    &stat);
 	return read_amount;
 }
 
