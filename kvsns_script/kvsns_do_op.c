@@ -682,6 +682,14 @@ int do_op(int argc, char *argv[])
 	} else if (!strcmp(exec_name, "mr_proper")) {
 		rc = kvsns_mr_proper();
 		printf("Mr Proper: rc=%d\n", rc);
+	} else if (!strcmp(exec_name, "sleep")) {
+		if (argc != 2) {
+			fprintf(stderr, "sleep <timeout in seconds>\n");
+			return 1;
+		}
+
+		sleep(atoi(argv[1]));
+					
 	} else if (!strcmp(exec_name, "print")) {
 		int i;
 
