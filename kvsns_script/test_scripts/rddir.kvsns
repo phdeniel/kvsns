@@ -1,0 +1,27 @@
+# Do the init
+init
+
+mkdir dir
+cd dir
+
+mkdir A 
+mkdir B
+mkdir C
+mkdir D
+creat a
+creat b
+creat c
+creat d
+
+sleep 2
+ls
+
+cd A
+mkdir 1
+mkdir 2
+mkdir 3
+ls
+
+# Clean everything
+mr_proper
+
