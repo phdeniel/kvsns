@@ -13,6 +13,7 @@
 #include <sys/types.h>
 #include <sys/param.h>
 #include <libgen.h>
+#include <sys/time.h>
 #include <kvsns/kvsal.h>
 #include <kvsns/kvsns.h>
 
@@ -29,6 +30,9 @@ extern char v[VLEN];
 extern kvsns_ino_t current_inode;
 extern kvsns_ino_t parent_inode;
 extern kvsns_ino_t ino;
+
+struct timeval tv_start;
+struct timeval tv_stop;
 
 int do_op(int argc, char *argv[])
 {
@@ -689,13 +693,21 @@ int do_op(int argc, char *argv[])
 		}
 
 		sleep(atoi(argv[1]));
-					
 	} else if (!strcmp(exec_name, "print")) {
 		int i;
 
 		for (i = 0; i < argc; i++)
 			printf("%s ", argv[i]);
 		printf("\n");
+	} else if (!strcmp(exec_name, "timer_start")) {
+		if (gettimeofday(&tv_start, NULL))
+			fprintf(stderr, "error in gettimeofday: errno=%d\n", errno);
+	} else if (!strcmp(exec_name, "timer_stop")) {
+		if (gettimeofday(&tv_stop, NULL))
+			fprintf(stderr, "error in gettimeofday: errno=%d\n", errno);
+
+		float time_diff = (tv_stop.tv_sec - tv_start.tv_sec) + 1e-6*(tv_stop.tv_usec - tv_start.tv_usec);
+		printf("-+-+-+-+> timer difference: %f\n", time_diff);;
 	} else
 		fprintf(stderr, "%s does not exists\n", exec_name);
 
