@@ -22,7 +22,9 @@ mkdir 3
 ls
 
 cd ..
+timer_start
 ls
+timer_stop
 
 # Clean everything
 mr_proper
