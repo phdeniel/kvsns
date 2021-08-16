@@ -180,6 +180,8 @@ int kvsns_opendir(kvsns_cred_t *cred, kvsns_ino_t *dir, kvsns_dir_t *ddir)
 	snprintf(pattern, KLEN, "%llu.dentries.*", *dir);
 
 	ddir->ino = *dir;
+	ddir->list.content = NULL;
+	ddir->list.size = 0;
 	return kvsal.fetch_list(pattern, &ddir->list);
 }
 
