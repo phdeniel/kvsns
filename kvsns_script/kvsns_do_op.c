@@ -708,6 +708,29 @@ int do_op(int argc, char *argv[])
 
 		float time_diff = (tv_stop.tv_sec - tv_start.tv_sec) + 1e-6*(tv_stop.tv_usec - tv_start.tv_usec);
 		printf("-+-+-+-+> timer difference: %f\n", time_diff);;
+	} else if (!strcmp(exec_name, "kvsal_set")) {
+		int rc;
+		char k[KLEN];
+		char v[VLEN];
+		if (argc != 3) {
+			fprintf(stderr, "kvsal_set <key> <value>\n");
+			return 1;
+		}
+		strcpy(k, argv[1]); 
+		strcpy(v, argv[2]);
+		rc = kvsal.set_char(k, v);
+		printf("kvsal_set: rc=%d\n", rc);
+	} else if (!strcmp(exec_name, "kvsal_get")) {
+		int rc;
+		char k[KLEN];
+		char v[VLEN];
+		if (argc != 2) {
+			fprintf(stderr, "kvsal_get <key> \n");
+			return 1;
+		}
+		strcpy(k, argv[1]); 
+		rc = kvsal.get_char(k, v);
+		printf("kvsal_get: %s=%s rc=%d\n", argv[1], v, rc);
 	} else
 		fprintf(stderr, "%s does not exists\n", exec_name);
 

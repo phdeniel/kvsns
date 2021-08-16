@@ -1,0 +1,14 @@
+
+timer_start
+creat f
+timer_stop
+
+timer_start
+kvsal_set a1 123
+timer_stop
+
+timer_start
+kvsal_get a1
+timer_stop
+
+
