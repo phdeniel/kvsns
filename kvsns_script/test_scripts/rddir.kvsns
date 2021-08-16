@@ -13,13 +13,15 @@ creat b
 creat c
 creat d
 
-sleep 2
 ls
 
 cd A
 mkdir 1
 mkdir 2
 mkdir 3
+ls
+
+cd ..
 ls
 
 # Clean everything
