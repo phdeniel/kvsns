@@ -260,7 +260,7 @@ int do_op(int argc, char *argv[])
 		kvsns_dentry_t dirent[10];
 		kvsns_dir_t dirfd;
 		int i;
-	memset(dirent, 0, 10*sizeof(kvsns_dentry_t));
+		memset(dirent, 0, 10*sizeof(kvsns_dentry_t));
 
 		rc = kvsns_opendir(&cred, &current_inode, &dirfd);
 		if (rc != 0) {
@@ -500,7 +500,7 @@ int do_op(int argc, char *argv[])
 
 	} else if (!strcmp(exec_name, "removexattr")) {
 		if (argc != 3) {
-			printf("removexattr name\n");
+			printf("removexattr name xattr_name\n");
 			return 1;
 		}
 
