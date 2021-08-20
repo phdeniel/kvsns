@@ -47,6 +47,7 @@ static char *clovis_proc_fid;
 static char *ifid_str;
 static uint32_t layoutid = 0;
 static bool use_m0trace = false;
+static bool use_addb = false;
 
 /* Clovis Instance */
 static struct m0_client	  *clovis_instance = NULL;
@@ -104,6 +105,10 @@ static int get_clovis_conf(struct collection_item *cfg)
 	WRAP_CONFIG("use_m0trace", cfg, item);
 	use_m0trace = get_bool_config_value(item, 0, NULL);
 
+	item = NULL;
+	WRAP_CONFIG("use_addb", cfg, item);
+	use_addb = get_bool_config_value(item, 0, NULL);
+
 	return 0;
 }
 
@@ -116,6 +121,7 @@ static void print_config(void)
 	printf("kvs_fid     = %s\n", ifid_str);
 	printf("layoutid    = %u\n", layoutid);
 	printf("use_m0trace = %d\n", use_m0trace);
+	printf("use_addb    = %d\n", use_addb);
 	printf("---------------------------\n");
 }
 
@@ -139,6 +145,7 @@ static int init_clovis(void)
 	/* Initialize Clovis configuration */
 	clovis_conf.mc_is_oostore	= true;
 	clovis_conf.mc_is_read_verify	= false;
+	clovis_conf.mc_is_addb_init     = use_addb;
 	clovis_conf.mc_local_addr	= clovis_local_addr;
 	clovis_conf.mc_ha_addr		= clovis_ha_addr;
 	clovis_conf.mc_profile		= clovis_prof;
@@ -556,20 +563,28 @@ int m0_pattern_kvs(char *k, char *pattern,
  *  End:
  */
 
-void open_entity(struct m0_entity *entity)
+static int open_entity(struct m0_entity *entity)
 {
-	struct m0_op *ops[1] = {NULL};
+	int		  rc;
+	struct m0_op	*ops[1] = {NULL};
 
-	m0_entity_open(entity, &ops[0]);
-	pthread_mutex_lock(&big_motr_lock);
+	rc = m0_entity_open(entity, &ops[0]);
+	if (rc != 0)
+		goto cleanup;
+
 	m0_op_launch(ops, 1);
-	pthread_mutex_unlock(&big_motr_lock);
-	m0_op_wait(ops[0], M0_BITS(M0_OS_FAILED,
-					  M0_OS_STABLE),
-			  M0_TIME_NEVER);
+	rc = m0_op_wait(ops[0], M0_BITS(M0_OS_FAILED,
+					       M0_OS_STABLE),
+			       M0_TIME_NEVER);
+	if (rc == 0)
+		rc = ops[0]->op_rc;
+
+cleanup:
 	m0_op_fini(ops[0]);
 	m0_op_free(ops[0]);
 	ops[0] = NULL;
+
+	return rc;
 }
 
 static int init_ctx(struct clovis_io_ctx *ioctx, off_t off,
@@ -1186,4 +1201,335 @@ ssize_t m0store_get_bsize(struct m0_uint128 id)
 	return m0_obj_layout_id_to_unit_size(
 			m0_client_layout_id(clovis_instance));
 }
+
+/**
+ * New stuff for BLK IO 
+ **/
+static inline uint32_t entity_sm_state(struct m0_obj *obj)
+{
+	return obj->ob_entity.en_sm.sm_state;
+}
+
+static int read_data_from_file(int fd, struct m0_bufvec *data)
+{
+	int i;
+	int rc;
+	int nr_blocks;
+
+	nr_blocks = data->ov_vec.v_nr;
+	for (i = 0; i < nr_blocks; ++i) {
+		rc = read(fd, data->ov_buf[i], data->ov_vec.v_count[i]);
+		if (rc != data->ov_vec.v_count[i])
+			break;
+	}
+
+	return i;
+}
+
+static void prepare_ext_vecs(struct m0_indexvec *ext,
+			     struct m0_bufvec *attr,
+			     uint32_t block_count, uint32_t block_size,
+			     uint64_t *last_index)
+{
+	int      i;
+
+	for (i = 0; i < block_count; ++i) {
+		ext->iv_index[i] = *last_index;
+		ext->iv_vec.v_count[i] = block_size;
+		*last_index += block_size;
+
+		/* we don't want any attributes */
+		attr->ov_vec.v_count[i] = 0;
+	}
+}
+
+static int alloc_vecs(struct m0_indexvec *ext, struct m0_bufvec *data,
+		      struct m0_bufvec *attr, uint32_t block_count,
+		      uint32_t block_size)
+{
+	int      rc;
+
+	rc = m0_indexvec_alloc(ext, block_count);
+	if (rc != 0)
+		return rc;
+
+	/*
+ *	  * this allocates <block_count> * <block_size>  buffers for data,
+ *		   * and initialises the bufvec for us.
+ *			    */
+
+	rc = m0_bufvec_alloc(data, block_count, block_size);
+	if (rc != 0) {
+		m0_indexvec_free(ext);
+		return rc;
+	}
+	rc = m0_bufvec_alloc(attr, block_count, 1);
+	if (rc != 0) {
+		m0_indexvec_free(ext);
+		m0_bufvec_free(data);
+		return rc;
+	}
+	return rc;
+}
+
+static void cleanup_vecs(struct m0_bufvec *data, struct m0_bufvec *attr,
+				struct m0_indexvec *ext)
+{
+		/* Free bufvec's and indexvec's */
+		m0_indexvec_free(ext);
+		m0_bufvec_free(data);
+		m0_bufvec_free(attr);
+}
+
+
+static int read_data_from_object(struct m0_obj *obj,
+				 struct m0_indexvec *ext,
+				 struct m0_bufvec *data,
+				 struct m0_bufvec *attr,
+				 uint32_t flags)
+{
+	int		  rc;
+	int		  op_rc;
+	int		  nr_tries = 10;
+	struct m0_op	*ops[1] = {NULL};
+
+again:
+
+	/* Create the read request */
+	m0_obj_op(obj, M0_OC_READ, ext, data, attr, 0, flags, &ops[0]);
+	if (ops[0] == NULL)
+		return -EINVAL;
+	M0_ASSERT(ops[0]->op_sm.sm_rc == 0);
+
+	/* Launch the read request*/
+	m0_op_launch(ops, 1);
+
+	/* wait */
+	rc = m0_op_wait(ops[0], M0_BITS(M0_OS_FAILED,
+					       M0_OS_STABLE),
+			       M0_TIME_NEVER);
+	op_rc = ops[0]->op_sm.sm_rc;
+
+
+	/* fini and release */
+	m0_op_fini(ops[0]);
+	m0_op_free(ops[0]);
+
+	if (op_rc == -EINVAL && nr_tries != 0) {
+		nr_tries--;
+		ops[0] = NULL;
+		sleep(5);
+		goto again;
+	}
+
+	return rc;
+}
+
+static int write_data_to_object(struct m0_obj *obj,
+				struct m0_indexvec *ext,
+				struct m0_bufvec *data,
+				struct m0_bufvec *attr)
+{
+	int		  rc;
+	int		  op_rc;
+	int		  nr_tries = 10;
+	struct m0_op	*ops[1] = {NULL};
+
+again:
+
+	/* Create the write request */
+	m0_obj_op(obj, M0_OC_WRITE, ext, data, attr, 0, 0, &ops[0]);
+	if (ops[0] == NULL)
+		return -EINVAL;
+
+	/* Launch the write request*/
+	m0_op_launch(ops, 1);
+
+	/* wait */
+	rc = m0_op_wait(ops[0],
+			M0_BITS(M0_OS_FAILED,
+				M0_OS_STABLE),
+			M0_TIME_NEVER);
+	op_rc = ops[0]->op_sm.sm_rc;
+
+	/* fini and release */
+	m0_op_fini(ops[0]);
+	m0_op_free(ops[0]);
+
+	if (op_rc == -EINVAL && nr_tries != 0) {
+		nr_tries--;
+		ops[0] = NULL;
+		sleep(5);
+		goto again;
+	}
+
+	return rc;
+}
+
+int m0_write_bulk(int fd_src,
+		  struct m0_uint128 id,
+		  uint32_t block_size,
+		  uint32_t block_count,
+		  uint64_t update_offset,
+		  int blks_per_io)
+{
+	int			   rc;
+	struct m0_indexvec	    ext;
+	struct m0_bufvec	      data;
+	struct m0_bufvec	      attr;
+	uint32_t		      bcount;
+	uint64_t		      last_index;
+	struct m0_obj		 obj;
+
+	M0_SET0(&obj);
+        m0_obj_init(&obj, &clovis_uber_realm, &id,
+                           m0_client_layout_id(clovis_instance));
+
+	rc = open_entity(&obj.ob_entity);
+
+	if (rc)
+		goto init_error;
+
+	if (entity_sm_state(&obj) != M0_ES_OPEN || rc != 0)
+		goto cleanup;
+
+	last_index = update_offset;
+
+	if (blks_per_io == 0)
+		blks_per_io = M0_MAX_BLOCK_COUNT;
+
+	rc = alloc_vecs(&ext, &data, &attr, blks_per_io, block_size);
+	if (rc != 0)
+		goto cleanup;
+
+	while (block_count > 0) {
+		bcount = (block_count > blks_per_io)?
+			  blks_per_io:block_count;
+		if (bcount < blks_per_io) {
+			cleanup_vecs(&data, &attr, &ext);
+			rc = alloc_vecs(&ext, &data, &attr, bcount,
+					block_size);
+			if (rc != 0)
+				goto cleanup;
+		}
+		prepare_ext_vecs(&ext, &attr, bcount,
+				 block_size, &last_index);
+
+		/* Read data from source file. */
+		rc = read_data_from_file(fd_src, &data);
+		M0_ASSERT(rc == bcount);
+
+		/* Copy data to the object*/
+		rc = write_data_to_object(&obj, &ext, &data, &attr);
+		if (rc != 0) {
+			fprintf(stderr, "Writing to object failed!\n");
+			cleanup_vecs(&data, &attr, &ext);
+			goto cleanup;
+		}
+		block_count -= bcount;
+	}
+cleanup:
+	cleanup_vecs(&data, &attr, &ext);
+	/* fini and release */
+init_error:
+	m0_entity_fini(&obj.ob_entity);
+	return rc;
+}
+
+int m0_read(struct m0_container *container,
+	    struct m0_uint128 id, char *dest,
+	    uint32_t block_size, uint32_t block_count,
+	    uint64_t offset, int blks_per_io, bool take_locks,
+	    uint32_t flags)
+{
+	int			   i;
+	int			   j;
+	int			   rc;
+	uint64_t		      last_index = 0;
+	struct m0_obj		 obj;
+	struct m0_indexvec	    ext;
+	struct m0_bufvec	      data;
+	struct m0_bufvec	      attr;
+	FILE			 *fp = NULL;
+	struct m0_client	     *instance;
+	uint32_t		      bcount;
+	uint64_t		      bytes_read;
+
+	/* If input file is not given, write to stdout */
+	if (dest != NULL) {
+		fp = fopen(dest, "w");
+		if (fp == NULL)
+			return -EPERM;
+	}
+	instance = container->co_realm.re_instance;
+
+	/* Read the requisite number of blocks from the entity */
+	M0_SET0(&obj);
+	m0_obj_init(&obj, &container->co_realm, &id,
+		    m0_client_layout_id(instance));
+
+	rc = open_entity(&obj.ob_entity);
+	if (entity_sm_state(&obj) != M0_ES_OPEN || rc != 0)
+		goto cleanup;
+
+	last_index = offset;
+
+       if (blks_per_io == 0)
+		blks_per_io = M0_MAX_BLOCK_COUNT;
+	rc = alloc_vecs(&ext, &data, &attr, blks_per_io, block_size);
+	if (rc != 0)
+		goto cleanup;
+	while (block_count > 0) {
+		bytes_read = 0;
+		bcount = (block_count > blks_per_io)?
+			  blks_per_io:block_count;
+		if (bcount < blks_per_io) {
+			cleanup_vecs(&data, &attr, &ext);
+			rc = alloc_vecs(&ext, &data, &attr, bcount,
+					block_size);
+			if (rc != 0)
+				goto cleanup;
+		}
+		prepare_ext_vecs(&ext, &attr, bcount,
+				 block_size, &last_index);
+
+		rc = read_data_from_object(&obj, &ext, &data, &attr, flags);
+		if (rc != 0) {
+			fprintf(stderr, "Reading from object failed!\n");
+			cleanup_vecs(&data, &attr, &ext);
+			goto cleanup;
+		}
+
+		if (fp != NULL) {
+			for (i = 0; i < bcount; ++i) {
+				bytes_read += fwrite(data.ov_buf[i], sizeof(char),
+					    data.ov_vec.v_count[i], fp);
+			}
+			if (bytes_read != bcount * block_size) {
+				rc = -EIO;
+				fprintf(stderr, "Writing to destination "
+					"file failed!\n");
+				cleanup_vecs(&data, &attr, &ext);
+				goto cleanup;
+			}
+		} else {
+			/* putchar the output */
+			for (i = 0; i < bcount; ++i) {
+				for (j = 0; j < data.ov_vec.v_count[i]; ++j)
+					putchar(((char *)data.ov_buf[i])[j]);
+			}
+		}
+		block_count -= bcount;
+	}
+
+	cleanup_vecs(&data, &attr, &ext);
+
+cleanup:
+	if (fp != NULL) {
+		fclose(fp);
+	}
+	m0_entity_fini(&obj.ob_entity);
+	return rc;
+}
+
 
