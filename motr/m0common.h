@@ -45,6 +45,21 @@
 #include "lib/user_space/trace.h"
 #include <kvsns/kvsal.h>
 
+
+/** Max number of blocks in concurrent IO per thread.
+ *   * Currently Client can write at max 100 blocks in
+ *     * a single request. This will change in future.
+ *       */
+enum { M0_MAX_BLOCK_COUNT = 100 };
+
+enum {
+	/** Min block size */
+	BLK_SIZE_4k = 4096,
+	/** Max block size */
+	BLK_SIZE_32m = 32 * 1024 * 1024
+};
+
+
 typedef bool (*get_list_cb)(char *k, void *arg);
 
 int m0init(struct collection_item *cfg_items);
@@ -89,6 +104,27 @@ static inline ssize_t m0store_pread(struct m0_uint128 id, off_t x,
 {
 	return m0store_do_io(id, IO_READ, x, len, bs, buff);
 }
+
+/*
+ * Stuff for blk IO
+ */
+
+int m0_read(struct m0_container *container,
+	    struct m0_uint128 id,
+	    char *dest,
+	    uint32_t block_size,
+	    uint32_t block_count,
+	    uint64_t offset,
+	    int blks_per_io, bool take_locks,
+	    uint32_t flags);
+
+
+int m0_write_bulk(int fd_src,
+		  struct m0_uint128 id,
+		  uint32_t block_size,
+		  uint32_t block_count,
+		  uint64_t update_offset,
+		  int blks_per_io);
 
 #endif
 /*
