@@ -35,8 +35,8 @@ int copy_to_mero(int fd_source, struct m0_uint128 id,
 	nb = filesize / bsize;	
 	aligned_offset = nb * bsize;
 
-	printf("filesize=%zd bsize=%zd  remain=%zd aligned_offset=%zd\n",
-		filesize, bsize, remain, aligned_offset);
+	printf("filesize=%zd bsize=%zd nb=%zd remain=%zd aligned_offset=%zd\n",
+		filesize, bsize, nb, remain, aligned_offset);
 
 	buff = malloc(bsize);
 	if (buff == NULL)
