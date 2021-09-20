@@ -1366,6 +1366,16 @@ again:
 	return rc;
 }
 
+int m0_read_bulk(int fd_dest,
+		 struct m0_uint128 id,
+		 uint32_t block_size,
+		 uint32_t block_count,
+		 uint64_t update_offset,
+		 int blks_per_io)
+{
+	return 0;
+}
+
 int m0_write_bulk(int fd_src,
 		  struct m0_uint128 id,
 		  uint32_t block_size,

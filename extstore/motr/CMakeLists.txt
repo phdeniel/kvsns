@@ -36,4 +36,6 @@ target_link_libraries(m0store_cp_to_bulk extstore_motr)
 add_executable(m0store_cp_from m0store_cp_from.c)
 target_link_libraries(m0store_cp_from extstore_motr)
 
+add_executable(m0store_cp_from_bulk m0store_cp_from_bulk.c)
+target_link_libraries(m0store_cp_from_bulk extstore_motr)
 
