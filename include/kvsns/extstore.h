@@ -75,6 +75,16 @@ int extstore_restore(kvsns_ino_t *ino);
 int extstore_release(kvsns_ino_t *ino);
 int extstore_state(kvsns_ino_t *ino, char *state);
 
+/* Bulk CP */
+int extstore_cp_to(int fd,
+		   kvsns_file_open_t *kfd,
+		   int iolen,
+		   size_t filesize);
+int extstore_cp_from(int fd,
+		     kvsns_file_open_t *kfd,
+		     int iolen,
+		     size_t filesize);
+
 struct extstore_ops {
 	int (*init)(struct collection_item *cfg_items,
 		    struct kvsal_ops *kvsalops);
@@ -105,7 +115,15 @@ struct extstore_ops {
 	int (*restore)(kvsns_ino_t *ino);
 	int (*release)(kvsns_ino_t *ino);
 	int (*state)(kvsns_ino_t *ino,
-			      char *state);
+		     char *state);
+	int (*cp_to)(int fd,
+		     kvsns_file_open_t *kfd,
+		     int iolen,
+		     size_t filesize);
+	int (*cp_from)(int fd,
+		       kvsns_file_open_t *kfd,
+		       int iolen,
+		       size_t filesize);
 };
 
 typedef int build_extstore_path_func(kvsns_ino_t object,
