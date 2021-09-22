@@ -362,6 +362,11 @@ int extstore_cp_to(int fd_source,
         size_t nb;
         int rc;
 
+	if (getenv("NO_BULK") != NULL) {
+		fprintf(stderr, "====> NO BULK !!!\n");
+		return -ENOTSUP;
+	}
+
 	RC_WRAP(build_m0store_id, *ino, &id);
 
         bsize = m0store_get_bsize(id);
@@ -424,6 +429,11 @@ int extstore_cp_from(int fd_dest,
         size_t nb;
 
         int rc;
+
+	if (getenv("NO_BULK") != NULL) {
+		fprintf(stderr, "====> NO BULK !!!\n");
+		return -ENOTSUP;
+	}
 
 	RC_WRAP(build_m0store_id, *ino, &id);
 
