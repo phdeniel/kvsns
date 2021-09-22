@@ -348,19 +348,130 @@ int extstore_state(kvsns_ino_t *ino,
 	return -ENOTSUP;
 }
 
-int extstore_cp_to(int fd,
-		   kvsns_file_open_t *kfd,
+int extstore_cp_to(int fd_source,
+		   kvsns_ino_t *ino,
 		   int iolen,
 		   size_t filesize)
 {
-	return -ENOTSUP;
+	struct m0_uint128 id;
+        size_t rsize, wsize;
+        size_t bsize;
+        char *buff;
+        size_t remain;
+        size_t aligned_offset;
+        size_t nb;
+        int rc;
+
+	RC_WRAP(build_m0store_id, *ino, &id);
+
+        bsize = m0store_get_bsize(id);
+        if (bsize < 0)
+                return bsize;
+
+        remain = filesize % bsize;
+        nb = filesize / bsize;
+        aligned_offset = nb * bsize;
+
+        printf("filesize=%zd bsize=%zd nb=%zd remain=%zd aligned_offset=%zd\n",
+                filesize, bsize, nb, remain, aligned_offset);
+
+        buff = malloc(bsize);
+        if (buff == NULL)
+                return -ENOMEM;
+
+        rc = m0_write_bulk(fd_source,
+                           id,
+                           bsize,
+                           nb,
+                           0,
+                           0);
+        printf("===> rc=%d\n", rc);
+
+        rsize = pread(fd_source, buff, remain, aligned_offset);
+        if (rsize < 0) {
+                        free(buff);
+                        return -1;
+        }
+
+        wsize = m0store_pwrite(id, aligned_offset, rsize, bsize, buff);
+        if (wsize < 0) {
+                free(buff);
+                return -1;
+        }
+
+        if (wsize != rsize) {
+                free(buff);
+                return -1;
+        }
+
+        /* Think about setting MD */
+        free(buff);
+        return 0;
 }
 
-int extstore_cp_from(int fd,
-		     kvsns_file_open_t *kfd,
+int extstore_cp_from(int fd_dest,
+		     kvsns_ino_t *ino,
 		     int iolen,
 		     size_t filesize)
 {
-	return -ENOTSUP;
+	struct m0_uint128 id;
+        size_t rsize, wsize;
+        ssize_t bsize;
+        char *buff;
+
+        size_t remain;
+        size_t aligned_offset;
+        size_t nb;
+
+        int rc;
+
+	RC_WRAP(build_m0store_id, *ino, &id);
+
+        bsize = m0store_get_bsize(id);
+        if (bsize < 0) 
+                return bsize;
+
+        remain = filesize % bsize;
+        nb = filesize / bsize;
+        aligned_offset = nb * bsize;
+
+        printf("filesize=%zd bsize=%zd nb=%zd remain=%zd aligned_offset=%zd\n",
+                filesize, bsize, nb, remain, aligned_offset);
+
+        buff = malloc(bsize);
+        if (buff == NULL)
+                return -ENOMEM;
+
+        rc = m0_read_bulk(fd_dest,
+                          id,
+                          bsize,
+                          nb,
+                          0,
+                          0,
+                          0);
+        printf("===> rc=%d\n", rc);
+
+        rsize = m0store_pread(id, aligned_offset, remain, bsize, buff);
+        if (rsize < 0) {
+                free(buff);
+                return -1;
+        }
+
+        wsize = pwrite(fd_dest, buff, rsize, aligned_offset);
+        if (wsize < 0) {
+                free(buff);
+                return -1;
+        }
+
+        /* This POC writes on aligned blocks, we should align to real size */
+        /* Useful in this case ?? */
+        rc = ftruncate(fd_dest, filesize);
+        if (rc < 0) {
+                free(buff);
+                return -1;
+        }
+
+        free(buff);
+        return 0;
 }
 
