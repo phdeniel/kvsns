@@ -77,11 +77,11 @@ int extstore_state(kvsns_ino_t *ino, char *state);
 
 /* Bulk CP */
 int extstore_cp_to(int fd,
-		   kvsns_file_open_t *kfd,
+		   kvsns_ino_t *ino,
 		   int iolen,
 		   size_t filesize);
 int extstore_cp_from(int fd,
-		     kvsns_file_open_t *kfd,
+		     kvsns_ino_t *ino,
 		     int iolen,
 		     size_t filesize);
 
