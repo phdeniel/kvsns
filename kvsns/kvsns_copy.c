@@ -42,6 +42,7 @@
 #include "kvsns_internal.h"
 
 #define BUFFSIZE 40960
+extern struct extstore_ops extstore;
 
 int kvsns_cp_from(kvsns_cred_t *cred, kvsns_file_open_t *kfd,
 		  int fd_dest, int iolen)
@@ -62,23 +63,31 @@ int kvsns_cp_from(kvsns_cred_t *cred, kvsns_file_open_t *kfd,
 	filesize = stat.st_size;
 	remains = filesize;
 	off = 0LL;
-	while (off < filesize) {
-		len = (remains > iolen) ? iolen : remains;
 
-		rsize = kvsns_read(cred, kfd, buff, len, off);
-		if (rsize < 0)
-			return -1;
+	rc = extstore.cp_from(fd_dest, &kfd->ino, iolen, filesize);
 
-		wsize = pwrite(fd_dest, buff, rsize, off);
-		if (wsize < 0)
-			return -1;
+	/* if not supported, then deal each block one by one */
+	if (rc == -ENOTSUP) {
+		while (off < filesize) {
+			len = (remains > iolen) ? iolen : remains;
 
-		if (wsize != rsize)
-			return -1;
+			rsize = kvsns_read(cred, kfd, buff, len, off);
+			if (rsize < 0)
+				return -1;
 
-		off += rsize;
-		remains -= rsize;
+			wsize = pwrite(fd_dest, buff, rsize, off);
+			if (wsize < 0)
+				return -1;
+
+			if (wsize != rsize)
+				return -1;
+
+			off += rsize;
+			remains -= rsize;
+		}
 	}
+
+	/** @todo the management of 'rc' value is really weak... */
 
 	/* This POC writes on aligned blocks, we should align to real size */
 	/* Useful in this case ?? */
@@ -111,23 +120,28 @@ int kvsns_cp_to(kvsns_cred_t *cred, int fd_source,
 
 	remains = srcstat.st_size;
 	filesize = srcstat.st_size;
-	off = 0LL;
-	while (off < filesize) {
-		len = (remains > iolen) ? iolen : remains;
 
-		rsize = pread(fd_source, buff, len, off);
-		if (rsize < 0)
-			return -1;
+	rc = extstore.cp_to(fd_source, &kfd->ino, iolen, filesize);
 
-		wsize = kvsns_write(cred, kfd, buff, rsize, off);
-		if (wsize < 0)
-			return -1;
+	if (rc == -ENOTSUP) { 
+		off = 0LL;
+		while (off < filesize) {
+			len = (remains > iolen) ? iolen : remains;
 
-		if (wsize != rsize)
-			return -1;
+			rsize = pread(fd_source, buff, len, off);
+			if (rsize < 0)
+				return -1;
 
-		off += rsize;
-		remains -= rsize;
+			wsize = kvsns_write(cred, kfd, buff, rsize, off);
+			if (wsize < 0)
+				return -1;
+
+			if (wsize != rsize)
+				return -1;
+
+			off += rsize;
+			remains -= rsize;
+		}
 	}
 
 	rc = kvsns_setattr(cred, &kfd->ino, &srcstat,
