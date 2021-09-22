@@ -7,6 +7,9 @@ target_link_libraries(kvsns_busybox kvsns)
 add_executable(kvsns_cp kvsns_cp.c)
 target_link_libraries(kvsns_cp kvsns)
 
+add_executable(kvsns_cp_bulk kvsns_cp_bulk.c)
+target_link_libraries(kvsns_cp_bulk kvsns)
+
 add_custom_target(links DEPENDS kvsns_busybox)
 add_custom_command(TARGET links
 		   COMMAND /usr/bin/ln -sf kvsns_busybox ns_reset

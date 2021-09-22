@@ -653,3 +653,19 @@ int extstore_state(kvsns_ino_t *ino, char *strstate)
 	return 0;
 }
 
+int extstore_cp_to(int fd,
+		   kvsns_file_open_t *kfd,
+		   int iolen,
+		   size_t filesize)
+{
+	return -ENOTSUP;
+}
+
+int extstore_cp_from(int fd,
+		     kvsns_file_open_t *kfd,
+		     int iolen,
+		     size_t filesize)
+{
+	return -ENOTSUP;
+}
+
