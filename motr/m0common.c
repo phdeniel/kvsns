@@ -1210,6 +1210,22 @@ static inline uint32_t entity_sm_state(struct m0_obj *obj)
 	return obj->ob_entity.en_sm.sm_state;
 }
 
+static int write_data_to_file(int fd, struct m0_bufvec *data)
+{
+	int i;
+	int rc;
+	int nr_blocks;
+
+	nr_blocks = data->ov_vec.v_nr;
+	for (i = 0; i < nr_blocks; ++i) {
+		rc = write(fd, data->ov_buf[i], data->ov_vec.v_count[i]);
+		if (rc != data->ov_vec.v_count[i])
+			break;
+	}
+
+	return i;
+}
+
 static int read_data_from_file(int fd, struct m0_bufvec *data)
 {
 	int i;
@@ -1366,16 +1382,6 @@ again:
 	return rc;
 }
 
-int m0_read_bulk(int fd_dest,
-		 struct m0_uint128 id,
-		 uint32_t block_size,
-		 uint32_t block_count,
-		 uint64_t update_offset,
-		 int blks_per_io)
-{
-	return 0;
-}
-
 int m0_write_bulk(int fd_src,
 		  struct m0_uint128 id,
 		  uint32_t block_size,
@@ -1446,51 +1452,42 @@ init_error:
 	return rc;
 }
 
-int m0_read(struct m0_container *container,
-	    struct m0_uint128 id, char *dest,
-	    uint32_t block_size, uint32_t block_count,
-	    uint64_t offset, int blks_per_io, bool take_locks,
-	    uint32_t flags)
+int m0_read_bulk(int fd_dest,
+		 struct m0_uint128 id,
+		 uint32_t block_size,
+		 uint32_t block_count,
+		 uint64_t update_offset,
+		 int blks_per_io,
+	    	 uint32_t flags)
 {
-	int			   i;
-	int			   j;
 	int			   rc;
 	uint64_t		      last_index = 0;
 	struct m0_obj		 obj;
 	struct m0_indexvec	    ext;
 	struct m0_bufvec	      data;
 	struct m0_bufvec	      attr;
-	FILE			 *fp = NULL;
-	struct m0_client	     *instance;
 	uint32_t		      bcount;
-	uint64_t		      bytes_read;
-
-	/* If input file is not given, write to stdout */
-	if (dest != NULL) {
-		fp = fopen(dest, "w");
-		if (fp == NULL)
-			return -EPERM;
-	}
-	instance = container->co_realm.re_instance;
 
 	/* Read the requisite number of blocks from the entity */
 	M0_SET0(&obj);
-	m0_obj_init(&obj, &container->co_realm, &id,
-		    m0_client_layout_id(instance));
+        m0_obj_init(&obj, &clovis_uber_realm, &id,
+                           m0_client_layout_id(clovis_instance));
 
 	rc = open_entity(&obj.ob_entity);
 	if (entity_sm_state(&obj) != M0_ES_OPEN || rc != 0)
 		goto cleanup;
 
-	last_index = offset;
+	/***** ICI ****/
+	last_index = update_offset;
 
        if (blks_per_io == 0)
 		blks_per_io = M0_MAX_BLOCK_COUNT;
+
 	rc = alloc_vecs(&ext, &data, &attr, blks_per_io, block_size);
 	if (rc != 0)
 		goto cleanup;
+
 	while (block_count > 0) {
-		bytes_read = 0;
 		bcount = (block_count > blks_per_io)?
 			  blks_per_io:block_count;
 		if (bcount < blks_per_io) {
@@ -1510,34 +1507,15 @@ int m0_read(struct m0_container *container,
 			goto cleanup;
 		}
 
-		if (fp != NULL) {
-			for (i = 0; i < bcount; ++i) {
-				bytes_read += fwrite(data.ov_buf[i], sizeof(char),
-					    data.ov_vec.v_count[i], fp);
-			}
-			if (bytes_read != bcount * block_size) {
-				rc = -EIO;
-				fprintf(stderr, "Writing to destination "
-					"file failed!\n");
-				cleanup_vecs(&data, &attr, &ext);
-				goto cleanup;
-			}
-		} else {
-			/* putchar the output */
-			for (i = 0; i < bcount; ++i) {
-				for (j = 0; j < data.ov_vec.v_count[i]; ++j)
-					putchar(((char *)data.ov_buf[i])[j]);
-			}
-		}
+		rc = write_data_to_file(fd_dest, &data);
+		M0_ASSERT(rc == bcount);
+
 		block_count -= bcount;
 	}
 
 	cleanup_vecs(&data, &attr, &ext);
 
 cleanup:
-	if (fp != NULL) {
-		fclose(fp);
-	}
 	m0_entity_fini(&obj.ob_entity);
 	return rc;
 }

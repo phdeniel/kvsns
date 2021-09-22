@@ -131,7 +131,8 @@ int m0_read_bulk(int fd_dest,
 		 uint32_t block_size,
 		 uint32_t block_count,
 		 uint64_t update_offset,
-		 int blks_per_io);
+		 int blks_per_io,
+		 uint32_t flags);
 
 #endif
 /*
