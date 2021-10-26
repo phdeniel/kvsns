@@ -35,14 +35,21 @@
 
 char funcname[MAXNAMLEN];
 
-void *handle_objstore;
-struct objstore_ops objstore;
+void *handle_objstore_lib;
+struct objstore_ops objstore_lib_ops;
 
-#define ADD_FUNC(__module__, __name__, __handle__)                   ({ \
-        snprintf(funcname, MAXNAMLEN, "%s_%s", #__module__, #__name__); \
-        *(void **)(&__module__.__name__) = dlsym(__handle__, funcname); \
-        if (!__module__.__name__)                                       \
-                return -EINVAL; })
+/* This macro is used to add a function through dlsym to a holding struct.
+ * For instance, we call this macro with the module "objstore_cmd", the name
+ * of the targeted function ("get"), the library handle ("libobjstore_cmd")
+ * and the holding structure "objstore_lib_ops". This way, the "get" function
+ * will correspond to the function "objstore_cmd_get" in the "libobjstore_cmd"
+ * library.
+ */
+#define ADD_FUNC(__module__, __name__, __handle__, __holder__)       ({ \
+	snprintf(funcname, MAXNAMLEN, "%s_%s", __module__, #__name__);  \
+	*(void **)(&__holder__.__name__) = dlsym(__handle__, funcname); \
+	if (!__holder__.__name__)                                       \
+		return -EINVAL; })
 
 #define RC_WRAP(__function, ...) ({\
 	int __rc = __function(__VA_ARGS__);\
@@ -246,15 +253,44 @@ int extstore_attach(kvsns_ino_t *ino, char *objid, int objid_len)
 	return 0;
 }
 
+static int load_objstore_lib(struct collection_item *cfg_items,
+			     struct kvsal_ops *kvsalops,
+			     const char *lib_name, const char *module_name)
+{
+	struct collection_item *item = NULL;
+	char *objstore_lib_path = NULL;
+
+	RC_WRAP(get_config_item, "crud_cache", lib_name, cfg_items, &item);
+	if (item == NULL)
+		return -ENOENT;
+	else
+		objstore_lib_path = get_string_config_value(item, NULL);
+
+	handle_objstore_lib = dlopen(objstore_lib_path, RTLD_LAZY);
+	if (!handle_objstore_lib) {
+		fprintf(stderr, "Can't open %s\n", objstore_lib_path);
+		return -EINVAL;
+	}
+
+	ADD_FUNC(module_name, init, handle_objstore_lib, objstore_lib_ops);
+	ADD_FUNC(module_name, get, handle_objstore_lib, objstore_lib_ops);
+	ADD_FUNC(module_name, put, handle_objstore_lib, objstore_lib_ops);
+	ADD_FUNC(module_name, del, handle_objstore_lib, objstore_lib_ops);
+
+	RC_WRAP(objstore_lib_ops.init, cfg_items, kvsalops,
+                &build_extstore_path);
+
+	return 0;
+}
+
 int extstore_init(struct collection_item *cfg_items,
 		  struct kvsal_ops *kvsalops)
 {
 	struct collection_item *item;
-	char *objstore_lib_path;
+	int rc;
 
 	if (cfg_items != NULL)
 		conf = cfg_items;
-
 
 	memcpy(&kvsal, kvsalops, sizeof(struct kvsal_ops));
 
@@ -267,29 +303,10 @@ int extstore_init(struct collection_item *cfg_items,
 		strncpy(store_root, get_string_config_value(item, NULL),
 			MAXPATHLEN);
 
-	item = NULL;
-	RC_WRAP(get_config_item, "crud_cache", "objstore_lib",
-				 cfg_items, &item);
-	if (item == NULL)
-		return -EINVAL;
-	else
-		objstore_lib_path = get_string_config_value(item, NULL);
+	/* Try to load the objstore_lib */
+	rc = load_objstore_lib(cfg_items, kvsalops, "objstore_lib", "objstore");
 
-	handle_objstore = dlopen(objstore_lib_path, RTLD_LAZY);
-	if (!handle_objstore) {
-		fprintf(stderr, "Can't open %s errno=%d\n",
-			objstore_lib_path, errno);
-		return -EINVAL;
-	}
-
-	ADD_FUNC(objstore, init, handle_objstore);
-	ADD_FUNC(objstore, get, handle_objstore);
-	ADD_FUNC(objstore, put, handle_objstore);
-	ADD_FUNC(objstore, del, handle_objstore);
-
-	RC_WRAP(objstore.init, cfg_items, kvsalops, build_extstore_path);
-
-	return 0;
+	return rc;
 }
 
 int extstore_del(kvsns_ino_t *ino)
@@ -299,7 +316,7 @@ int extstore_del(kvsns_ino_t *ino)
 	int rc;
 
 	/* Delete in the object store */
-	RC_WRAP(objstore.del, ino);
+	RC_WRAP(objstore_lib_ops.del, ino);
 
 	rc = build_extstore_path(*ino, storepath, MAXPATHLEN);
 	if (rc) {
@@ -548,7 +565,7 @@ int extstore_archive(kvsns_ino_t *ino)
 		/* Xfer wuth the object store */
 		RC_WRAP(build_extstore_path, *ino, storepath, MAXPATHLEN);
 
-		RC_WRAP(objstore.put, storepath, ino);
+		RC_WRAP(objstore_lib_ops.put, storepath, ino);
 		RC_WRAP(set_entry_state, ino, DUPLICATED);
 		rc = 0;
 		break;
@@ -579,7 +596,7 @@ int extstore_restore(kvsns_ino_t *ino)
 	case RELEASED:
 		/* Xfer with the object store */
 		RC_WRAP(build_extstore_path, *ino, storepath, MAXPATHLEN);
-		RC_WRAP(objstore.get, storepath, ino);
+		RC_WRAP(objstore_lib_ops.get, storepath, ino);
 		RC_WRAP(set_entry_state, ino, DUPLICATED);
 		rc = 0;
 		break;
