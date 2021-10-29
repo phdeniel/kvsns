@@ -323,6 +323,8 @@ int kvsns_attach(kvsns_cred_t *cred, kvsns_ino_t *parent, char *name,
 
 	/* Poison eid */
 	memset(&eid, 0, sizeof(extstore_id_t));	
+	eid.len = objid_len,
+	strncpy(eid.data, objid, DATALEN);
 
 	RC_WRAP(kvsns_access, cred, parent, KVSNS_ACCESS_WRITE);
 	RC_WRAP(kvsns_create_entry, cred, parent, name, NULL,
@@ -330,7 +332,6 @@ int kvsns_attach(kvsns_cred_t *cred, kvsns_ino_t *parent, char *name,
 				    &eid, NULL);
 	RC_WRAP(kvsns_setattr, cred, newfile, stat, statflags);
 	RC_WRAP(kvsns_getattr, cred, newfile, stat);
-	//RC_WRAP(extstore.attach, newfile, objid, objid_len);
 	RC_WRAP(extstore.attach, &eid, objid, objid_len);
 
 	return 0;

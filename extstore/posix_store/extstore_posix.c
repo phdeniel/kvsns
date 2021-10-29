@@ -75,7 +75,7 @@ static int extstore_consolidate_attrs(extstore_id_t *eid, struct stat *filestat)
 
 int extstore_attach(extstore_id_t *eid, char *objid, int objid_len)
 {
-	return -ENOTSUP;
+	return 0;
 }
 
 int extstore_create(extstore_id_t eid)
@@ -94,10 +94,6 @@ int extstore_new_objectid(extstore_id_t *eid,
 	eid->len = snprintf(eid->data, KLEN, "obj:%.*s", seedlen, seed);
 
 	return 0;
-#if 0
-	return snprintf(extstore_path, pathlen, "%s/inum=%llu",
-			store_root, (unsigned long long)object);
-#endif
 }
 
 int extstore_init(struct collection_item *cfg_items,
