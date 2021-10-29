@@ -41,7 +41,8 @@
 
 
 
-static int build_m0store_id(kvsns_ino_t	 object,
+#if 0
+static int build_m0store_id(extstore_id_t *eid,
 			    struct m0_uint128  *id)
 {
 	char k[KLEN];
@@ -63,7 +64,9 @@ static int build_m0store_id(kvsns_ino_t	 object,
 	id->u_lo = atoi(v);
 
 	return 0;
+	return -ENOTSUP;
 }
+#endif
 
 enum update_stat_how {
 	UP_ST_WRITE = 1,
@@ -114,79 +117,51 @@ static int update_stat(struct stat *stat, enum update_stat_how how,
 	return 0;
 }
 
-int extstore_create(kvsns_ino_t object)
+int extstore_new_objectid(extstore_id_t *eid,
+                          unsigned int seedlen,
+                          char *seed)
 {
-	char k[KLEN];
-	char v[VLEN];
-	size_t klen;
-	size_t vlen;
-	int rc;
-	struct m0_uint128 id;
+        if (!eid || !seed)
+                return -EINVAL;
 
-	snprintf(k, KLEN, "%llu.data", object);
-	klen = strnlen(k, KLEN) + 1;
+	/* Ici il fait hacher une seed en m0128_t de motr qui va dans l'eid */
+        /* Be careful about printf format: string with known length */
+        eid->len = snprintf(eid->data, KLEN, "obj:%.*s", seedlen, seed);
 
-	id = M0_ID_APP;
-	id.u_lo += (unsigned long long)object;
-	snprintf(v, VLEN, "%llu", (unsigned long long)id.u_lo);
-	vlen = strnlen(v, KLEN) + 1;
+	// id = M0_ID_APP;
+	///id.u_lo += (unsigned long long)object;   <----- Il faut creer l'ID !!!
 
-	rc = m0kvs_set(k, klen, v, vlen);
-	if (rc != 0)
-		return rc;
+        return -ENOTSUP;
+}
 
-	snprintf(k, KLEN, "%llu.data_ext", object);
-	klen = strnlen(k, KLEN) + 1;
-	snprintf(v, VLEN, " ");
-	vlen = strnlen(v, KLEN) + 1;
+static int eid2motr(extstore_id_t *eid, struct m0_uint128 *id)
+{
+	if (!eid || !id)
+		return -EINVAL;
 
-	rc = m0kvs_set(k, klen, v, vlen);
-	if (rc != 0)
-		return rc;
+	/* Converti une eid en objid */
+	if (eid->len != sizeof(struct m0_uint128))
+		return -EINVAL;
 
-	rc = m0store_create_object(id);
-	if (rc != 0)
-		return rc;
-
+	memcpy(id, eid->data, eid->len);
 	return 0;
 }
 
-int extstore_attach(kvsns_ino_t *ino, char *objid, int objid_len)
+int extstore_create(extstore_id_t eid)
 {
-	char k[KLEN];
-	char v[VLEN];
-	size_t klen;
-	size_t vlen;
-	int rc;
 	struct m0_uint128 id;
 
+	RC_WRAP(eid2motr, &eid, &id);
+	RC_WRAP(m0store_create_object, id);
 
-	snprintf(k, KLEN, "%llu.data", *ino);
-	klen = strnlen(k, KLEN) + 1;
-	id = M0_ID_APP;
-	id.u_lo = atoi(objid);
-
-	snprintf(v, VLEN, "%llu", (unsigned long long)id.u_lo);
-	vlen = strnlen(v, KLEN) + 1;
-
-	rc = m0kvs_set(k, klen, v, vlen);
-	if (rc != 0)
-		return rc;
-
-	snprintf(k, KLEN, "%llu.data_ext", *ino);
-	snprintf(k, KLEN, "%llu.data", *ino);
-	snprintf(v, VLEN, " ");
-	vlen = strnlen(v, KLEN) + 1;
-
-	rc = m0kvs_set(k, klen, v, vlen);
-	if (rc != 0)
-		return rc;
-
-	rc = m0store_create_object(id);
-	if (rc != 0)
-		return rc;
-
+	/* Should handle MD */
 	return 0;
+}
+
+int extstore_attach(extstore_id_t *eid)
+{
+	/* Should handle MD */
+	return 0; 
 }
 
 int extstore_init(struct collection_item *cfg_items,
@@ -197,20 +172,12 @@ int extstore_init(struct collection_item *cfg_items,
 	return 0;
 }
 
-int extstore_del(kvsns_ino_t *ino)
+int extstore_del(extstore_id_t *eid)
 {
-	char k[KLEN];
-	size_t klen;
 	struct m0_uint128 id;
 	int rc;
 
-	rc = build_m0store_id(*ino, &id);
-	if (rc) {
-		if (rc == -ENOENT) /* No data created */
-			return 0;
-
-		return rc;
-	}
+	RC_WRAP(eid2motr, eid, &id);
 
 	rc = m0store_delete_object(id);
 	if (rc) {
@@ -220,24 +187,10 @@ int extstore_del(kvsns_ino_t *ino)
 		return -errno;
 	}
 
-	/* delete <inode>.data */
-	snprintf(k, KLEN, "%llu.data", *ino);
-	klen = strnlen(k, KLEN) + 1;
-	rc = m0kvs_del(k, klen);
-	if (rc != 0)
-		return rc;
-
-	/* delete <inode>.data_ext */
-	snprintf(k, KLEN, "%llu.data_ext", *ino);
-	klen = strnlen(k, KLEN) + 1;
-	rc = m0kvs_del(k, klen);
-	if (rc != 0)
-		return rc;
-
 	return 0;
 }
 
-int extstore_read(kvsns_ino_t *ino,
+int extstore_read(extstore_id_t *eid,
 		  off_t offset,
 		  size_t buffer_size,
 		  void *buffer,
@@ -248,7 +201,7 @@ int extstore_read(kvsns_ino_t *ino,
 	ssize_t bsize;
 	struct m0_uint128 id;
 
-	RC_WRAP(build_m0store_id, *ino, &id);
+	RC_WRAP(eid2motr, eid, &id);
 
 	bsize = m0store_get_bsize(id);
 	if (bsize < 0)
@@ -264,7 +217,7 @@ int extstore_read(kvsns_ino_t *ino,
 	return read_bytes;
 }
 
-int extstore_write(kvsns_ino_t *ino,
+int extstore_write(extstore_id_t *eid,
 		   off_t offset,
 		   size_t buffer_size,
 		   void *buffer,
@@ -278,7 +231,7 @@ int extstore_write(kvsns_ino_t *ino,
 	size_t klen, vlen;
 	struct stat motr_stat;
 
-	RC_WRAP(build_m0store_id, *ino, &id);
+	RC_WRAP(eid2motr, eid, &id);
 
 	bsize = m0store_get_bsize(id);
 	if (bsize < 0)
@@ -292,7 +245,7 @@ int extstore_write(kvsns_ino_t *ino,
 	RC_WRAP(update_stat, stat, UP_ST_WRITE,
 		offset+written_bytes);
 
-	snprintf(k, KLEN, "%llu.stat", *ino);
+	snprintf(k, KLEN, "%.stat", eid->data);
 	klen = strnlen(k, KLEN)+1;
 	vlen = sizeof(struct stat);
 	RC_WRAP(m0kvs_get, k, klen, (char *)&motr_stat, &vlen);
@@ -308,12 +261,12 @@ int extstore_write(kvsns_ino_t *ino,
 }
 
 
-int extstore_truncate(kvsns_ino_t *ino,
+int extstore_truncate(extstore_id_t *eid,
 		      off_t filesize,
 		      bool on_obj_store,
 		      struct stat *stat)
 {
-	if (!ino || !stat)
+	if (!eid || !stat)
 		return -EINVAL;
 
 	stat->st_size = filesize;
@@ -321,35 +274,35 @@ int extstore_truncate(kvsns_ino_t *ino,
 	return 0;
 }
 
-int extstore_getattr(kvsns_ino_t *ino,
+int extstore_getattr(extstore_id_t *eid,
 		     struct stat *stat)
 {
 	return -ENOENT; /* Attrs are not ,anaged here */
 }
 
-int extstore_archive(kvsns_ino_t *ino)
+int extstore_archive(extstore_id_t *eid)
 {
 	return -ENOTSUP;
 }
 
-int extstore_restore(kvsns_ino_t *ino)
+int extstore_restore(extstore_id_t *eid)
 {
 	return -ENOTSUP;
 }
 
-int extstore_release(kvsns_ino_t *ino)
+int extstore_release(extstore_id_t *eid)
 {
 	return -ENOTSUP;
 }
 
-int extstore_state(kvsns_ino_t *ino,
+int extstore_state(extstore_id_t *eid,
 		   char *state)
 {
 	return -ENOTSUP;
 }
 
 int extstore_cp_to(int fd_source,
-		   kvsns_ino_t *ino,
+		   extstore_id_t *eid,
 		   int iolen,
 		   size_t filesize)
 {
@@ -367,7 +320,7 @@ int extstore_cp_to(int fd_source,
 		return -ENOTSUP;
 	}
 
-	RC_WRAP(build_m0store_id, *ino, &id);
+	RC_WRAP(eid2motr, eid, &id);
 
         bsize = m0store_get_bsize(id);
         if (bsize < 0)
@@ -415,7 +368,7 @@ int extstore_cp_to(int fd_source,
 }
 
 int extstore_cp_from(int fd_dest,
-		     kvsns_ino_t *ino,
+		     extstore_id_t *eid,
 		     int iolen,
 		     size_t filesize)
 {
@@ -435,7 +388,7 @@ int extstore_cp_from(int fd_dest,
 		return -ENOTSUP;
 	}
 
-	RC_WRAP(build_m0store_id, *ino, &id);
+	RC_WRAP(eid2motr, eid, &id);
 
         bsize = m0store_get_bsize(id);
         if (bsize < 0) 

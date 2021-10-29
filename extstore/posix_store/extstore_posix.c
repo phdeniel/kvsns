@@ -73,7 +73,7 @@ static int extstore_consolidate_attrs(extstore_id_t *eid, struct stat *filestat)
 	return 0;
 }
 
-int extstore_attach(extstore_id_t *eid, char *objid, int objid_len)
+int extstore_attach(extstore_id_t *eid)
 {
 	return 0;
 }

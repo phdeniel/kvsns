@@ -73,8 +73,7 @@ int extstore_truncate(extstore_id_t *eid,
 		      off_t filesize,
 		      bool running_attach,
 		      struct stat *stat);
-int extstore_attach(extstore_id_t *eid,
-		    char *objid, int objid_len);
+int extstore_attach(extstore_id_t *eid);
 int extstore_getattr(extstore_id_t *eid,
 		     struct stat *stat);
 
@@ -120,9 +119,7 @@ struct extstore_ops {
 			off_t filesize,
 			bool running_attach,
 			struct stat *stat);
-	int (*attach)(extstore_id_t *eid,
-		      char *objid,
-		      int objid_len);
+	int (*attach)(extstore_id_t *eid);
 	int (*getattr)(extstore_id_t *eid,
 		       struct stat *stat);
 	int (*archive)(extstore_id_t *eid);
