@@ -38,6 +38,7 @@
 #include <errno.h>
 #include <ini_config.h>
 #include <kvsns/kvsns.h>
+#include <kvsns/extstore.h>
 #include <string.h>
 #include <syslog.h>
 
@@ -50,7 +51,7 @@
 #define RC_WRAP(__function, ...) ({\
 	int __rc = __function(__VA_ARGS__);\
 	syslog(LOG_DEBUG, "Call to %s rc=%d", #__function, __rc); \
-	if (__rc != 0) {        \
+	if (__rc != 0) {	\
 		syslog(LOG_INFO, "Call to %s failed, rc=%d", \
 			#__function, __rc); \
 		return __rc; } })
@@ -69,12 +70,17 @@ int kvsns_str2parentlist(kvsns_ino_t *inolist, int *size, char *str);
 int kvsns_parentlist2str(kvsns_ino_t *inolist, int size, char *str);
 int kvsns_create_entry(kvsns_cred_t *cred, kvsns_ino_t *parent,
 		       char *name, char *lnk, mode_t mode,
-		       kvsns_ino_t *newdir, enum kvsns_type type);
+		       kvsns_ino_t *new_entry, enum kvsns_type type,
+		       extstore_id_t *eid,
+		       int (*nof)(extstore_id_t *, unsigned int, char *));
 int kvsns_get_stat(kvsns_ino_t *ino, struct stat *bufstat);
 int kvsns_set_stat(kvsns_ino_t *ino, struct stat *bufstat);
 int kvsns_update_stat(kvsns_ino_t *ino, int flags);
 int kvsns_amend_stat(struct stat *stat, int flags);
 int kvsns_delall_xattr(kvsns_cred_t *cred, kvsns_ino_t *ino);
+int kvsns_get_objectid(kvsns_ino_t *ino,
+		       extstore_id_t *eid);
+
 
 
 #endif

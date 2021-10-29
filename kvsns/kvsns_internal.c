@@ -152,9 +152,28 @@ int kvsns_amend_stat(struct stat *stat, int flags)
 	return 0;
 }
 
+int kvsns_get_objectid(kvsns_ino_t *ino,
+		       extstore_id_t *eid)
+{
+	char k[KLEN];
+
+	if (!eid)
+		return -EINVAL;
+
+	snprintf(k, KLEN, "%llu.objid", *ino);
+
+	RC_WRAP(kvsal.get_char, k, eid->data);
+
+	eid->len = strnlen(eid->data, VLEN);
+
+	return 0;
+}
+
 int kvsns_create_entry(kvsns_cred_t *cred, kvsns_ino_t *parent,
 		       char *name, char *lnk, mode_t mode,
-		       kvsns_ino_t *new_entry, enum kvsns_type type)
+		       kvsns_ino_t *new_entry, enum kvsns_type type,
+		       extstore_id_t *eid, 
+		       int (*nof)(extstore_id_t *, unsigned int, char *))
 {
 	int rc;
 	char k[KLEN];
@@ -234,6 +253,36 @@ int kvsns_create_entry(kvsns_cred_t *cred, kvsns_ino_t *parent,
 		RC_WRAP_LABEL(rc, aborted, kvsal.set_char, k, lnk);
 	}
 
+	if (type == KVSNS_FILE) {
+		char seed[2*MAXNAMLEN];
+		unsigned int seedlen;
+
+		if (!eid) {
+			rc = -EINVAL;
+			goto aborted;
+		}
+
+		if (eid->len == 0) { /* Is eid defined */
+			/* eid is provided is file is attached
+ 			 * otherwise we should create it 
+ 			 */ 
+	
+			if (!nof) {
+				rc = -EINVAL;
+				goto aborted;
+			}
+
+			seedlen = snprintf(seed, 2*MAXNAMLEN,
+					   "inum=%llu,name=%s",
+					   (unsigned long long)*new_entry,
+					   name);			
+			rc = nof(eid, seedlen, seed);
+		}
+
+		/* set the reference in the KVS */
+		snprintf(k, KLEN, "%llu.objid", *new_entry);
+		RC_WRAP(kvsal.set_char, k, eid->data);
+	}
 	RC_WRAP_LABEL(rc, aborted, kvsns_amend_stat, &parent_stat,
 		      STAT_CTIME_SET|STAT_MTIME_SET);
 	RC_WRAP_LABEL(rc, aborted, kvsns_set_stat, parent, &parent_stat);

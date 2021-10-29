@@ -77,7 +77,7 @@ int kvsns_mkdir(kvsns_cred_t *cred, kvsns_ino_t *parent, char *name,
 	RC_WRAP(kvsns_access, cred, parent, KVSNS_ACCESS_WRITE);
 
 	return kvsns_create_entry(cred, parent, name, NULL,
-				  mode, newdir, KVSNS_DIR);
+				  mode, newdir, KVSNS_DIR, NULL, NULL);
 }
 
 int kvsns_symlink(kvsns_cred_t *cred, kvsns_ino_t *parent, char *name,
@@ -92,7 +92,7 @@ int kvsns_symlink(kvsns_cred_t *cred, kvsns_ino_t *parent, char *name,
 	RC_WRAP(kvsns_get_stat, parent, &parent_stat);
 
 	RC_WRAP(kvsns_create_entry, cred, parent, name, content,
-		0, newlnk, KVSNS_SYMLINK);
+		0, newlnk, KVSNS_SYMLINK, NULL, NULL);
 
 	RC_WRAP(kvsns_update_stat, parent, STAT_MTIME_SET|STAT_CTIME_SET);
 
@@ -290,6 +290,7 @@ int kvsns_getattr(kvsns_cred_t *cred, kvsns_ino_t *ino, struct stat *bufstat)
 	struct stat data_stat;
 	char k[KLEN];
 	int rc;
+	extstore_id_t eid;
 
 	if (!cred || !ino || !bufstat)
 		return -EINVAL;
@@ -297,9 +298,11 @@ int kvsns_getattr(kvsns_cred_t *cred, kvsns_ino_t *ino, struct stat *bufstat)
 	snprintf(k, KLEN, "%llu.stat", *ino);
 	RC_WRAP(kvsal.get_stat, k, bufstat);
 
+	/* special action is required for files */
 	if (S_ISREG(bufstat->st_mode)) {
 		/* for file, information is to be retrieved form extstore */
-		rc = extstore.getattr(ino, &data_stat);
+		RC_WRAP(kvsns_get_objectid,ino, &eid);
+		rc = extstore.getattr(&eid, &data_stat);
 		if (rc != 0) {
 			if (rc == -ENOENT)
 				return 0; /* no associated data */
@@ -324,6 +327,7 @@ int kvsns_setattr(kvsns_cred_t *cred, kvsns_ino_t *ino,
 	struct stat bufstat;
 	struct timeval t;
 	mode_t ifmt;
+	extstore_id_t eid;
 
 	if (!cred || !ino || !setstat)
 		return -EINVAL;
@@ -338,6 +342,7 @@ int kvsns_setattr(kvsns_cred_t *cred, kvsns_ino_t *ino,
 
 	snprintf(k, KLEN, "%llu.stat", *ino);
 	RC_WRAP(kvsal.get_stat, k, &bufstat);
+	RC_WRAP(kvsns_get_objectid, ino, &eid);
 
 	/* ctime is to be updated if md are changed */
 	bufstat.st_ctim.tv_sec = t.tv_sec;
@@ -355,11 +360,11 @@ int kvsns_setattr(kvsns_cred_t *cred, kvsns_ino_t *ino,
 		bufstat.st_gid = setstat->st_gid;
 
 	if (statflag & STAT_SIZE_SET)
-		RC_WRAP(extstore.truncate, ino, setstat->st_size, true,
+		RC_WRAP(extstore.truncate, &eid, setstat->st_size, true,
 			&bufstat);
 
 	if (statflag & STAT_SIZE_ATTACH)
-		RC_WRAP(extstore.truncate, ino, setstat->st_size, false,
+		RC_WRAP(extstore.truncate, &eid, setstat->st_size, false,
 			&bufstat);
 
 	if (statflag & STAT_ATIME_SET) {
@@ -450,6 +455,7 @@ int kvsns_unlink(kvsns_cred_t *cred, kvsns_ino_t *dir, char *name)
 	bool opened;
 	bool deleted;
 	bool is_symlink;
+	extstore_id_t eid;
 
 	opened = false;
 	deleted = false;
@@ -465,6 +471,7 @@ int kvsns_unlink(kvsns_cred_t *cred, kvsns_ino_t *dir, char *name)
 	RC_WRAP(kvsns_access, cred, dir, KVSNS_ACCESS_WRITE);
 
 	RC_WRAP(kvsns_lookup, cred, dir, name, &ino);
+	RC_WRAP(kvsns_get_objectid, &ino, &eid);
 
 	RC_WRAP(kvsns_get_stat, dir, &dir_stat);
 	RC_WRAP(kvsns_get_stat, &ino, &ino_stat);
@@ -538,11 +545,15 @@ int kvsns_unlink(kvsns_cred_t *cred, kvsns_ino_t *dir, char *name)
 	RC_WRAP(kvsal.end_transaction);
 
 	/* Call to object store : do not mix with metadata transaction */
-	if (!opened && deleted && !is_symlink)
-		RC_WRAP(extstore.del, &ino);
+	if (!opened && deleted && !is_symlink) {
+		RC_WRAP(extstore.del, &eid);
+		snprintf(k, KLEN, "%llu.objid", ino);
+		RC_WRAP(kvsal.del, k);
+	}
 
-	if (deleted)
+	if (deleted) 
 		RC_WRAP(kvsns_remove_all_xattr, cred, &ino);
+		
 	return 0;
 
 aborted:

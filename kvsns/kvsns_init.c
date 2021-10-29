@@ -125,6 +125,7 @@ static int kvsns_load_libs(void)
 
 	ADD_FUNC(extstore, init, handle_extstore);
 	ADD_FUNC(extstore, create, handle_extstore);
+	ADD_FUNC(extstore, new_objectid, handle_extstore);
 	ADD_FUNC(extstore, read, handle_extstore);
 	ADD_FUNC(extstore, write, handle_extstore);
 	ADD_FUNC(extstore, del, handle_extstore);

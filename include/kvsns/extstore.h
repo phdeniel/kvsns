@@ -42,91 +42,105 @@
 #include <stdbool.h>
 #include <ini_config.h>
 #include <kvsns/kvsal.h>
-#include <kvsns/kvsns.h>
+
+#define DATALEN VLEN
+
+typedef struct extstore_id {
+	unsigned int len;
+	char         data[DATALEN];
+} extstore_id_t;
 
 int extstore_init(struct collection_item *cfg_items,
 		  struct kvsal_ops *kvsalops);
-int extstore_create(kvsns_ino_t object);
-int extstore_read(kvsns_ino_t *ino,
+int extstore_create(extstore_id_t eid);
+int extstore_new_objectid(extstore_id_t *eid,
+			  unsigned int seedlen,
+			  char *seed);
+int extstore_read(extstore_id_t *eid,
 		  off_t offset,
 		  size_t buffer_size,
 		  void *buffer,
 		  bool *end_of_file,
 		  struct stat *stat);
-int extstore_write(kvsns_ino_t *ino,
+int extstore_write(extstore_id_t *eid,
 		   off_t offset,
 		   size_t buffer_size,
 		   void *buffer,
 		   bool *fsal_stable,
 		   struct stat *stat);
-int extstore_del(kvsns_ino_t *ino);
-int extstore_truncate(kvsns_ino_t *ino,
+int extstore_del(extstore_id_t *eid);
+int extstore_truncate(extstore_id_t *eid,
 		      off_t filesize,
 		      bool running_attach,
 		      struct stat *stat);
-int extstore_attach(kvsns_ino_t *ino,
+int extstore_attach(extstore_id_t *eid,
 		    char *objid, int objid_len);
-int extstore_getattr(kvsns_ino_t *ino,
+int extstore_getattr(extstore_id_t *eid,
 		     struct stat *stat);
 
+//struct extstore_id eid_null = { .len = 0, .data = NULL}; 
+
 /* Pseudo HSM */
-int extstore_archive(kvsns_ino_t *ino);
-int extstore_restore(kvsns_ino_t *ino);
-int extstore_release(kvsns_ino_t *ino);
-int extstore_state(kvsns_ino_t *ino, char *state);
+int extstore_archive(extstore_id_t *eid);
+int extstore_restore(extstore_id_t *eid);
+int extstore_release(extstore_id_t *eid);
+int extstore_state(extstore_id_t *eid, char *state);
 
 /* Bulk CP */
 int extstore_cp_to(int fd,
-		   kvsns_ino_t *ino,
+		   extstore_id_t *eid,
 		   int iolen,
 		   size_t filesize);
 int extstore_cp_from(int fd,
-		     kvsns_ino_t *ino,
+		     extstore_id_t *eid,
 		     int iolen,
 		     size_t filesize);
 
 struct extstore_ops {
 	int (*init)(struct collection_item *cfg_items,
 		    struct kvsal_ops *kvsalops);
-	int (*create)(kvsns_ino_t object);
-	int (*read)(kvsns_ino_t *ino,
+	int (*create)(extstore_id_t eid);
+	int (*new_objectid)(extstore_id_t *eid,
+			    unsigned int seedlen,
+			    char *seed);
+	int (*read)(extstore_id_t *eid,
 		    off_t offset,
 		    size_t buffer_size,
 		    void *buffer,
 		    bool *end_of_file,
 		    struct stat *stat);
-	int (*write)(kvsns_ino_t *ino,
+	int (*write)(extstore_id_t *eid,
 		     off_t offset,
 		     size_t buffer_size,
 		     void *buffer,
 		     bool *fsal_stable,
 		     struct stat *stat);
-	int (*del)(kvsns_ino_t *ino);
-	int (*truncate)(kvsns_ino_t *ino,
+	int (*del)(extstore_id_t *eid);
+	int (*truncate)(extstore_id_t *eid,
 			off_t filesize,
 			bool running_attach,
 			struct stat *stat);
-	int (*attach)(kvsns_ino_t *ino,
+	int (*attach)(extstore_id_t *eid,
 		      char *objid,
 		      int objid_len);
-	int (*getattr)(kvsns_ino_t *ino,
+	int (*getattr)(extstore_id_t *eid,
 		       struct stat *stat);
-	int (*archive)(kvsns_ino_t *ino);
-	int (*restore)(kvsns_ino_t *ino);
-	int (*release)(kvsns_ino_t *ino);
-	int (*state)(kvsns_ino_t *ino,
+	int (*archive)(extstore_id_t *eid);
+	int (*restore)(extstore_id_t *eid);
+	int (*release)(extstore_id_t *eid);
+	int (*state)(extstore_id_t *eid,
 		     char *state);
 	int (*cp_to)(int fd,
-		     kvsns_ino_t *ino,
+		     extstore_id_t *eid,
 		     int iolen,
 		     size_t filesize);
 	int (*cp_from)(int fd,
-		       kvsns_ino_t *ino,
+		       extstore_id_t *eid,
 		       int iolen,
 		       size_t filesize);
 };
 
-typedef int build_extstore_path_func(kvsns_ino_t object,
+typedef int build_extstore_path_func(extstore_id_t *eid,
 				     char *extstore_path,
 				     size_t pathlen);
 
@@ -134,17 +148,17 @@ typedef int build_extstore_path_func(kvsns_ino_t object,
 int objstore_init(struct collection_item *cfg_items,
 		  struct kvsal_ops *kvsalops,
 		  build_extstore_path_func *bespf);
-int objstore_put(char *path, kvsns_ino_t *ino);
-int objstore_get(char *path, kvsns_ino_t *ino);
-int objstore_del(kvsns_ino_t *ino);
+int objstore_put(char *path, extstore_id_t *eid);
+int objstore_get(char *path, extstore_id_t *eid);
+int objstore_del(extstore_id_t *eid);
 
 struct objstore_ops {
 	int (*init)(struct collection_item *cfg_items,
 		    struct kvsal_ops *kvsalops,
 		    build_extstore_path_func *bespf);
-	int (*put)(char *path, kvsns_ino_t *ino);
-	int (*get)(char *path, kvsns_ino_t *ino);
-	int (*del)(kvsns_ino_t *ino);
+	int (*put)(char *path, extstore_id_t *eid);
+	int (*get)(char *path, extstore_id_t *eid);
+	int (*del)(extstore_id_t *eid);
 };
 
 #endif

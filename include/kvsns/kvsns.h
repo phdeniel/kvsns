@@ -50,6 +50,7 @@
 #include <sys/xattr.h>
 
 #include <kvsns/kvsal.h>
+#include <kvsns/extstore.h>
 
 #define KVSNS_ROOT_INODE 2LL
 #define KVSNS_ROOT_UID 0

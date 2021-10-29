@@ -35,24 +35,24 @@
 
 static char store_root[MAXPATHLEN];
 
-static int build_extstore_path(kvsns_ino_t object,
+static int build_extstore_path(extstore_id_t object,
 			       char *extstore_path,
 			       size_t pathlen)
 {
 	if (!extstore_path)
 		return -1;
 
-	return snprintf(extstore_path, pathlen, "%s/inum=%llu",
-			store_root, (unsigned long long)object);
+	return snprintf(extstore_path, pathlen, "%s/%s",
+			store_root, object.data);
 }
 
-static int extstore_consolidate_attrs(kvsns_ino_t *ino, struct stat *filestat)
+static int extstore_consolidate_attrs(extstore_id_t *eid, struct stat *filestat)
 {
 	struct stat extstat;
 	char storepath[MAXPATHLEN];
 	int rc;
 
-	rc = build_extstore_path(*ino, storepath, MAXPATHLEN);
+	rc = build_extstore_path(*eid, storepath, MAXPATHLEN);
 	if (rc < 0)
 		return rc;
 
@@ -73,14 +73,31 @@ static int extstore_consolidate_attrs(kvsns_ino_t *ino, struct stat *filestat)
 	return 0;
 }
 
-int extstore_attach(kvsns_ino_t *ino, char *objid, int objid_len)
+int extstore_attach(extstore_id_t *eid, char *objid, int objid_len)
 {
 	return -ENOTSUP;
 }
 
-int extstore_create(kvsns_ino_t object)
+int extstore_create(extstore_id_t eid)
 {
 	return 0;
+}
+
+int extstore_new_objectid(extstore_id_t *eid, 
+			  unsigned int seedlen,
+			  char *seed)
+{
+	if (!eid || !seed)
+		return -EINVAL;
+
+	/* Be careful about printf format: string with known length */
+	eid->len = snprintf(eid->data, KLEN, "obj:%.*s", seedlen, seed);
+
+	return 0;
+#if 0
+	return snprintf(extstore_path, pathlen, "%s/inum=%llu",
+			store_root, (unsigned long long)object);
+#endif
 }
 
 int extstore_init(struct collection_item *cfg_items,
@@ -115,12 +132,12 @@ int extstore_init(struct collection_item *cfg_items,
 	return 0;
 }
 
-int extstore_del(kvsns_ino_t *ino)
+int extstore_del(extstore_id_t *eid)
 {
 	char storepath[MAXPATHLEN];
 	int rc;
 
-	rc = build_extstore_path(*ino, storepath, MAXPATHLEN);
+	rc = build_extstore_path(*eid, storepath, MAXPATHLEN);
 	if (rc < 0)
 		return rc;
 
@@ -135,7 +152,7 @@ int extstore_del(kvsns_ino_t *ino)
 	return 0;
 }
 
-int extstore_read(kvsns_ino_t *ino,
+int extstore_read(extstore_id_t *eid,
 		  off_t offset,
 		  size_t buffer_size,
 		  void *buffer,
@@ -148,7 +165,7 @@ int extstore_read(kvsns_ino_t *ino,
 	ssize_t read_bytes;
 	struct stat storestat;
 
-	rc = build_extstore_path(*ino, storepath, MAXPATHLEN);
+	rc = build_extstore_path(*eid, storepath, MAXPATHLEN);
 	if (rc < 0)
 		return rc;
 
@@ -179,7 +196,7 @@ int extstore_read(kvsns_ino_t *ino,
 	return read_bytes;
 }
 
-int extstore_write(kvsns_ino_t *ino,
+int extstore_write(extstore_id_t *eid,
 		   off_t offset,
 		   size_t buffer_size,
 		   void *buffer,
@@ -193,7 +210,7 @@ int extstore_write(kvsns_ino_t *ino,
 	struct stat storestat;
 
 
-	rc = build_extstore_path(*ino, storepath, MAXPATHLEN);
+	rc = build_extstore_path(*eid, storepath, MAXPATHLEN);
 	if (rc < 0)
 		return rc;
 
@@ -227,7 +244,7 @@ int extstore_write(kvsns_ino_t *ino,
 }
 
 
-int extstore_truncate(kvsns_ino_t *ino,
+int extstore_truncate(extstore_id_t *eid,
 		      off_t filesize,
 		      bool on_obj_store,
 		      struct stat *stat)
@@ -236,10 +253,10 @@ int extstore_truncate(kvsns_ino_t *ino,
 	char storepath[MAXPATHLEN];
 	struct timeval t;
 
-	if (!ino || !stat)
+	if (!eid || !stat)
 		return -EINVAL;
 
-	rc = build_extstore_path(*ino, storepath, MAXPATHLEN);
+	rc = build_extstore_path(*eid, storepath, MAXPATHLEN);
 	if (rc < 0)
 		return rc;
 
@@ -263,20 +280,20 @@ int extstore_truncate(kvsns_ino_t *ino,
 			return -errno;
 	}
 
-	rc = extstore_consolidate_attrs(ino, stat);
+	rc = extstore_consolidate_attrs(eid, stat);
 	if (rc < 0)
 		return rc;
 
 	return 0;
 }
 
-int extstore_getattr(kvsns_ino_t *ino,
+int extstore_getattr(extstore_id_t *eid,
 		     struct stat *stat)
 {
 	int rc;
 	char storepath[MAXPATHLEN];
 
-	rc = build_extstore_path(*ino, storepath, MAXPATHLEN);
+	rc = build_extstore_path(*eid, storepath, MAXPATHLEN);
 	if (rc < 0)
 		return rc;
 
@@ -287,28 +304,28 @@ int extstore_getattr(kvsns_ino_t *ino,
 	return 0;
 }
 
-int extstore_archive(kvsns_ino_t *ino)
+int extstore_archive(extstore_id_t *eid)
 {
 	return -ENOTSUP;
 }
 
-int extstore_restore(kvsns_ino_t *ino)
+int extstore_restore(extstore_id_t *eid)
 {
 	return -ENOTSUP;
 }
 
-int extstore_release(kvsns_ino_t *ino)
+int extstore_release(extstore_id_t *eid)
 {
 	return -ENOTSUP;
 }
 
-int extstore_state(kvsns_ino_t *ino, char *state)
+int extstore_state(extstore_id_t *eid, char *state)
 {
 	return -ENOTSUP;
 }
 
 int extstore_cp_to(int fd,
-		   kvsns_ino_t *ino, 
+		   extstore_id_t *eid, 
 		   int iolen,
 		   size_t filesize)
 {
@@ -316,7 +333,7 @@ int extstore_cp_to(int fd,
 }
 
 int extstore_cp_from(int fd,
-		     kvsns_ino_t *ino, 
+		     extstore_id_t *eid, 
 		     int iolen,
 		     size_t filesize)
 {

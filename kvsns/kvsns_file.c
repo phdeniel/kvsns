@@ -94,18 +94,22 @@ static int kvsns_ownerlist2str(kvsns_open_owner_t *ownerlist, int size,
 	return 0;
 }
 
-
 int kvsns_creat(kvsns_cred_t *cred, kvsns_ino_t *parent, char *name,
 		mode_t mode, kvsns_ino_t *newfile)
 {
 	struct stat stat;
+	extstore_id_t eid;
+
+	/* Poison eid */
+	memset(&eid, 0, sizeof(extstore_id_t));	
 
 	RC_WRAP(kvsns_access, cred, parent, KVSNS_ACCESS_WRITE);
 	RC_WRAP(kvsns_create_entry, cred, parent, name, NULL,
-				  mode, newfile, KVSNS_FILE);
+				  mode, newfile, KVSNS_FILE, 
+				  &eid, extstore.new_objectid);
 	RC_WRAP(kvsns_get_stat, newfile, &stat);
-	RC_WRAP(extstore.create, *newfile);
-
+	RC_WRAP(extstore.create, eid);
+	
 	return 0;
 }
 
@@ -181,6 +185,7 @@ int kvsns_close(kvsns_file_open_t *fd)
 	bool found = false;
 	bool opened_and_deleted;
 	bool delete_object = false;
+	extstore_id_t eid;
 
 	if (!fd)
 		return -EINVAL;
@@ -193,6 +198,9 @@ int kvsns_close(kvsns_file_open_t *fd)
 		else
 			return rc;
 	}
+
+	/* get the related extstore id */
+	RC_WRAP(kvsns_get_objectid, &fd->ino, &eid);
 
 	/* Was the file deleted as it was opened ? */
 	/* The last close should perform actual data deletion */
@@ -223,7 +231,7 @@ int kvsns_close(kvsns_file_open_t *fd)
 			RC_WRAP(kvsal.end_transaction);
 
 			if (delete_object)
-				RC_WRAP(extstore.del, &fd->ino);
+				RC_WRAP(extstore.del, &eid);
 
 			return 0;
 		} else {
@@ -255,7 +263,7 @@ int kvsns_close(kvsns_file_open_t *fd)
 
 	/* To be done outside of the previous transaction */
 	if (delete_object)
-		RC_WRAP(extstore.del, &fd->ino);
+		RC_WRAP(extstore.del, &eid);
 
 	return 0;
 
@@ -270,12 +278,14 @@ ssize_t kvsns_write(kvsns_cred_t *cred, kvsns_file_open_t *fd,
 	ssize_t write_amount;
 	bool stable;
 	struct stat wstat;
+	extstore_id_t eid;
 
 	memset(&wstat, 0, sizeof(wstat));
 
 	RC_WRAP(kvsns_access, cred, &fd->ino, KVSNS_ACCESS_WRITE);
+	RC_WRAP(kvsns_get_objectid, &fd->ino, &eid);
 
-	write_amount = extstore.write(&fd->ino,
+	write_amount = extstore.write(&eid,
                                       offset,
                                       count,
                                       buf,
@@ -290,10 +300,12 @@ ssize_t kvsns_read(kvsns_cred_t *cred, kvsns_file_open_t *fd,
 	ssize_t read_amount;
 	bool eof;
 	struct stat stat;
+	extstore_id_t eid;
 
 	RC_WRAP(kvsns_access, cred, &fd->ino, KVSNS_ACCESS_READ);
+	RC_WRAP(kvsns_get_objectid, &fd->ino, &eid);
 
-	read_amount = extstore.read(&fd->ino,
+	read_amount = extstore.read(&eid,
                                     offset,
                                     count,
                                     buf,
@@ -307,33 +319,52 @@ int kvsns_attach(kvsns_cred_t *cred, kvsns_ino_t *parent, char *name,
 		 char *objid, int objid_len, struct stat *stat, int statflags,
 		  kvsns_ino_t *newfile)
 {
+	extstore_id_t eid; 
+
+	/* Poison eid */
+	memset(&eid, 0, sizeof(extstore_id_t));	
+
 	RC_WRAP(kvsns_access, cred, parent, KVSNS_ACCESS_WRITE);
 	RC_WRAP(kvsns_create_entry, cred, parent, name, NULL,
-				    stat->st_mode, newfile, KVSNS_FILE);
+				    stat->st_mode, newfile, KVSNS_FILE, 
+				    &eid, NULL);
 	RC_WRAP(kvsns_setattr, cred, newfile, stat, statflags);
 	RC_WRAP(kvsns_getattr, cred, newfile, stat);
-	RC_WRAP(extstore.attach, newfile, objid, objid_len);
+	//RC_WRAP(extstore.attach, newfile, objid, objid_len);
+	RC_WRAP(extstore.attach, &eid, objid, objid_len);
 
 	return 0;
 }
 
 int kvsns_archive(kvsns_cred_t *cred, kvsns_ino_t *ino)
 {
-	return extstore.archive(ino);
+	extstore_id_t eid;
+
+	RC_WRAP(kvsns_get_objectid, ino, &eid);
+	return extstore.archive(&eid);
 }
 
 int kvsns_restore(kvsns_cred_t *cred, kvsns_ino_t *ino)
 {
-	return extstore.restore(ino);
+	extstore_id_t eid;
+
+	RC_WRAP(kvsns_get_objectid, ino, &eid);
+	return extstore.restore(&eid);
 }
 
 int kvsns_release(kvsns_cred_t *cred, kvsns_ino_t *ino)
 {
-	return extstore.release(ino);
+	extstore_id_t eid;
+
+	RC_WRAP(kvsns_get_objectid, ino, &eid);
+	return extstore.release(&eid);
 }
 
 int kvsns_state(kvsns_cred_t *cred, kvsns_ino_t *ino, char *state)
 {
-	return extstore.state(ino, state);
+	extstore_id_t eid;
+
+	RC_WRAP(kvsns_get_objectid, ino, &eid);
+	return extstore.state(&eid, state);
 }
 
