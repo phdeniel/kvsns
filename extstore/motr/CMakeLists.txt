@@ -20,6 +20,7 @@ add_library(extstore_motr SHARED ${extstore_LIB_SRCS})
 
 target_link_libraries(extstore_motr
   m0common
+  hashkvs
   ini_config
   motr
   uuid

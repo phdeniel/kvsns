@@ -45,6 +45,8 @@ endif
 if motr_lib.found()
    subdir('motr')
 endif
+
+subdir('hash')
 subdir('extstore')
 subdir('kvsal')
 subdir('kvsns')

@@ -32,6 +32,7 @@
 #include <ini_config.h>
 //#include <hiredis/hiredis.h>
 #include <kvsns/extstore.h>
+#include <kvsns/hashlib.h>
 #include "../../motr/m0common.h"
 
 #define RC_WRAP(__function, ...) ({\
@@ -123,27 +124,39 @@ int extstore_new_objectid(extstore_id_t *eid,
 {
         if (!eid || !seed)
                 return -EINVAL;
-
+	
 	/* Ici il fait hacher une seed en m0128_t de motr qui va dans l'eid */
         /* Be careful about printf format: string with known length */
         eid->len = snprintf(eid->data, KLEN, "obj:%.*s", seedlen, seed);
 
-	// id = M0_ID_APP;
-	///id.u_lo += (unsigned long long)object;   <----- Il faut creer l'ID !!!
-
-        return -ENOTSUP;
+        return 0;
 }
 
 static int eid2motr(extstore_id_t *eid, struct m0_uint128 *id)
 {
+	struct m0_fid *fid;
+	hashbuff128_t hb;
+	int rc;
+	char strid[DATALEN];
+
 	if (!eid || !id)
 		return -EINVAL;
 
-	/* Converti une eid en objid */
-	if (eid->len != sizeof(struct m0_uint128))
-		return -EINVAL;
+	rc = hashlib_murmur3_128("motr", eid->data, hb);
+	if (rc)
+		return -EINVAL; 
 
-	memcpy(id, eid->data, eid->len);
+	memcpy(id, hb, sizeof(struct m0_uint128));
+
+	id->u_lo |= M0_ID_APP.u_lo; /* Preserve reserved ids for the system */
+	id->u_hi |= M0_ID_APP.u_hi; 
+	fid = (struct m0_fid*)id;
+
+	m0_fid_print(strid, DATALEN, fid);
+
+	fprintf(stderr, "DBG: eid2motr: eid=%.*s id=%s\n",
+		eid->len, eid->data, strid);
+
 	return 0;
 }
 
@@ -168,8 +181,7 @@ int extstore_init(struct collection_item *cfg_items,
 		  struct kvsal_ops *kvsalops)
 {
 	/* Init m0store */
-	//return m0init(cfg_items);
-	return 0;
+	return m0init(cfg_items);
 }
 
 int extstore_del(extstore_id_t *eid)

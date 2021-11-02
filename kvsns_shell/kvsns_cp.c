@@ -43,10 +43,10 @@
 
 static void exit_rc(char *msg, int rc)
 {
-	if (rc >= 0)
-		return;
-
 	char format[MAXPATHLEN];
+
+	if (!rc)
+		return;
 
 	snprintf(format, MAXPATHLEN, "%s%s",
 		 msg, " |rc=%d\n");
@@ -146,7 +146,8 @@ int main(int argc, char *argv[])
 	exit_rc("Copy failed", rc);
 
 	/* The end */
-	rc = close(fd);
+	errno = 0;
+	close(fd);
 	exit_rc("Can't close POSIX fd, errono", errno);
 
 	rc = kvsns_close(&kfd);

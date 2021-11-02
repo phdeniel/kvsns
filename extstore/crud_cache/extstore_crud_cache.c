@@ -101,7 +101,7 @@ static enum state str2state(const char *str)
 	return INVAL;
 }
 
-static int get_entry_state(kvsns_ino_t *ino, enum state *state)
+static int get_entry_state(extstore_id_t *eid, enum state *state)
 {
 	char k[KLEN];
 	char v[VLEN];
@@ -114,7 +114,7 @@ static int get_entry_state(kvsns_ino_t *ino, enum state *state)
 	return 0;
 }
 
-static int set_entry_state(kvsns_ino_t *ino, enum state state)
+static int set_entry_state(extstore_id_t *eid, enum state state)
 {
 	char  k[KLEN];
 	char *v = NULL;
@@ -127,7 +127,7 @@ static int set_entry_state(kvsns_ino_t *ino, enum state state)
 	return 0;
 }
 
-static int del_entry_state(kvsns_ino_t *ino)
+static int del_entry_state(extstore_id_t *eid)
 {
 	char k[KLEN];
 	snprintf(k, KLEN, "%llu.cache_state", *ino);
@@ -136,7 +136,7 @@ static int del_entry_state(kvsns_ino_t *ino)
 	return 0;
 }
 
-static int build_extstore_path(kvsns_ino_t object,
+static int build_extstore_path(extstore_id_t eid,
 			       char *extstore_path,
 			       size_t pathlen)
 {
@@ -200,7 +200,7 @@ static int update_stat(struct stat *stat, enum update_stat_how how,
 	return 0;
 }
 
-int extstore_create(kvsns_ino_t object)
+int extstore_create(extstore_id_t eid)
 {
 	char path[sizeof(store_root) + KLEN];
 	char v[sizeof(store_root) + KLEN];
@@ -230,7 +230,7 @@ int extstore_create(kvsns_ino_t object)
 	return 0;
 }
 
-int extstore_attach(kvsns_ino_t *ino, char *objid, int objid_len)
+int extstore_attach(extstore_id_t *eid)
 {
 	char k[KLEN];
 	char v[VLEN];
@@ -309,7 +309,7 @@ int extstore_init(struct collection_item *cfg_items,
 	return rc;
 }
 
-int extstore_del(kvsns_ino_t *ino)
+int extstore_del(extstore_id_t *eid)
 {
 	char k[KLEN];
 	char storepath[MAXPATHLEN];
@@ -352,7 +352,7 @@ int extstore_del(kvsns_ino_t *ino)
 	return 0;
 }
 
-int extstore_read(kvsns_ino_t *ino,
+int extstore_read(extstore_id_t *eid,
 		  off_t offset,
 		  size_t buffer_size,
 		  void *buffer,
@@ -399,7 +399,7 @@ errout:
 	return rc;
 }
 
-int extstore_write(kvsns_ino_t *ino,
+int extstore_write(extstore_id_t *eid,
 		   off_t offset,
 		   size_t buffer_size,
 		   void *buffer,
@@ -457,7 +457,7 @@ int extstore_write(kvsns_ino_t *ino,
 }
 
 
-int extstore_truncate(kvsns_ino_t *ino,
+int extstore_truncate(extstore_id_t *eid,
 		      off_t filesize,
 		      bool running_attach,
 		      struct stat *stat)
@@ -507,7 +507,7 @@ int extstore_truncate(kvsns_ino_t *ino,
 	return rc;
 }
 
-int extstore_getattr(kvsns_ino_t *ino,
+int extstore_getattr(extstore_id_t *eid,
 		     struct stat *stat)
 {
 	int rc;
@@ -543,7 +543,7 @@ int extstore_getattr(kvsns_ino_t *ino,
 	return rc;
 }
 
-int extstore_archive(kvsns_ino_t *ino)
+int extstore_archive(extstore_id_t *eid)
 {
 	enum state state;
 	char storepath[MAXPATHLEN];
@@ -577,7 +577,7 @@ int extstore_archive(kvsns_ino_t *ino)
 	return rc;
 }
 
-int extstore_restore(kvsns_ino_t *ino)
+int extstore_restore(extstore_id_t *eid)
 {
 	enum state state;
 	char storepath[MAXPATHLEN];
@@ -608,7 +608,7 @@ int extstore_restore(kvsns_ino_t *ino)
 	return rc;
 }
 
-int extstore_release(kvsns_ino_t *ino)
+int extstore_release(extstore_id_t *eid)
 {
 	enum state state;
 	char storepath[MAXPATHLEN];
@@ -640,7 +640,7 @@ int extstore_release(kvsns_ino_t *ino)
 	return rc;
 }
 
-int extstore_state(kvsns_ino_t *ino, char *strstate)
+int extstore_state(extstore_id_t *eid, char *strstate)
 {
 	enum state state;
 
@@ -654,7 +654,7 @@ int extstore_state(kvsns_ino_t *ino, char *strstate)
 }
 
 int extstore_cp_to(int fd,
-		   kvsns_ino_t *ino, 
+		   extstore_id_t *eid, 
 		   int iolen,
 		   size_t filesize)
 {
@@ -662,7 +662,7 @@ int extstore_cp_to(int fd,
 }
 
 int extstore_cp_from(int fd,
-		     kvsns_ino_t *ino, 
+		     extstore_id_t *eid, 
 		     int iolen,
 		     size_t filesize)
 {

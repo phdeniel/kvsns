@@ -332,7 +332,7 @@ int kvsns_attach(kvsns_cred_t *cred, kvsns_ino_t *parent, char *name,
 				    &eid, NULL);
 	RC_WRAP(kvsns_setattr, cred, newfile, stat, statflags);
 	RC_WRAP(kvsns_getattr, cred, newfile, stat);
-	RC_WRAP(extstore.attach, &eid, objid, objid_len);
+	RC_WRAP(extstore.attach, &eid);
 
 	return 0;
 }
