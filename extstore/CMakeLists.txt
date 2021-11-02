@@ -8,4 +8,4 @@ if (HAVE_MOTR AND HAVE_MOTR_H)
 	add_subdirectory(motr)
 endif (HAVE_MOTR AND HAVE_MOTR_H)
 
-add_subdirectory(crud_cache)
+#add_subdirectory(crud_cache)
