@@ -209,6 +209,9 @@ static void m0kvs_do_init(void)
 {
 	int rc;
 
+	if (clovis_init_done)
+		return;
+
 	rc = get_clovis_conf(conf);
 
 	if (rc != 0) {
