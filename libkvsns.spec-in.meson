@@ -130,6 +130,9 @@ rm -rf $RPM_BUILD_ROOT
 %{_bindir}/cp_get.sh
 
 %changelog
+* Wed Nov  3 2021 Philippe DENIEL <philippe.deniel@cea.fr> 1.3.0
+- Better layering between kvsns, kvsal aand extstore.
+
 * Mon Aug  3 2020 Philippe DENIEL <philippe.deniel@cea.fr> 1.2.8
 - Change dependencies so that libkvsns-utils can be built
 

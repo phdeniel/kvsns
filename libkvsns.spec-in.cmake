@@ -197,6 +197,9 @@ rm -rf $RPM_BUILD_ROOT
 
 
 %changelog
+* Wed Nov  3 2021 Philippe DENIEL <philippe.deniel@cea.fr> 1.3.0
+- Better layering between kvsns, kvsal aand extstore. 
+
 * Mon Jan  4 2021 Philippe DENIEL <philippe.deniel@cea.fr> 1.2.11
 - Build libkvsns does not requires redis or hiredis, a special rpm is created
 
