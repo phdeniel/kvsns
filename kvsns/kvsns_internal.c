@@ -273,7 +273,7 @@ int kvsns_create_entry(kvsns_cred_t *cred, kvsns_ino_t *parent,
 			}
 
 			seedlen = snprintf(seed, 2*MAXNAMLEN,
-					   "inum=%llu,name=%s",
+					   "inum=%llu:name=%s",
 					   (unsigned long long)*new_entry,
 					   name);			
 			rc = nof(eid, seedlen, seed);

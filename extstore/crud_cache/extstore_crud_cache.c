@@ -48,7 +48,7 @@ struct objstore_ops objstore_lib_ops;
 #define ADD_FUNC(__module__, __name__, __handle__, __holder__)       ({ \
 	snprintf(funcname, MAXNAMLEN, "%s_%s", __module__, #__name__);  \
 	*(void **)(&__holder__.__name__) = dlsym(__handle__, funcname); \
-	if (!__holder__.__name__)                                       \
+	if (!__holder__.__name__)				       \
 		return -EINVAL; })
 
 #define RC_WRAP(__function, ...) ({\
@@ -58,7 +58,7 @@ struct objstore_ops objstore_lib_ops;
 
 #define RC_WRAP_LABEL(__rc, __label, __function, ...) ({\
 	__rc = __function(__VA_ARGS__);\
-	if (__rc != 0)        \
+	if (__rc != 0)	\
 		goto __label; })
 
 
@@ -106,7 +106,10 @@ static int get_entry_state(extstore_id_t *eid, enum state *state)
 	char k[KLEN];
 	char v[VLEN];
 
-	snprintf(k, KLEN, "%llu.cache_state", *ino);
+	if (!eid || !state)
+		return -EINVAL;
+
+	snprintf(k, KLEN, "%s.cache_state", eid->data);
 	RC_WRAP(kvsal.get_char, k, v);
 
 	*state = str2state(v);
@@ -119,7 +122,10 @@ static int set_entry_state(extstore_id_t *eid, enum state state)
 	char  k[KLEN];
 	char *v = NULL;
 
-	snprintf(k, KLEN, "%llu.cache_state", *ino);
+	if (!eid || !state)
+		return -EINVAL;
+
+	snprintf(k, KLEN, "%s.cache_state", eid->data);
 	v = (char *)state2str(state);
 
 	RC_WRAP(kvsal.set_char, k, v);
@@ -130,7 +136,11 @@ static int set_entry_state(extstore_id_t *eid, enum state state)
 static int del_entry_state(extstore_id_t *eid)
 {
 	char k[KLEN];
-	snprintf(k, KLEN, "%llu.cache_state", *ino);
+
+	if (!eid)
+		return -EINVAL;
+
+	snprintf(k, KLEN, "%s.cache_state", eid->data);
 	RC_WRAP(kvsal.del, k);
 
 	return 0;
@@ -140,13 +150,11 @@ static int build_extstore_path(extstore_id_t eid,
 			       char *extstore_path,
 			       size_t pathlen)
 {
-	char k[KLEN];
-
 	if (!extstore_path)
 		return -1;
 
-	snprintf(k, KLEN, "%llu.data", object);
-	RC_WRAP(kvsal.get_char, k, extstore_path);
+	snprintf(extstore_path, pathlen, "%s/%s",
+		 store_root, eid.data);
 
 	return 0;
 }
@@ -200,6 +208,19 @@ static int update_stat(struct stat *stat, enum update_stat_how how,
 	return 0;
 }
 
+int extstore_new_objectid(extstore_id_t *eid,
+			  unsigned int seedlen,
+			  char *seed)
+{
+	if (!eid || !seed)
+		return -EINVAL;
+
+	/* Be careful about printf format: string with known length */
+	eid->len = snprintf(eid->data, KLEN, "obj:%.*s", seedlen, seed);
+
+	return 0;
+}
+
 int extstore_create(extstore_id_t eid)
 {
 	char path[sizeof(store_root) + KLEN];
@@ -208,22 +229,18 @@ int extstore_create(extstore_id_t eid)
 	char k[KLEN];
 	int fd;
 
-	snprintf(k, KLEN, "%llu.data", object);
-	snprintf(path, sizeof(store_root) + KLEN,
-                 "%s/inum=%llu", store_root, object);
-	strncpy(v, path, sizeof(store_root) + KLEN);
-	RC_WRAP(kvsal.set_char, k, v);
+	RC_WRAP(build_extstore_path, eid, path, sizeof(store_root) + KLEN);
 
 	fd = creat(path, 0777);
 	if (fd == -1)
 		return -errno;
 	close(fd);
 
-	snprintf(k, KLEN, "%llu.data_attr", object);
+	snprintf(k, KLEN, "%s.data_attr", eid.data);
 	memset((char *)&stat, 0, sizeof(stat));
 	RC_WRAP(kvsal.set_stat, k, &stat);
 
-	snprintf(k, KLEN, "%llu.cache_state", object);
+	snprintf(k, KLEN, "%s.cache_state", eid.data);
 	snprintf(v, VLEN, state2str(CACHED));
 	RC_WRAP(kvsal.set_char, k, v);
 
@@ -236,19 +253,18 @@ int extstore_attach(extstore_id_t *eid)
 	char v[VLEN];
 	struct stat stat;
 
-	snprintf(k, KLEN, "%llu.data", *ino);
-	strncpy(v, objid, (objid_len > VLEN)?VLEN:objid_len);
-	RC_WRAP(kvsal.set_char, k, v);
+	if (!eid)
+		return -EINVAL;
 
-	snprintf(k, KLEN, "%llu.data_attr", *ino);
+	snprintf(k, KLEN, "%s.data_attr", eid->data);
 	memset((char *)&stat, 0, sizeof(stat));
 	RC_WRAP(kvsal.set_stat, k, &stat);
 
-	snprintf(k, KLEN, "%llu.cache_state", *ino);
+	snprintf(k, KLEN, "%s.cache_state", eid->data);
 	snprintf(v, VLEN, state2str(CACHED));
 	RC_WRAP(kvsal.set_char, k, v);
 
-	RC_WRAP(set_entry_state, ino, CACHED);
+	RC_WRAP(set_entry_state, eid, CACHED);
 
 	return 0;
 }
@@ -278,7 +294,7 @@ static int load_objstore_lib(struct collection_item *cfg_items,
 	ADD_FUNC(module_name, del, handle_objstore_lib, objstore_lib_ops);
 
 	RC_WRAP(objstore_lib_ops.init, cfg_items, kvsalops,
-                &build_extstore_path);
+		&build_extstore_path);
 
 	return 0;
 }
@@ -315,10 +331,13 @@ int extstore_del(extstore_id_t *eid)
 	char storepath[MAXPATHLEN];
 	int rc;
 
-	/* Delete in the object store */
-	RC_WRAP(objstore_lib_ops.del, ino);
+	if (!eid)
+		return -EINVAL;
 
-	rc = build_extstore_path(*ino, storepath, MAXPATHLEN);
+	/* Delete in the object store */
+	RC_WRAP(objstore_lib_ops.del, eid);
+
+	rc = build_extstore_path(*eid, storepath, MAXPATHLEN);
 	if (rc) {
 		if (rc == -ENOENT) /* No data created */
 			return 0;
@@ -334,20 +353,16 @@ int extstore_del(extstore_id_t *eid)
 		return -errno;
 	}
 
-	/* delete <inode>.data */
-	snprintf(k, KLEN, "%llu.data", *ino);
+	/* delete <eid>.data_attr */
+	snprintf(k, KLEN, "%s.data_attr", eid->data);
 	RC_WRAP(kvsal.del, k);
 
-	/* delete <inode>.data_attr */
-	snprintf(k, KLEN, "%llu.data_attr", *ino);
-	RC_WRAP(kvsal.del, k);
-
-	snprintf(k, KLEN, "%llu.data_obj", *ino);
+	snprintf(k, KLEN, "%s.data_obj", eid->data);
 	if (kvsal.exists(k) != -ENOENT)
 		RC_WRAP(kvsal.del, k);
 
 	/* delete state */
-	RC_WRAP(del_entry_state, ino);
+	RC_WRAP(del_entry_state, eid);
 
 	return 0;
 }
@@ -366,12 +381,15 @@ int extstore_read(extstore_id_t *eid,
 	enum state state;
 	char k[KLEN];
 
-	RC_WRAP(get_entry_state, ino, &state);
+	if (!eid)
+		return -EINVAL;
+
+	RC_WRAP(get_entry_state, eid, &state);
 
 	if (state == RELEASED)
-		RC_WRAP(extstore_restore, ino);
+		RC_WRAP(extstore_restore, eid);
 
-	RC_WRAP(build_extstore_path, *ino, storepath, MAXPATHLEN);
+	RC_WRAP(build_extstore_path, *eid, storepath, MAXPATHLEN);
 
 	fd = open(storepath, O_CREAT|O_RDONLY|O_SYNC, 0755);
 	if (fd < 0)
@@ -384,7 +402,7 @@ int extstore_read(extstore_id_t *eid,
 	}
 
 	RC_WRAP_LABEL(rc, errout, update_stat, stat, UP_ST_READ, 0);
-	snprintf(k, KLEN, "%llu.data_attr", *ino);
+	snprintf(k, KLEN, "%s.data_attr", eid->data);
 	RC_WRAP_LABEL(rc, errout, kvsal.set_stat, k, stat);
 
 	rc = close(fd);
@@ -414,15 +432,15 @@ int extstore_write(extstore_id_t *eid,
 	enum state state;
 	char k[KLEN];
 
-	if (!ino)
+	if (!eid)
 		return -EINVAL;
 
-	RC_WRAP(get_entry_state, ino, &state);
+	RC_WRAP(get_entry_state, eid, &state);
 
 	if (state == RELEASED)
-		RC_WRAP(extstore_restore, ino);
+		RC_WRAP(extstore_restore, eid);
 
-	RC_WRAP(build_extstore_path, *ino, storepath, MAXPATHLEN);
+	RC_WRAP(build_extstore_path, *eid, storepath, MAXPATHLEN);
 
 	fd = open(storepath, O_CREAT|O_WRONLY|O_SYNC, 0755);
 	if (fd < 0)
@@ -438,7 +456,7 @@ int extstore_write(extstore_id_t *eid,
 	if (rc < 0)
 		return -errno;
 
-	snprintf(k, KLEN, "%llu.data_attr", *ino);
+	snprintf(k, KLEN, "%s.data_attr", eid->data);
 	RC_WRAP(kvsal.get_stat, k, &objstat);
 	RC_WRAP(update_stat, &objstat, UP_ST_WRITE,
 		offset+written_bytes);
@@ -450,7 +468,7 @@ int extstore_write(extstore_id_t *eid,
 	stat->st_ctim = objstat.st_ctim;
 
 	if (state != CACHED)
-		RC_WRAP(set_entry_state, ino, CACHED);
+		RC_WRAP(set_entry_state, eid, CACHED);
 
 	*fsal_stable = true;
 	return written_bytes;
@@ -468,26 +486,26 @@ int extstore_truncate(extstore_id_t *eid,
 	enum state state;
 	char k[KLEN];
 
-	if (!ino || !stat)
+	if (!eid || !stat)
 		return -EINVAL;
 
-	RC_WRAP(get_entry_state, ino, &state);
+	RC_WRAP(get_entry_state, eid, &state);
 
 
 	switch (state) {
 	case CACHED:
-		RC_WRAP(build_extstore_path, *ino, storepath, MAXPATHLEN);
+		RC_WRAP(build_extstore_path, *eid, storepath, MAXPATHLEN);
 		RC_WRAP(truncate, storepath, filesize);
 		rc = 0;
 		break;
 	case DUPLICATED:
-		RC_WRAP(build_extstore_path, *ino, storepath, MAXPATHLEN);
+		RC_WRAP(build_extstore_path, *eid, storepath, MAXPATHLEN);
 		RC_WRAP(truncate, storepath, filesize);
-		RC_WRAP(set_entry_state, ino, CACHED);
+		RC_WRAP(set_entry_state, eid, CACHED);
 		rc = 0;
 		break;
 	case RELEASED:
-		snprintf(k, KLEN, "%llu.data_attr", *ino);
+		snprintf(k, KLEN, "%s.data_attr", eid->data);
 		RC_WRAP(kvsal.get_stat, k, &objstat);
 
 		stat->st_size = filesize;
@@ -516,22 +534,22 @@ int extstore_getattr(extstore_id_t *eid,
 	char k[KLEN];
 
 	/* Should be using stored stat */
-	if (!ino || !stat)
+	if (!eid || !stat)
 		return -EINVAL;
 
-	RC_WRAP(get_entry_state, ino, &state);
+	RC_WRAP(get_entry_state, eid, &state);
 
 	switch (state) {
 	case CACHED:
 	case DUPLICATED:
 		/* Newer data are in cache, let's query it */
-		RC_WRAP(build_extstore_path, *ino, storepath, MAXPATHLEN);
+		RC_WRAP(build_extstore_path, *eid, storepath, MAXPATHLEN);
 		RC_WRAP(lstat, storepath, stat);
 		rc = 0; /* Success */
 		break;
 	case RELEASED:
 		/* Get archived stats */
-		snprintf(k, KLEN, "%llu.data_attr", *ino);
+		snprintf(k, KLEN, "%s.data_attr", eid->data);
 		RC_WRAP(kvsal.get_stat, k, stat);
 		rc = 0; /* Success */
 		break;
@@ -549,10 +567,10 @@ int extstore_archive(extstore_id_t *eid)
 	char storepath[MAXPATHLEN];
 	int rc;
 
-	if (!ino)
+	if (!eid)
 		return -EINVAL;
 
-	RC_WRAP(get_entry_state, ino, &state);
+	RC_WRAP(get_entry_state, eid, &state);
 
 	switch (state) {
 	case RELEASED:
@@ -563,10 +581,10 @@ int extstore_archive(extstore_id_t *eid)
 		break;
 	case CACHED:
 		/* Xfer wuth the object store */
-		RC_WRAP(build_extstore_path, *ino, storepath, MAXPATHLEN);
+		RC_WRAP(build_extstore_path, *eid, storepath, MAXPATHLEN);
 
-		RC_WRAP(objstore_lib_ops.put, storepath, ino);
-		RC_WRAP(set_entry_state, ino, DUPLICATED);
+		RC_WRAP(objstore_lib_ops.put, storepath, eid);
+		RC_WRAP(set_entry_state, eid, DUPLICATED);
 		rc = 0;
 		break;
 	default:
@@ -583,10 +601,10 @@ int extstore_restore(extstore_id_t *eid)
 	char storepath[MAXPATHLEN];
 	int rc = 0;
 
-	if (!ino)
+	if (!eid)
 		return -EINVAL;
 
-	RC_WRAP(get_entry_state, ino, &state);
+	RC_WRAP(get_entry_state, eid, &state);
 
 	switch (state) {
 	case DUPLICATED:
@@ -595,9 +613,9 @@ int extstore_restore(extstore_id_t *eid)
 		break;
 	case RELEASED:
 		/* Xfer with the object store */
-		RC_WRAP(build_extstore_path, *ino, storepath, MAXPATHLEN);
-		RC_WRAP(objstore_lib_ops.get, storepath, ino);
-		RC_WRAP(set_entry_state, ino, DUPLICATED);
+		RC_WRAP(build_extstore_path, *eid, storepath, MAXPATHLEN);
+		RC_WRAP(objstore_lib_ops.get, storepath, eid);
+		RC_WRAP(set_entry_state, eid, DUPLICATED);
 		rc = 0;
 		break;
 	default:
@@ -614,10 +632,10 @@ int extstore_release(extstore_id_t *eid)
 	char storepath[MAXPATHLEN];
 	int rc = 0;
 
-	if (!ino)
+	if (!eid)
 		return -EINVAL;
 
-	RC_WRAP(get_entry_state, ino, &state);
+	RC_WRAP(get_entry_state, eid, &state);
 
 	switch (state) {
 	case CACHED:
@@ -627,9 +645,9 @@ int extstore_release(extstore_id_t *eid)
 		rc = 0; /* Nothing to do */
 		break;
 	case DUPLICATED:
-		RC_WRAP(build_extstore_path, *ino, storepath, MAXPATHLEN);
+		RC_WRAP(build_extstore_path, *eid, storepath, MAXPATHLEN);
 		RC_WRAP(unlink, storepath);
-		RC_WRAP(set_entry_state, ino, RELEASED);
+		RC_WRAP(set_entry_state, eid, RELEASED);
 		rc = 0;
 		break;
 	default:
@@ -644,10 +662,10 @@ int extstore_state(extstore_id_t *eid, char *strstate)
 {
 	enum state state;
 
-	if (!ino)
+	if (!eid)
 		return -EINVAL;
 
-	RC_WRAP(get_entry_state, ino, &state);
+	RC_WRAP(get_entry_state, eid, &state);
 	strcpy(strstate, state2str(state));
 
 	return 0;

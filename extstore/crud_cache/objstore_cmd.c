@@ -60,7 +60,7 @@ build_extstore_path_func *build_extstore_path;
 #define PUT_STR ".archive"
 #define PUT_STR_SIZE sizeof(PUT_STR)
 
-int objstore_put(char *path, kvsns_ino_t *ino)
+int objstore_put(char *path, extstore_id_t *eid)
 {
 	char storepath[MAXPATHLEN - PUT_STR_SIZE];
 	char objpath[MAXPATHLEN];
@@ -68,7 +68,10 @@ int objstore_put(char *path, kvsns_ino_t *ino)
 	char k[KLEN];
 	FILE *fp;
 
-	RC_WRAP(build_extstore_path, *ino, storepath,
+	if (!eid)
+		return -EINVAL;
+
+	RC_WRAP(build_extstore_path, *eid, storepath,
                 MAXPATHLEN - PUT_STR_SIZE);
 	snprintf(objpath, MAXPATHLEN, "%s%s", storepath, PUT_STR);
 	sprintf(cmd, cmd_put, storepath, objpath);
@@ -76,13 +79,13 @@ int objstore_put(char *path, kvsns_ino_t *ino)
 	fp = popen(cmd, "r");
 	pclose(fp);
 
-	snprintf(k, KLEN, "%llu.data_obj", *ino);
+	snprintf(k, KLEN, "%s.data_obj", eid->data);
 	RC_WRAP(kvsal.set_char, k, objpath);
 
 	return 0;
 }
 
-int objstore_get(char *path, kvsns_ino_t *ino)
+int objstore_get(char *path, extstore_id_t *eid)
 {
 	char k[KLEN];
 	char storepath[MAXPATHLEN];
@@ -90,8 +93,11 @@ int objstore_get(char *path, kvsns_ino_t *ino)
 	char cmd[3*MAXPATHLEN];
 	FILE *fp;
 
-	RC_WRAP(build_extstore_path, *ino, storepath, MAXPATHLEN);
-	snprintf(k, KLEN, "%llu.data_obj", *ino);
+	if (!eid)
+		return -EINVAL;
+
+	RC_WRAP(build_extstore_path, *eid, storepath, MAXPATHLEN);
+	snprintf(k, KLEN, "%s.data_obj", eid->data);
 	RC_WRAP(kvsal.get_char, k, objpath);
 	sprintf(cmd, cmd_get, storepath, objpath);
 
@@ -101,7 +107,7 @@ int objstore_get(char *path, kvsns_ino_t *ino)
 	return 0;
 }
 
-int objstore_del(kvsns_ino_t *ino)
+int objstore_del(extstore_id_t *eid)
 {
 	char k[KLEN];
 	char storepath[MAXPATHLEN];
@@ -109,8 +115,11 @@ int objstore_del(kvsns_ino_t *ino)
 	char cmd[3*MAXPATHLEN];
 	FILE *fp;
 
-	RC_WRAP(build_extstore_path, *ino, storepath, MAXPATHLEN);
-	snprintf(k, KLEN, "%llu.data_obj", *ino);
+	if (!eid)
+		return -EINVAL;
+
+	RC_WRAP(build_extstore_path, *eid, storepath, MAXPATHLEN);
+	snprintf(k, KLEN, "%s.data_obj", eid->data);
 
 	if (kvsal.exists(k) != -ENOENT) {
 		RC_WRAP(kvsal.get_char, k, objpath);

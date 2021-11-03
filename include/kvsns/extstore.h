@@ -137,7 +137,7 @@ struct extstore_ops {
 		       size_t filesize);
 };
 
-typedef int build_extstore_path_func(extstore_id_t *eid,
+typedef int build_extstore_path_func(extstore_id_t eid,
 				     char *extstore_path,
 				     size_t pathlen);
 
