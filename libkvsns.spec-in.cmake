@@ -50,28 +50,28 @@ Provides: %{name}-devel = %{version}-%{release}
 
 # REDIS
 %if %{with redis}
-%package redis
+%package kvsal-redis
 Summary: The REDIS based kvsal
 Group: Applications/System
 Requires: %{name} = %{version}-%{release} librados2
-Provides: %{name}-rados = %{version}-%{release}
+Provides: %{name}-kvsal-redis = %{version}-%{release}
 Requires: redis hiredis
 BuildRequires: hiredis-devel
 
-%description redis
+%description kvsal-redis
 This package contains a library for using REDIS as a KVS for libkvsns
 %endif
 
 
 # RADOS
 %if %{with rados}
-%package rados
+%package extstore-rados
 Summary: The RADOS based backend for libkvsns
 Group: Applications/System
 Requires: %{name} = %{version}-%{release} librados2
-Provides: %{name}-rados = %{version}-%{release}
+Provides: %{name}-extstore-rados = %{version}-%{release}
 
-%description rados
+%description extstore-rados
 This package contains a library for using RADOS as a backed for libkvsns
 %endif
 
@@ -97,7 +97,7 @@ This package contains tools for libkvsns.
 Summary: Development file for the library libkvsns
 Group: Development/Libraries
 Requires: %{name} = %{version}-%{release} pkgconfig
-Requires: redis hiredis libkvsns
+Requires: libkvsns
 Provides: %{name}-utils = %{version}-%{release}
 
 %description utils
@@ -179,7 +179,7 @@ rm -rf $RPM_BUILD_ROOT
 %{_bindir}/cp_get.sh
  
 %if %{with redis}
-%files redis
+%files kvsal-redis
 %{_libdir}/libkvsal_redis.so*
 %endif
 
@@ -191,7 +191,7 @@ rm -rf $RPM_BUILD_ROOT
 %endif
 
 %if %{with rados}
-%files rados
+%files extstore-rados
 %{_libdir}/libextstore_rados.so*
 %endif
 
