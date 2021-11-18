@@ -62,6 +62,23 @@ BuildRequires: hiredis-devel
 This package contains a library for using REDIS as a KVS for libkvsns
 %endif
 
+%package extstore-crud_cache
+Summary: The CRUD cache based backend for libkvsns
+Group: Applications/System
+Requires: %{name} = %{version}-%{release} librados2
+Provides: %{name}-extstore-crud_cache = %{version}-%{release}
+
+%description extstore-crud_cache
+This package contains a library for using POSIX as a backed for libkvsns
+
+%package extstore-posix
+Summary: The (dummy) POSIX  based backend for libkvsns
+Group: Applications/System
+Requires: %{name} = %{version}-%{release} librados2
+Provides: %{name}-extstore-posix = %{version}-%{release}
+
+%description extstore-posix
+This package contains a library for using POSIX as a backed for libkvsns
 
 # RADOS
 %if %{with rados}
@@ -155,9 +172,6 @@ rm -rf $RPM_BUILD_ROOT
 
 %files
 %defattr(-,root,root)
-%{_libdir}/libextstore_posix.so*
-%{_libdir}/libextstore_crud_cache.so*
-%{_libdir}/libobjstore_cmd.so*
 %{_libdir}/libkvsns.so*
 %config(noreplace) %{_sysconfdir}/kvsns.d/kvsns.ini
 
@@ -178,6 +192,13 @@ rm -rf $RPM_BUILD_ROOT
 %{_bindir}/cp_put.sh
 %{_bindir}/cp_get.sh
  
+%files extstore-posix
+%{_libdir}/libextstore_posix.so*
+
+%files extstore-crud_cache
+%{_libdir}/libextstore_crud_cache.so*
+%{_libdir}/libobjstore_cmd.so*
+
 %if %{with redis}
 %files kvsal-redis
 %{_libdir}/libkvsal_redis.so*
